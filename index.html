@@ -13,7 +13,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Shuttle Tracker">
 
-  <!-- Firebase SDKs (Compatibility Layer) -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -32,64 +32,43 @@
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); overflow-x: hidden; }
 
-    /* --- EXECUTIVE SPLASH SCREEN --- */
+    /* EXECUTIVE SPLASH SCREEN */
     #splash-screen {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
+      color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9999; transition: opacity 0.6s ease, visibility 0.6s ease;
     }
 
     .brand-icon-wrapper {
-      position: relative;
-      width: 72px;
-      height: 72px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      backdrop-filter: blur(10px);
+      width: 72px; height: 72px; background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 18px; display: flex;
+      align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
-
-    .brand-icon-svg {
-      width: 38px;
-      height: 38px;
-      fill: none;
-      stroke: #38bdf8;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .splash-title { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; color: #f8fafc; }
-    .splash-subtitle { font-size: 13px; color: #94a3b8; margin-top: 4px; margin-bottom: 32px; font-weight: 400; }
-
+    .brand-icon-svg { width: 38px; height: 38px; fill: none; stroke: #38bdf8; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .splash-title { font-size: 24px; font-weight: 700; margin: 0; color: #f8fafc; }
+    .splash-subtitle { font-size: 13px; color: #94a3b8; margin-top: 4px; margin-bottom: 32px; }
     .progress-bar-container { width: 140px; height: 3px; background: rgba(255, 255, 255, 0.08); border-radius: 2px; overflow: hidden; margin-bottom: 24px; }
     .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #2563eb); animation: loadProgress 1.8s ease-in-out forwards; }
-
     @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
-
     .nuzan-corporate-tag { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #64748b; text-transform: uppercase; }
     .nuzan-corporate-tag span { color: #38bdf8; }
 
-    /* --- MAIN APP UI --- */
-    .app-wrapper { max-width: 440px; margin: auto; padding: 16px; min-height: 100vh; }
+    /* AUTH / LOGIN SCREEN */
+    #auth-screen {
+      position: fixed; inset: 0; background: var(--bg); z-index: 8000;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .login-card { background: white; padding: 24px; border-radius: 16px; border: 1px solid var(--border); width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+    .login-card h2 { margin: 0 0 4px 0; font-size: 20px; font-weight: 800; color: var(--text); }
 
+    /* MAIN UI */
+    .app-wrapper { max-width: 440px; margin: auto; padding: 16px; min-height: 100vh; }
     .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .brand-title { display: flex; flex-direction: column; }
-    .brand-title h3 { margin: 0; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+    .brand-title h3 { margin: 0; font-size: 18px; font-weight: 800; }
     .brand-subtitle { font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 1px; text-transform: uppercase; }
 
+    .user-pill { font-size: 11px; background: #e2e8f0; padding: 4px 10px; border-radius: 20px; font-weight: 700; color: #334155; }
     .lock-btn { background: #fff; border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
 
     nav { display: flex; gap: 4px; margin-bottom: 16px; background: #e2e8f0; padding: 4px; border-radius: 12px; }
@@ -120,17 +99,17 @@
     .badge-unpaid { background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
     .badge-paid { background: var(--success); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
 
-    /* PRINTABLE RECEIPT MODAL */
-    .receipt-modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 1000; padding: 16px; backdrop-filter: blur(4px); }
+    /* PRINT MODAL */
+    .receipt-modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 9000; padding: 16px; backdrop-filter: blur(4px); }
     .receipt-modal.active { display: flex; }
-    .receipt-content { background: white; padding: 24px; border-radius: 16px; max-width: 380px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    .receipt-content { background: white; padding: 24px; border-radius: 16px; max-width: 380px; width: 100%; }
     .receipt-header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 14px; margin-bottom: 14px; }
     .receipt-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
 
     @media print {
       body * { visibility: hidden; }
       .receipt-content, .receipt-content * { visibility: visible; }
-      .receipt-content { position: absolute; left: 0; top: 0; width: 100%; max-width: 100%; box-shadow: none; padding: 0; }
+      .receipt-content { position: absolute; left: 0; top: 0; width: 100%; max-width: 100%; padding: 0; }
       .no-print { display: none !important; }
     }
 
@@ -149,12 +128,27 @@
   </div>
   <h1 class="splash-title">Shuttle Tracker</h1>
   <div class="splash-subtitle">Badminton Operations Platform</div>
-  
-  <div class="progress-bar-container">
-    <div class="progress-bar-fill"></div>
-  </div>
-
+  <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
   <div class="nuzan-corporate-tag">ENGINEERED BY <span>NUZAN</span></div>
+</div>
+
+<!-- USER LOGIN MODAL -->
+<div id="auth-screen">
+  <div class="login-card">
+    <h2>Player Sign In</h2>
+    <p style="font-size: 12px; color: #64748b; margin: 0 0 16px 0;">Select your Flight Level to access your portal.</p>
+    
+    <label style="font-size: 11px; font-weight: 800; color: #64748b;">FULL NAME</label>
+    <input type="text" id="loginName" placeholder="e.g. Syed Ahmed">
+
+    <label style="font-size: 11px; font-weight: 800; color: #64748b;">WHATSAPP PHONE</label>
+    <input type="text" id="loginPhone" placeholder="e.g. 97339123456">
+
+    <label style="font-size: 11px; font-weight: 800; color: #64748b;">ASSIGNED FLIGHT LEVEL</label>
+    <select id="loginLevel"></select>
+
+    <button onclick="loginUser()" class="btn-submit" style="background: var(--primary); margin-top: 8px;">Enter My Flight Portal</button>
+  </div>
 </div>
 
 <!-- MAIN APP CONTAINER -->
@@ -164,7 +158,10 @@
       <h3>🏸 Shuttle Tracker</h3>
       <span class="brand-subtitle">Powered by NuZan</span>
     </div>
-    <button id="authBtn" class="lock-btn" onclick="toggleAdminAuth()">🔒 Admin</button>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span id="userPill" class="user-pill">Guest</span>
+      <button id="authBtn" class="lock-btn" onclick="toggleAdminAuth()">🔒 Admin</button>
+    </div>
   </div>
 
   <nav>
@@ -174,32 +171,29 @@
     <button id="nav-settings" class="admin-only" onclick="showScreen('screen-settings')">Settings</button>
   </nav>
 
-  <!-- SCHEDULE SCREEN -->
+  <!-- 1. SCHEDULE & TIMETABLE SCREEN -->
   <div id="screen-timetable" class="screen active">
     <div class="card">
-      <label style="font-size:11px; font-weight:800; color:#64748b;">SELECT FLIGHT</label>
-      <select id="userLevelSelect" onchange="renderTimetable()"></select>
-
-      <label style="font-size:11px; font-weight:800; color:#64748b;">PLAYING DAY</label>
-      <select id="daySelect" onchange="renderTimetable()">
-        <option value="Sunday">Sunday</option>
-        <option value="Monday">Monday</option>
-        <option value="Tuesday">Tuesday</option>
-        <option value="Wednesday">Wednesday</option>
-        <option value="Thursday">Thursday</option>
-        <option value="Friday">Friday</option>
-        <option value="Saturday">Saturday</option>
-      </select>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h4 style="margin:0;">Flight Level</h4>
+          <span id="playerCurrentLevelDisplay" style="font-size:16px; font-weight:800; color:var(--primary);">Flight 4-A</span>
+        </div>
+        <button onclick="switchUserAccount()" class="btn-sm" style="background:#e2e8f0; color:#334155;">Switch User</button>
+      </div>
     </div>
 
-    <div id="timetableGrid"></div>
+    <div class="card">
+      <h4>Weekly Timetable Schedule</h4>
+      <div id="weeklyScheduleList"></div>
+    </div>
   </div>
 
-  <!-- GAME LOG SCREEN -->
+  <!-- 2. GAME LOG SCREEN -->
   <div id="screen-game" class="screen">
     <div style="margin-bottom: 12px;">
       <h3 id="sessionTitle" style="margin: 0;">Flight Session</h3>
-      <small id="sessionMeta" style="color: #64748b;">Session Info</small>
+      <small id="sessionMeta" style="color: #64748b;">Session Active</small>
     </div>
 
     <div class="card">
@@ -209,22 +203,23 @@
 
     <div class="card">
       <h4>Shuttlecocks Used</h4>
-      <div class="counter">
-        <button onclick="updateCorkCount(-1)">-</button>
-        <span id="corkDisplay" style="font-size: 22px; font-weight: bold;">1</span>
-        <button onclick="updateCorkCount(1)">+</button>
+      <!-- Admin Only Modifiers -->
+      <div id="corkControls" class="counter">
+        <button id="btnCorkMinus" class="admin-only" onclick="updateCorkCount(-1)">-</button>
+        <span id="corkDisplay" style="font-size: 24px; font-weight: 800;">1</span>
+        <button id="btnCorkPlus" class="admin-only" onclick="updateCorkCount(1)">+</button>
       </div>
       <div style="text-align: center; color: #64748b; font-size: 12px;">Unit Price: BHD <span id="corkPriceDisplay">1.000</span></div>
     </div>
 
     <div class="split-box">
-      <small style="color: #475569; font-weight: 700;">PER PLAYER SHARE</small>
+      <small style="color: #475569; font-weight: 700;">YOUR REQUIRED PAYMENT SHARE</small>
       <h3 id="splitDisplay">BHD 0.250</h3>
-      <small style="color: #64748b;">(Total: BHD <span id="totalCostDisplay">1.000</span> ÷ <span id="playerCountDisplay">4</span> Active)</small>
+      <small style="color: #64748b;">(Total: BHD <span id="totalCostDisplay">1.000</span> ÷ <span id="playerCountDisplay">4</span> Attending)</small>
     </div>
 
     <div class="card">
-      <h4>Payment Method</h4>
+      <h4>Submit Payment Proof</h4>
       <select id="paymentMethod" onchange="togglePaymentUI()">
         <option value="BenefitPay">BenefitPay (Attach Screenshot)</option>
         <option value="Cash">Cash in Hand</option>
@@ -239,10 +234,10 @@
     </div>
   </div>
 
-  <!-- UNPAID TAB -->
+  <!-- 3. ADMIN UNPAID TAB -->
   <div id="screen-admin" class="screen">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-      <h3 style="margin:0;">Payment Status</h3>
+      <h3 style="margin:0;">Payment Ledger</h3>
       <button onclick="openReceiptModal()" class="btn-sm" style="background:var(--primary); color:white; font-weight:bold;">🧾 Print Statement</button>
     </div>
     
@@ -252,9 +247,30 @@
     <div id="overdueList"></div>
   </div>
 
-  <!-- SETTINGS TAB -->
+  <!-- 4. ADMIN SETTINGS TAB -->
   <div id="screen-settings" class="screen">
     <h3 style="margin-bottom: 12px;">Admin Panel</h3>
+
+    <div class="card">
+      <h4>Level Weekly Schedule Manager</h4>
+      <label style="font-size: 12px;">Target Flight Level:</label>
+      <select id="scheduleLevelSelect" onchange="loadScheduleEditor()"></select>
+
+      <label style="font-size: 12px;">Playing Day & Time:</label>
+      <div style="display:flex; gap:8px;">
+        <select id="scheduleDayInput">
+          <option value="Sunday">Sunday</option>
+          <option value="Monday">Monday</option>
+          <option value="Tuesday">Tuesday</option>
+          <option value="Wednesday">Wednesday</option>
+          <option value="Thursday">Thursday</option>
+          <option value="Friday">Friday</option>
+          <option value="Saturday">Saturday</option>
+        </select>
+        <input type="text" id="scheduleTimeInput" placeholder="e.g. 8:00 PM - 10:00 PM">
+      </div>
+      <button onclick="saveWeeklyScheduleSlot()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:700;">Update Day Schedule</button>
+    </div>
 
     <div class="card">
       <h4>Members Manager</h4>
@@ -278,7 +294,7 @@
     </div>
 
     <div class="card">
-      <h4>General Settings</h4>
+      <h4>System Parameters</h4>
       <label style="font-size: 12px;">Cork Unit Price (BHD):</label>
       <input type="number" id="settingCorkPrice" step="0.050" value="1.000">
 
@@ -289,7 +305,7 @@
       <input type="password" id="newAdminPin" placeholder="Change Admin PIN">
     </div>
 
-    <button class="btn-submit" onclick="saveAdminSettings()">Save Settings</button>
+    <button class="btn-submit" onclick="saveAdminSettings()">Save System Settings</button>
   </div>
 
   <footer>
@@ -297,7 +313,7 @@
   </footer>
 </div>
 
-<!-- PRINTABLE RECEIPT / STATEMENT MODAL -->
+<!-- PRINT STATEMENT MODAL -->
 <div id="receiptModal" class="receipt-modal">
   <div class="receipt-content">
     <div class="receipt-header">
@@ -337,7 +353,7 @@
     }, 1800);
   });
 
-  // --- YOUR LIVE FIREBASE CONFIGURATION ---
+  // --- LIVE FIREBASE CONFIGURATION ---
   const firebaseConfig = {
     apiKey: "AIzaSyDJETuE2apzR2p7SJaEvK9Cs4Z0h1Jdx4c",
     authDomain: "shuttle-tracker-39f72.firebaseapp.com",
@@ -350,14 +366,21 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
+  // STATE MANAGEMENT
   let isAdmin = false;
+  let currentUser = JSON.parse(localStorage.getItem('shuttle_user')) || null;
   let adminPIN = localStorage.getItem('shuttle_admin_pin') || "1234";
   let corkPriceBHD = parseFloat(localStorage.getItem('shuttle_cork_price')) || 1.000;
   let adminPhone = localStorage.getItem('shuttle_admin_phone') || "97339123456";
   let currentCorkCount = 1;
-  let activeSelectedLevel = "Flight 4-A";
 
-  const levelsList = ["All Levels", "Premier", "Flight 1", "Flight 2", "Flight 3", "Flight 4-A", "Flight 4-B"];
+  const levelsList = ["Premier", "Flight 1", "Flight 2", "Flight 3", "Flight 4-A", "Flight 4-B"];
+
+  let weeklyTimetables = JSON.parse(localStorage.getItem('shuttle_timetables')) || {
+    "Flight 4-A": { "Sunday": "8:00 PM - 10:00 PM", "Tuesday": "8:00 PM - 10:00 PM", "Friday": "6:00 PM - 9:00 PM" },
+    "Flight 4-B": { "Sunday": "6:00 PM - 8:00 PM", "Thursday": "8:00 PM - 10:00 PM" },
+    "Flight 1": { "Monday": "8:00 PM - 10:00 PM", "Wednesday": "8:00 PM - 10:00 PM" }
+  };
 
   let defaultMembers = [
     { id: "p1", name: "Syed", phone: "97339123456", level: "Flight 4-A", coming: true, isPaid: false, amountOwed: 0.250 },
@@ -368,64 +391,118 @@
 
   let playersList = JSON.parse(localStorage.getItem('shuttle_players')) || defaultMembers;
 
-  const timetableData = {
-    "Sunday": ["Flight 4-A", "Flight 4-B", "Flight 3"],
-    "Monday": ["Flight 1", "Flight 2", "Premier"],
-    "Tuesday": ["Flight 3", "Flight 4-A"],
-    "Wednesday": ["Premier", "Flight 1"],
-    "Thursday": ["Flight 2", "Flight 4-B"],
-    "Friday": ["Premier", "Flight 1", "Flight 2", "Flight 3", "Flight 4-A", "Flight 4-B"],
-    "Saturday": ["Flight 1", "Flight 2", "Premier"]
-  };
-
   function normalizeLevel(lvl) {
     return String(lvl || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
   }
 
+  // FIRESTORE LIVE SYNC
   function syncWithCloud() {
     db.collection("members").onSnapshot((snapshot) => {
       let cloudPlayers = [];
-      snapshot.forEach((doc) => {
-        cloudPlayers.push({ id: doc.id, ...doc.data() });
-      });
+      snapshot.forEach((doc) => cloudPlayers.push({ id: doc.id, ...doc.data() }));
       if (cloudPlayers.length > 0) {
         playersList = cloudPlayers;
         localStorage.setItem('shuttle_players', JSON.stringify(playersList));
-        renderAttendees();
-        recalculateSplit();
+        if (currentUser) {
+          renderAttendees();
+          recalculateSplit();
+        }
         renderAdminDashboard();
       }
-    }, (error) => {
-      console.log("Firestore Sync Note:", error.message);
+    });
+
+    db.collection("system").doc("timetable").onSnapshot((doc) => {
+      if (doc.exists) {
+        weeklyTimetables = doc.data();
+        localStorage.setItem('shuttle_timetables', JSON.stringify(weeklyTimetables));
+        renderWeeklySchedule();
+      }
+    });
+
+    db.collection("system").doc("sessionState").onSnapshot((doc) => {
+      if (doc.exists) {
+        currentCorkCount = doc.data().corkCount || 1;
+        document.getElementById('corkDisplay').innerText = currentCorkCount;
+        recalculateSplit();
+      }
     });
   }
 
   function savePlayersData() {
     localStorage.setItem('shuttle_players', JSON.stringify(playersList));
-    playersList.forEach((player) => {
-      db.collection("members").doc(player.id).set(player, { merge: true });
+    playersList.forEach((player) => db.collection("members").doc(player.id).set(player, { merge: true }));
+  }
+
+  function saveWeeklyScheduleCloud() {
+    localStorage.setItem('shuttle_timetables', JSON.stringify(weeklyTimetables));
+    db.collection("system").doc("timetable").set(weeklyTimetables);
+  }
+
+  function saveSessionStateCloud() {
+    db.collection("system").doc("sessionState").set({ corkCount: currentCorkCount });
+  }
+
+  // LOGIN & ROLE MANAGEMENT
+  function populateLoginDropdowns() {
+    const loginSel = document.getElementById('loginLevel');
+    const adminLvlSel = document.getElementById('adminLevelFilter');
+    const unpaidLvlSel = document.getElementById('unpaidLevelFilter');
+    const schedLvlSel = document.getElementById('scheduleLevelSelect');
+    
+    loginSel.innerHTML = '';
+    adminLvlSel.innerHTML = '';
+    unpaidLvlSel.innerHTML = '<option value="All Levels">All Levels</option>';
+    schedLvlSel.innerHTML = '';
+
+    levelsList.forEach(lvl => {
+      loginSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
+      adminLvlSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
+      unpaidLvlSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
+      schedLvlSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
     });
   }
 
-  function populateLevelDropdowns() {
-    const userLvlSel = document.getElementById('userLevelSelect');
-    const adminLvlSel = document.getElementById('adminLevelFilter');
-    const unpaidLvlSel = document.getElementById('unpaidLevelFilter');
+  function checkUserSession() {
+    if (!currentUser) {
+      document.getElementById('auth-screen').style.display = 'flex';
+    } else {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('userPill').innerText = currentUser.name;
+      document.getElementById('playerCurrentLevelDisplay').innerText = currentUser.level;
+      renderWeeklySchedule();
+      renderAttendees();
+      recalculateSplit();
+    }
+  }
+
+  function loginUser() {
+    const name = document.getElementById('loginName').value.trim();
+    const phone = document.getElementById('loginPhone').value.trim();
+    const level = document.getElementById('loginLevel').value;
+
+    if (!name || !phone) {
+      alert("Please enter both your name and WhatsApp phone number.");
+      return;
+    }
+
+    currentUser = { name, phone, level };
+    localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
     
-    userLvlSel.innerHTML = '';
-    adminLvlSel.innerHTML = '';
-    unpaidLvlSel.innerHTML = '';
+    // Auto add player to list if new
+    const existing = playersList.find(p => p.phone === phone);
+    if (!existing) {
+      const newPlayer = { id: `p_${Date.now()}`, name, phone, level, coming: true, isPaid: false, amountOwed: 0.250 };
+      playersList.push(newPlayer);
+      savePlayersData();
+    }
 
-    levelsList.forEach(lvl => {
-      if (lvl !== "All Levels") {
-        userLvlSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
-        adminLvlSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
-      }
-      unpaidLvlSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
-    });
+    checkUserSession();
+  }
 
-    userLvlSel.value = activeSelectedLevel;
-    unpaidLvlSel.value = activeSelectedLevel;
+  function switchUserAccount() {
+    localStorage.removeItem('shuttle_user');
+    currentUser = null;
+    checkUserSession();
   }
 
   function toggleAdminAuth() {
@@ -441,7 +518,7 @@
         document.getElementById('authBtn').innerText = "🔓 Lock";
         document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
       } else if (pin !== null) {
-        alert("Incorrect PIN!");
+        alert("Incorrect Admin PIN!");
       }
     }
   }
@@ -463,47 +540,62 @@
     }
   }
 
-  function renderTimetable() {
-    activeSelectedLevel = document.getElementById('userLevelSelect').value || "Flight 4-A";
-    document.getElementById('unpaidLevelFilter').value = activeSelectedLevel;
+  // TIMETABLE SCHEDULE
+  function renderWeeklySchedule() {
+    if (!currentUser) return;
+    const level = currentUser.level;
+    const container = document.getElementById('weeklyScheduleList');
+    container.innerHTML = '';
+
+    const sched = weeklyTimetables[level] || {};
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    let hasMatches = false;
+    days.forEach(day => {
+      if (sched[day]) {
+        hasMatches = true;
+        container.innerHTML += `
+          <div class="attendee-item">
+            <div><strong>${day}</strong><br><small style="color:#64748b;">${sched[day]}</small></div>
+            <span class="badge-paid" style="background:var(--primary);">Active Slot</span>
+          </div>
+        `;
+      }
+    });
+
+    if (!hasMatches) {
+      container.innerHTML = `<small style="color:#94a3b8;">No recurring weekly matches set for ${level}. Admin can set this in Settings.</small>`;
+    }
+  }
+
+  function saveWeeklyScheduleSlot() {
+    const level = document.getElementById('scheduleLevelSelect').value;
+    const day = document.getElementById('scheduleDayInput').value;
+    const timeStr = document.getElementById('scheduleTimeInput').value.trim();
+
+    if (!weeklyTimetables[level]) weeklyTimetables[level] = {};
     
-    const day = document.getElementById('daySelect').value;
-    const grid = document.getElementById('timetableGrid');
-    grid.innerHTML = '';
-
-    const flightsOnDay = timetableData[day] || [];
-    const isFlightScheduled = flightsOnDay.some(f => normalizeLevel(f) === normalizeLevel(activeSelectedLevel));
-
-    if (!isFlightScheduled) {
-      grid.innerHTML = `<div style="text-align:center; padding:20px; color:#adb5bd;">No sessions scheduled for <strong>${activeSelectedLevel}</strong> on ${day}.</div>`;
-      return;
+    if (timeStr === "") {
+      delete weeklyTimetables[level][day];
+    } else {
+      weeklyTimetables[level][day] = timeStr;
     }
 
-    const card = document.createElement('div');
-    card.className = `card`;
-    card.style.cssText = "cursor:pointer; display:flex; justify-content:space-between; align-items:center;";
-    card.innerHTML = `<div><strong>${activeSelectedLevel} Session</strong><br><small style="color:#64748b;">${day} Match</small></div><span style="color:var(--primary); font-weight:bold;">→</span>`;
-    card.onclick = () => selectSlot(activeSelectedLevel, day);
-    grid.appendChild(card);
+    saveWeeklyScheduleCloud();
+    renderWeeklySchedule();
+    alert(`Updated ${day} timetable schedule for ${level}!`);
   }
 
-  function selectSlot(flight, day) {
-    activeSelectedLevel = flight;
-    document.getElementById('sessionTitle').innerText = `${flight} Session`;
-    document.getElementById('sessionMeta').innerText = `${day}`;
-    renderAttendees();
-    recalculateSplit();
-    showScreen('screen-game');
-  }
-
+  // GAME LOG & ATTENDANCE
   function renderAttendees() {
+    if (!currentUser) return;
     const container = document.getElementById('attendeeChecklist');
     container.innerHTML = '';
 
-    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(activeSelectedLevel));
+    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(currentUser.level));
 
     if (levelMembers.length === 0) {
-      container.innerHTML = `<small style="color:#adb5bd;">No members added to ${activeSelectedLevel} yet.</small>`;
+      container.innerHTML = `<small style="color:#adb5bd;">No members registered under ${currentUser.level} yet.</small>`;
       return;
     }
 
@@ -531,13 +623,16 @@
   }
 
   function updateCorkCount(val) {
+    if (!isAdmin) return;
     currentCorkCount = Math.max(1, currentCorkCount + val);
     document.getElementById('corkDisplay').innerText = currentCorkCount;
+    saveSessionStateCloud();
     recalculateSplit();
   }
 
   function recalculateSplit() {
-    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(activeSelectedLevel));
+    if (!currentUser) return;
+    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(currentUser.level));
     const activeCount = levelMembers.filter(p => p.coming !== false).length || 1;
 
     const totalCost = currentCorkCount * corkPriceBHD;
@@ -568,18 +663,14 @@
   function checkUploadValid() {
     const fileInput = document.getElementById('screenshotInput');
     const submitBtn = document.getElementById('submitPayBtn');
-    if (fileInput.files.length > 0) {
-      submitBtn.disabled = false;
-      submitBtn.innerText = "Submit Proof & Mark Paid";
-    } else {
-      submitBtn.disabled = true;
-      submitBtn.innerText = "Attach Screenshot First";
-    }
+    submitBtn.disabled = fileInput.files.length === 0;
+    submitBtn.innerText = fileInput.files.length > 0 ? "Submit Proof & Mark Paid" : "Attach Screenshot First";
   }
 
   function submitSessionPayment() {
+    if (!currentUser) return;
     const method = document.getElementById('paymentMethod').value;
-    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(activeSelectedLevel) && p.coming !== false);
+    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(currentUser.level) && p.coming !== false);
 
     if (levelMembers.length === 0) {
       alert("No active attending members selected!");
@@ -595,18 +686,13 @@
     });
 
     savePlayersData();
-
-    if (method === 'BenefitPay') {
-      alert(`✅ Proof uploaded! Automatically marked ${levelMembers.length} member(s) as PAID.`);
-    } else {
-      alert(`Recorded Cash payment for ${levelMembers.length} member(s). Marked as UNPAID until cleared by Admin.`);
-    }
-
+    alert(method === 'BenefitPay' ? "✅ Proof submitted! Payment recorded as PAID." : "Recorded Cash payment. Marked as UNPAID until Admin approval.");
     showScreen('screen-timetable');
   }
 
+  // ADMIN LEDGER & EXPORTS
   function renderAdminDashboard() {
-    const filterLvl = document.getElementById('unpaidLevelFilter').value || activeSelectedLevel;
+    const filterLvl = document.getElementById('unpaidLevelFilter').value || "All Levels";
     const container = document.getElementById('overdueList');
     container.innerHTML = '';
 
@@ -616,14 +702,14 @@
     });
 
     if (filteredMembers.length === 0) {
-      container.innerHTML = `<p style="color:#64748b; text-align:center; padding:16px;">No members registered in ${filterLvl} yet.</p>`;
+      container.innerHTML = `<p style="color:#64748b; text-align:center; padding:16px;">No records found.</p>`;
       return;
     }
 
     filteredMembers.forEach((m) => {
       const isPaid = m.isPaid === true;
       const owed = m.amountOwed || 0.250;
-      const waUrl = `https://wa.me/${m.phone}?text=Hi%20${encodeURIComponent(m.name)},%20friendly%20reminder%20for%20your%20unpaid%20badminton%20fee%20of%20BHD%20${owed.toFixed(3)}%20(${m.level}).`;
+      const waUrl = `https://wa.me/${m.phone}?text=Hi%20${encodeURIComponent(m.name)},%20reminder%20for%20your%20badminton%20fee%20of%20BHD%20${owed.toFixed(3)}%20(${m.level}).`;
 
       container.innerHTML += `
         <div class="overdue-card ${isPaid ? '' : 'unpaid-bg'}">
@@ -654,32 +740,26 @@
     }
   }
 
-  // PRINTABLE RECEIPT / STATEMENT GENERATOR
   function openReceiptModal() {
-    const filterLvl = document.getElementById('unpaidLevelFilter').value || activeSelectedLevel;
+    const filterLvl = document.getElementById('unpaidLevelFilter').value || "All Levels";
     const modal = document.getElementById('receiptModal');
     const itemsContainer = document.getElementById('receiptItems');
     
     document.getElementById('receiptDate').innerText = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    document.getElementById('receiptFlight').innerText = `Flight: ${filterLvl}`;
+    document.getElementById('receiptFlight').innerText = `Flight Filter: ${filterLvl}`;
 
-    const filtered = playersList.filter(p => {
-      if (filterLvl === "All Levels") return true;
-      return normalizeLevel(p.level) === normalizeLevel(filterLvl);
-    });
+    const filtered = playersList.filter(p => filterLvl === "All Levels" || normalizeLevel(p.level) === normalizeLevel(filterLvl));
 
     itemsContainer.innerHTML = '';
-    let totalPaid = 0;
-    let totalUnpaid = 0;
+    let totalPaid = 0; let totalUnpaid = 0;
 
     filtered.forEach(m => {
       const owed = m.amountOwed || 0.250;
-      if (m.isPaid) totalPaid += owed;
-      else totalUnpaid += owed;
+      if (m.isPaid) totalPaid += owed; else totalUnpaid += owed;
 
       itemsContainer.innerHTML += `
         <div class="receipt-row">
-          <span>${m.name}</span>
+          <span>${m.name} (${m.level})</span>
           <span style="font-weight:bold; color:${m.isPaid ? 'var(--success)' : 'var(--danger)'};">
             ${m.isPaid ? 'PAID (BHD ' + owed.toFixed(3) + ')' : 'UNPAID (BHD ' + owed.toFixed(3) + ')'}
           </span>
@@ -689,7 +769,6 @@
 
     document.getElementById('receiptTotalPaid').innerText = `BHD ${totalPaid.toFixed(3)}`;
     document.getElementById('receiptTotalUnpaid').innerText = `BHD ${totalUnpaid.toFixed(3)}`;
-
     modal.classList.add('active');
   }
 
@@ -697,27 +776,14 @@
     document.getElementById('receiptModal').classList.remove('active');
   }
 
-  // GOOGLE SHEETS / EXCEL CSV EXPORTER
   function exportToGoogleSheetsCSV() {
     let csvContent = "data:text/csv;charset=utf-8,ID,Name,Phone,Level,Attending,Status,Amount Owed (BHD)\n";
-
     playersList.forEach(m => {
-      const row = [
-        m.id,
-        `"${m.name}"`,
-        `"${m.phone}"`,
-        `"${m.level}"`,
-        m.coming !== false ? "Yes" : "No",
-        m.isPaid ? "Paid" : "Unpaid",
-        (m.amountOwed || 0.250).toFixed(3)
-      ].join(",");
-      csvContent += row + "\n";
+      csvContent += [m.id, `"${m.name}"`, `"${m.phone}"`, `"${m.level}"`, m.coming !== false ? "Yes" : "No", m.isPaid ? "Paid" : "Unpaid", (m.amountOwed || 0.250).toFixed(3)].join(",") + "\n";
     });
-
-    const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `ShuttleTracker_Export_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute("href", encodeURI(csvContent));
+    link.setAttribute("download", `ShuttleTracker_Report_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -730,14 +796,14 @@
   }
 
   function renderAdminMembersList() {
-    const selectedLevel = document.getElementById('adminLevelFilter').value || levelsList[1];
+    const selectedLevel = document.getElementById('adminLevelFilter').value || levelsList[0];
     const container = document.getElementById('adminFilteredPlayerList');
     container.innerHTML = '';
 
     const filtered = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(selectedLevel));
 
     if (filtered.length === 0) {
-      container.innerHTML = `<small style="color:#adb5bd;">No members added to ${selectedLevel} yet.</small>`;
+      container.innerHTML = `<small style="color:#adb5bd;">No members registered in ${selectedLevel}.</small>`;
       return;
     }
 
@@ -757,17 +823,14 @@
     const phone = document.getElementById('newPlayerPhone').value.trim();
 
     if (name && phone) {
-      const newPlayer = { id: `p_${Date.now()}`, name, phone, level, coming: true, isPaid: false, amountOwed: 0.250 };
-      playersList.push(newPlayer);
+      playersList.push({ id: `p_${Date.now()}`, name, phone, level, coming: true, isPaid: false, amountOwed: 0.250 });
       savePlayersData();
-      
       document.getElementById('newPlayerName').value = '';
       document.getElementById('newPlayerPhone').value = '';
-      
       renderAdminMembersList();
       alert(`Added ${name} to ${level}!`);
     } else {
-      alert("Please enter Member Name and WhatsApp Number!");
+      alert("Please enter both Name and Phone Number.");
     }
   }
 
@@ -792,20 +855,17 @@
     localStorage.setItem('shuttle_admin_phone', adminPhone);
     savePlayersData();
     
-    alert("Settings saved!");
+    alert("System settings saved!");
     showScreen('screen-timetable');
   }
 
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
-    });
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
   }
 
-  populateLevelDropdowns();
-  renderTimetable();
+  populateLoginDropdowns();
+  checkUserSession();
   syncWithCloud();
 </script>
-
 </body>
 </html>
