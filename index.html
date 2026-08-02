@@ -5,13 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Shuttle Tracker | NuZan Enterprise</title>
 
-  <!-- PWA & Branding Meta -->
+  <!-- PWA Meta -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0b0f19">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Shuttle Tracker">
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -20,101 +19,124 @@
   <style>
     :root {
       --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --success: #059669;
-      --danger: #dc2626;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --border: #e2e8f0;
-      --text: #0f172a;
+      --primary-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      --bg: #0b0f19;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
     }
 
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); overflow-x: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      margin: 0; padding: 0;
+      color: var(--text);
+      overflow-x: hidden;
+    }
 
     /* EXECUTIVE SPLASH SCREEN */
     #splash-screen {
       position: fixed; inset: 0;
-      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-      color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(circle at center, #1e293b 0%, #0b0f19 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
       z-index: 9999; transition: opacity 0.6s ease, visibility 0.6s ease;
     }
-
     .brand-icon-wrapper {
       width: 72px; height: 72px; background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 18px; display: flex;
-      align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
     }
-    .brand-icon-svg { width: 38px; height: 38px; fill: none; stroke: #38bdf8; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .splash-title { font-size: 24px; font-weight: 700; margin: 0; color: #f8fafc; }
-    .splash-subtitle { font-size: 13px; color: #94a3b8; margin-top: 4px; margin-bottom: 32px; }
-    .progress-bar-container { width: 140px; height: 3px; background: rgba(255, 255, 255, 0.08); border-radius: 2px; overflow: hidden; margin-bottom: 24px; }
-    .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #2563eb); animation: loadProgress 1.8s ease-in-out forwards; }
+    .brand-icon-svg { width: 36px; height: 36px; fill: none; stroke: #38bdf8; stroke-width: 2; }
+    .progress-bar-container { width: 140px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; margin: 20px 0; }
+    .progress-bar-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #2563eb); animation: loadProgress 1.6s ease-in-out forwards; }
     @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
-    .nuzan-corporate-tag { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #64748b; text-transform: uppercase; }
-    .nuzan-corporate-tag span { color: #38bdf8; }
 
-    /* AUTH / LOGIN SCREEN */
+    /* AUTH SCREEN */
     #auth-screen {
-      position: fixed; inset: 0; background: var(--bg); z-index: 8000;
-      display: flex; align-items: center; justify-content: center; padding: 20px;
+      position: fixed; inset: 0; background: rgba(11, 15, 25, 0.95);
+      backdrop-filter: blur(12px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
     }
-    .login-card { background: white; padding: 24px; border-radius: 16px; border: 1px solid var(--border); width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-    .login-card h2 { margin: 0 0 4px 0; font-size: 20px; font-weight: 800; color: var(--text); }
+    .login-card {
+      background: rgba(30, 41, 59, 0.6); border: 1px solid var(--card-border);
+      padding: 28px; border-radius: 24px; width: 100%; max-width: 360px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5); text-align: center;
+    }
 
-    /* MAIN UI */
+    /* APP CONTAINER */
     .app-wrapper { max-width: 440px; margin: auto; padding: 16px; min-height: 100vh; }
-    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .brand-title h3 { margin: 0; font-size: 18px; font-weight: 800; }
-    .brand-subtitle { font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 1px; text-transform: uppercase; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    
+    /* HORIZONTAL SCROLLABLE TIMETABLE CAROUSEL */
+    .timetable-carousel-wrapper {
+      display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px;
+      scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+    }
+    .timetable-carousel-wrapper::-webkit-scrollbar { display: none; }
+    .day-card {
+      flex: 0 0 130px; scroll-snap-align: start;
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 18px; padding: 14px; text-align: center;
+      transition: all 0.2s ease;
+    }
+    .day-card.active-slot {
+      background: rgba(37, 99, 235, 0.15); border-color: rgba(56, 189, 248, 0.4);
+    }
+    .day-card .day-name { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .day-card.active-slot .day-name { color: #38bdf8; }
+    .day-card .time-badge { font-size: 11px; font-weight: 600; margin-top: 6px; color: var(--text); }
 
-    .user-pill { font-size: 11px; background: #e2e8f0; padding: 4px 10px; border-radius: 20px; font-weight: 700; color: #334155; }
-    .lock-btn { background: #fff; border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+    /* UI CARDS & WIDGETS */
+    .card {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      padding: 18px; border-radius: 20px; margin-bottom: 16px;
+      backdrop-filter: blur(10px);
+    }
+    .card h4 { margin: 0 0 12px 0; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
 
-    nav { display: flex; gap: 4px; margin-bottom: 16px; background: #e2e8f0; padding: 4px; border-radius: 12px; }
-    nav button { flex: 1; padding: 10px 2px; border: none; background: transparent; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; color: #64748b; transition: all 0.2s ease; }
-    nav button.active { background: #fff; color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    /* PLAYER CHIPS */
+    .attendee-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .player-chip {
+      background: rgba(255,255,255,0.02); border: 1px solid var(--card-border);
+      padding: 10px; border-radius: 14px; display: flex; align-items: center; gap: 10px;
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .player-chip.attending { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); }
+    .avatar-circle {
+      width: 28px; height: 28px; border-radius: 50%; background: #334155;
+      display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;
+    }
+    .player-chip.attending .avatar-circle { background: var(--success); color: white; }
+
+    /* FINTECH STAT BOX */
+    .split-stat-box {
+      background: linear-gradient(135deg, rgba(37,99,235,0.2) 0%, rgba(15,23,42,0.4) 100%);
+      border: 1px solid rgba(56,189,248,0.3); border-radius: 22px; padding: 20px; text-align: center; margin-bottom: 16px;
+    }
+    .split-stat-box h3 { margin: 4px 0; font-size: 32px; font-weight: 800; color: #38bdf8; letter-spacing: -1px; }
+
+    /* NAVIGATION */
+    nav { display: flex; gap: 6px; margin-bottom: 20px; background: rgba(255,255,255,0.04); padding: 4px; border-radius: 14px; }
+    nav button { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; color: var(--text-muted); }
+    nav button.active { background: rgba(255,255,255,0.1); color: var(--text); }
     .admin-only { display: none; }
 
     .screen { display: none; }
     .screen.active { display: block; }
 
-    .card { border: 1px solid var(--border); padding: 16px; border-radius: 14px; margin-bottom: 14px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-    .card h4 { margin: 0 0 10px 0; font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-
-    .attendee-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
-    .counter { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 10px 0; }
-    .counter button { width: 40px; height: 40px; font-size: 18px; border-radius: 50%; border: none; background: var(--primary); color: white; cursor: pointer; font-weight: bold; }
-
-    .split-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 14px; text-align: center; margin-bottom: 14px; }
-    .split-box h3 { margin: 0; color: var(--primary); font-size: 24px; font-weight: 800; }
-
-    select, input[type="text"], input[type="number"], input[type="password"], input[type="file"] { width: 100%; padding: 10px; margin: 6px 0 12px 0; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; }
-    .btn-submit { width: 100%; padding: 12px; font-size: 14px; font-weight: 700; border: none; border-radius: 10px; background: var(--success); color: white; cursor: pointer; }
-    .btn-submit:disabled { background: #cbd5e1; cursor: not-allowed; }
-
-    .overdue-card { border: 1px solid var(--border); background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .overdue-card.unpaid-bg { border-color: #fecaca; background: #fef2f2; }
-    .btn-sm { border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; text-decoration: none; }
-    .badge-unpaid { background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
-    .badge-paid { background: var(--success); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
-
-    /* PRINT MODAL */
-    .receipt-modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 9000; padding: 16px; backdrop-filter: blur(4px); }
-    .receipt-modal.active { display: flex; }
-    .receipt-content { background: white; padding: 24px; border-radius: 16px; max-width: 380px; width: 100%; }
-    .receipt-header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 14px; margin-bottom: 14px; }
-    .receipt-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
-
-    @media print {
-      body * { visibility: hidden; }
-      .receipt-content, .receipt-content * { visibility: visible; }
-      .receipt-content { position: absolute; left: 0; top: 0; width: 100%; max-width: 100%; padding: 0; }
-      .no-print { display: none !important; }
+    input, select {
+      width: 100%; padding: 12px; margin: 6px 0 14px 0; border: 1px solid var(--card-border);
+      border-radius: 12px; font-size: 14px; background: rgba(0,0,0,0.3); color: white;
     }
+    .btn-submit { width: 100%; padding: 14px; font-size: 14px; font-weight: 700; border: none; border-radius: 12px; background: var(--primary-gradient); color: white; cursor: pointer; }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    footer { text-align: center; font-size: 11px; color: #94a3b8; font-weight: 600; margin-top: 24px; padding-bottom: 16px; }
-    footer span { color: var(--primary); }
+    footer { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 24px; padding-bottom: 16px; }
+    footer span { color: #38bdf8; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -126,137 +148,101 @@
       <path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/>
     </svg>
   </div>
-  <h1 class="splash-title">Shuttle Tracker</h1>
-  <div class="splash-subtitle">Badminton Operations Platform</div>
+  <h2 style="margin:0; font-size:22px;">Shuttle Tracker</h2>
+  <small style="color:#94a3b8; margin-top:4px;">Badminton Operations Platform</small>
   <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
-  <div class="nuzan-corporate-tag">ENGINEERED BY <span>NUZAN</span></div>
+  <small style="letter-spacing:2px; font-weight:700; color:#64748b;">POWERED BY <span style="color:#38bdf8;">NUZAN</span></small>
 </div>
 
-<!-- USER LOGIN MODAL -->
+<!-- STRICT ADMIN-MANAGED LOGIN -->
 <div id="auth-screen">
   <div class="login-card">
-    <h2>Player Sign In</h2>
-    <p style="font-size: 12px; color: #64748b; margin: 0 0 16px 0;">Select your Flight Level to access your portal.</p>
+    <h3 style="margin:0 0 6px 0;">Player Verification</h3>
+    <p style="font-size:12px; color:var(--text-muted); margin:0 0 16px 0;">Enter your registered phone number to access your flight schedule.</p>
     
-    <label style="font-size: 11px; font-weight: 800; color: #64748b;">FULL NAME</label>
-    <input type="text" id="loginName" placeholder="e.g. Syed Ahmed">
-
-    <label style="font-size: 11px; font-weight: 800; color: #64748b;">WHATSAPP PHONE</label>
+    <label style="font-size:11px; font-weight:800; color:var(--text-muted); display:block; text-align:left;">WHATSAPP PHONE</label>
     <input type="text" id="loginPhone" placeholder="e.g. 97339123456">
 
-    <label style="font-size: 11px; font-weight: 800; color: #64748b;">ASSIGNED FLIGHT LEVEL</label>
-    <select id="loginLevel"></select>
-
-    <button onclick="loginUser()" class="btn-submit" style="background: var(--primary); margin-top: 8px;">Enter My Flight Portal</button>
+    <button onclick="verifyAndLogin()" class="btn-submit">Verify Account</button>
   </div>
 </div>
 
 <!-- MAIN APP CONTAINER -->
 <div class="app-wrapper">
   <div class="header-bar">
-    <div class="brand-title">
-      <h3>🏸 Shuttle Tracker</h3>
-      <span class="brand-subtitle">Powered by NuZan</span>
+    <div>
+      <h3 style="margin:0; font-size:18px;">🏸 Shuttle Tracker</h3>
+      <span style="font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:1px;">PRODUCT OF NUZAN</span>
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
-      <span id="userPill" class="user-pill">Guest</span>
-      <button id="authBtn" class="lock-btn" onclick="toggleAdminAuth()">🔒 Admin</button>
+      <span id="userPill" style="font-size:11px; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:20px; font-weight:700;">Guest</span>
+      <button id="authBtn" style="background:none; border:1px solid var(--card-border); color:white; padding:6px 12px; border-radius:20px; cursor:pointer; font-size:12px;" onclick="toggleAdminAuth()">🔒 Admin</button>
     </div>
   </div>
 
   <nav>
     <button id="nav-timetable" class="active" onclick="showScreen('screen-timetable')">Schedule</button>
     <button id="nav-game" onclick="showScreen('screen-game')">Game Log</button>
-    <button id="nav-admin" class="admin-only" onclick="showScreen('screen-admin')">Unpaid</button>
+    <button id="nav-admin" class="admin-only" onclick="showScreen('screen-admin')">Ledger</button>
     <button id="nav-settings" class="admin-only" onclick="showScreen('screen-settings')">Settings</button>
   </nav>
 
-  <!-- 1. SCHEDULE & TIMETABLE SCREEN -->
+  <!-- SCHEDULE SCREEN WITH HORIZONTAL SWIPE CAROUSEL -->
   <div id="screen-timetable" class="screen active">
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <h4 style="margin:0;">Flight Level</h4>
-          <span id="playerCurrentLevelDisplay" style="font-size:16px; font-weight:800; color:var(--primary);">Flight 4-A</span>
-        </div>
-        <button onclick="switchUserAccount()" class="btn-sm" style="background:#e2e8f0; color:#334155;">Switch User</button>
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h4 style="margin:0;">Assigned Level</h4>
+        <span id="playerLevelDisplay" style="font-size:16px; font-weight:800; color:#38bdf8;">Flight 4-A</span>
       </div>
+      <button onclick="switchUser()" style="background:rgba(255,255,255,0.08); border:none; color:white; padding:6px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">Switch Account</button>
     </div>
 
     <div class="card">
-      <h4>Weekly Timetable Schedule</h4>
-      <div id="weeklyScheduleList"></div>
+      <h4>Weekly Match Schedule</h4>
+      <div id="timetableCarousel" class="timetable-carousel-wrapper"></div>
     </div>
   </div>
 
-  <!-- 2. GAME LOG SCREEN -->
+  <!-- GAME LOG SCREEN -->
   <div id="screen-game" class="screen">
-    <div style="margin-bottom: 12px;">
-      <h3 id="sessionTitle" style="margin: 0;">Flight Session</h3>
-      <small id="sessionMeta" style="color: #64748b;">Session Active</small>
+    <div class="card">
+      <h4>Attending Players</h4>
+      <div id="attendeeGrid" class="attendee-grid"></div>
     </div>
 
     <div class="card">
-      <h4>Attendance Checklist</h4>
-      <div id="attendeeChecklist"></div>
-    </div>
-
-    <div class="card">
-      <h4>Shuttlecocks Used</h4>
-      <!-- Admin Only Modifiers -->
-      <div id="corkControls" class="counter">
-        <button id="btnCorkMinus" class="admin-only" onclick="updateCorkCount(-1)">-</button>
-        <span id="corkDisplay" style="font-size: 24px; font-weight: 800;">1</span>
-        <button id="btnCorkPlus" class="admin-only" onclick="updateCorkCount(1)">+</button>
+      <h4>Shuttlecock Inventory</h4>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px; color:var(--text-muted);">Shuttlecocks Used:</span>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button id="btnMinus" class="admin-only" onclick="updateCorkCount(-1)" style="width:32px; height:32px; border-radius:50%; background:var(--primary); border:none; color:white; font-weight:bold;">-</button>
+          <span id="corkDisplay" style="font-size:22px; font-weight:bold; color:#38bdf8;">1</span>
+          <button id="btnPlus" class="admin-only" onclick="updateCorkCount(1)" style="width:32px; height:32px; border-radius:50%; background:var(--primary); border:none; color:white; font-weight:bold;">+</button>
+        </div>
       </div>
-      <div style="text-align: center; color: #64748b; font-size: 12px;">Unit Price: BHD <span id="corkPriceDisplay">1.000</span></div>
     </div>
 
-    <div class="split-box">
-      <small style="color: #475569; font-weight: 700;">YOUR REQUIRED PAYMENT SHARE</small>
+    <div class="split-stat-box">
+      <small style="color:var(--text-muted); font-weight:700; font-size:10px; letter-spacing:1px;">YOUR REQUIRED SHARE</small>
       <h3 id="splitDisplay">BHD 0.250</h3>
-      <small style="color: #64748b;">(Total: BHD <span id="totalCostDisplay">1.000</span> ÷ <span id="playerCountDisplay">4</span> Attending)</small>
-    </div>
-
-    <div class="card">
-      <h4>Submit Payment Proof</h4>
-      <select id="paymentMethod" onchange="togglePaymentUI()">
-        <option value="BenefitPay">BenefitPay (Attach Screenshot)</option>
-        <option value="Cash">Cash in Hand</option>
-      </select>
-
-      <div id="benefitPayBlock">
-        <div style="font-size: 12px; margin-bottom: 6px;">BenefitPay No: <strong id="adminPhoneDisplay">+973 39XX XXXX</strong></div>
-        <input type="file" id="screenshotInput" accept="image/*" onchange="checkUploadValid()">
-      </div>
-
-      <button id="submitPayBtn" class="btn-submit" onclick="submitSessionPayment()" disabled>Attach Screenshot First</button>
+      <small style="color:var(--text-muted); font-size:11px;">(Total Cost BHD <span id="totalCostDisplay">1.000</span> ÷ <span id="activeCountDisplay">4</span> Active)</small>
     </div>
   </div>
 
-  <!-- 3. ADMIN UNPAID TAB -->
+  <!-- ADMIN LEDGER -->
   <div id="screen-admin" class="screen">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-      <h3 style="margin:0;">Payment Ledger</h3>
-      <button onclick="openReceiptModal()" class="btn-sm" style="background:var(--primary); color:white; font-weight:bold;">🧾 Print Statement</button>
+    <div class="card">
+      <h4>Payment Status Ledger</h4>
+      <select id="unpaidFilter" onchange="renderAdminDashboard()"></select>
+      <div id="ledgerList"></div>
     </div>
-    
-    <label style="font-size: 12px; font-weight: bold; color: #64748b;">Filter Level:</label>
-    <select id="unpaidLevelFilter" onchange="renderAdminDashboard()" style="margin-bottom: 12px;"></select>
-
-    <div id="overdueList"></div>
   </div>
 
-  <!-- 4. ADMIN SETTINGS TAB -->
+  <!-- ADMIN SETTINGS -->
   <div id="screen-settings" class="screen">
-    <h3 style="margin-bottom: 12px;">Admin Panel</h3>
-
     <div class="card">
-      <h4>Level Weekly Schedule Manager</h4>
-      <label style="font-size: 12px;">Target Flight Level:</label>
-      <select id="scheduleLevelSelect" onchange="loadScheduleEditor()"></select>
-
-      <label style="font-size: 12px;">Playing Day & Time:</label>
+      <h4>Schedule Manager (Weekly)</h4>
+      <select id="scheduleLevelSelect"></select>
       <div style="display:flex; gap:8px;">
         <select id="scheduleDayInput">
           <option value="Sunday">Sunday</option>
@@ -267,45 +253,18 @@
           <option value="Friday">Friday</option>
           <option value="Saturday">Saturday</option>
         </select>
-        <input type="text" id="scheduleTimeInput" placeholder="e.g. 8:00 PM - 10:00 PM">
+        <input type="text" id="scheduleTimeInput" placeholder="8:00 PM - 10:00 PM">
       </div>
-      <button onclick="saveWeeklyScheduleSlot()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:700;">Update Day Schedule</button>
+      <button onclick="saveWeeklySlot()" class="btn-submit">Update Day Slot</button>
     </div>
 
     <div class="card">
-      <h4>Members Manager</h4>
-      <label style="font-size: 12px;">Select Level:</label>
-      <select id="adminLevelFilter" onchange="renderAdminMembersList()"></select>
-      
-      <div id="adminFilteredPlayerList"></div>
-
-      <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
-      
-      <input type="text" id="newPlayerName" placeholder="Member Name">
-      <input type="text" id="newPlayerPhone" placeholder="WhatsApp (e.g. 97339000000)">
-      <button onclick="addPlayerToLevel()" style="width:100%; padding:10px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:700;">+ Add Member</button>
+      <h4>Add Authorized Member</h4>
+      <select id="addMemberLevel"></select>
+      <input type="text" id="addMemberName" placeholder="Full Name">
+      <input type="text" id="addMemberPhone" placeholder="WhatsApp Phone (e.g. 97339000000)">
+      <button onclick="adminAddMember()" class="btn-submit">+ Authorize Member</button>
     </div>
-
-    <div class="card">
-      <h4>Data Reports & Export</h4>
-      <button onclick="exportToGoogleSheetsCSV()" style="width:100%; padding:12px; background:#0f766e; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">
-        📊 Export to Google Sheets (CSV)
-      </button>
-    </div>
-
-    <div class="card">
-      <h4>System Parameters</h4>
-      <label style="font-size: 12px;">Cork Unit Price (BHD):</label>
-      <input type="number" id="settingCorkPrice" step="0.050" value="1.000">
-
-      <label style="font-size: 12px;">Admin BenefitPay Phone:</label>
-      <input type="text" id="settingAdminPhone" value="97339123456">
-
-      <label style="font-size: 12px;">Admin PIN:</label>
-      <input type="password" id="newAdminPin" placeholder="Change Admin PIN">
-    </div>
-
-    <button class="btn-submit" onclick="saveAdminSettings()">Save System Settings</button>
   </div>
 
   <footer>
@@ -313,47 +272,15 @@
   </footer>
 </div>
 
-<!-- PRINT STATEMENT MODAL -->
-<div id="receiptModal" class="receipt-modal">
-  <div class="receipt-content">
-    <div class="receipt-header">
-      <h2 style="margin:0; font-size:18px;">🏸 Shuttle Tracker</h2>
-      <small style="color:#64748b; font-weight:bold;">NuZan Enterprise Statement</small><br>
-      <small id="receiptDate" style="color:#64748b;"></small><br>
-      <small id="receiptFlight" style="font-weight:bold; color:var(--primary);"></small>
-    </div>
-
-    <div id="receiptItems"></div>
-
-    <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
-    
-    <div class="receipt-row" style="font-weight:bold; font-size:13px; color:var(--success);">
-      <span>Total Paid:</span>
-      <span id="receiptTotalPaid">BHD 0.000</span>
-    </div>
-    <div class="receipt-row" style="font-weight:bold; font-size:13px; color:var(--danger);">
-      <span>Total Unpaid:</span>
-      <span id="receiptTotalUnpaid">BHD 0.000</span>
-    </div>
-
-    <div class="no-print" style="margin-top:20px; display:flex; gap:8px;">
-      <button onclick="window.print()" class="btn-submit" style="margin:0; background:var(--primary);">🖨️ Print / Save PDF</button>
-      <button onclick="closeReceiptModal()" class="btn-submit" style="margin:0; background:var(--danger);">Close</button>
-    </div>
-  </div>
-</div>
-
 <script>
-  // Hide Splash Screen
   window.addEventListener('load', () => {
     setTimeout(() => {
       const splash = document.getElementById('splash-screen');
       splash.style.opacity = '0';
       setTimeout(() => splash.style.display = 'none', 600);
-    }, 1800);
+    }, 1600);
   });
 
-  // --- LIVE FIREBASE CONFIGURATION ---
   const firebaseConfig = {
     apiKey: "AIzaSyDJETuE2apzR2p7SJaEvK9Cs4Z0h1Jdx4c",
     authDomain: "shuttle-tracker-39f72.firebaseapp.com",
@@ -366,47 +293,30 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // STATE MANAGEMENT
   let isAdmin = false;
+  let adminPIN = "1234";
   let currentUser = JSON.parse(localStorage.getItem('shuttle_user')) || null;
-  let adminPIN = localStorage.getItem('shuttle_admin_pin') || "1234";
-  let corkPriceBHD = parseFloat(localStorage.getItem('shuttle_cork_price')) || 1.000;
-  let adminPhone = localStorage.getItem('shuttle_admin_phone') || "97339123456";
   let currentCorkCount = 1;
+  let corkPrice = 1.000;
 
-  const levelsList = ["Premier", "Flight 1", "Flight 2", "Flight 3", "Flight 4-A", "Flight 4-B"];
+  const levels = ["Premier", "Flight 1", "Flight 2", "Flight 3", "Flight 4-A", "Flight 4-B"];
 
   let weeklyTimetables = JSON.parse(localStorage.getItem('shuttle_timetables')) || {
-    "Flight 4-A": { "Sunday": "8:00 PM - 10:00 PM", "Tuesday": "8:00 PM - 10:00 PM", "Friday": "6:00 PM - 9:00 PM" },
-    "Flight 4-B": { "Sunday": "6:00 PM - 8:00 PM", "Thursday": "8:00 PM - 10:00 PM" },
-    "Flight 1": { "Monday": "8:00 PM - 10:00 PM", "Wednesday": "8:00 PM - 10:00 PM" }
+    "Flight 4-A": { "Sunday": "8:00 PM - 10:00 PM", "Tuesday": "8:00 PM - 10:00 PM", "Friday": "6:00 PM - 9:00 PM" }
   };
 
-  let defaultMembers = [
-    { id: "p1", name: "Syed", phone: "97339123456", level: "Flight 4-A", coming: true, isPaid: false, amountOwed: 0.250 },
-    { id: "p2", name: "Alex", phone: "97339654321", level: "Flight 4-A", coming: true, isPaid: false, amountOwed: 0.250 },
-    { id: "p3", name: "Sarah", phone: "97338765432", level: "Flight 4-A", coming: true, isPaid: false, amountOwed: 0.250 },
-    { id: "p4", name: "John", phone: "97337112233", level: "Flight 4-A", coming: true, isPaid: false, amountOwed: 0.250 }
+  let playersList = JSON.parse(localStorage.getItem('shuttle_players')) || [
+    { id: "p1", name: "Syed", phone: "97339123456", level: "Flight 4-A", coming: true, isPaid: false, amountOwed: 0.250 }
   ];
 
-  let playersList = JSON.parse(localStorage.getItem('shuttle_players')) || defaultMembers;
-
-  function normalizeLevel(lvl) {
-    return String(lvl || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  }
-
-  // FIRESTORE LIVE SYNC
   function syncWithCloud() {
     db.collection("members").onSnapshot((snapshot) => {
-      let cloudPlayers = [];
-      snapshot.forEach((doc) => cloudPlayers.push({ id: doc.id, ...doc.data() }));
-      if (cloudPlayers.length > 0) {
-        playersList = cloudPlayers;
+      let cloud = [];
+      snapshot.forEach(doc => cloud.push({ id: doc.id, ...doc.data() }));
+      if (cloud.length > 0) {
+        playersList = cloud;
         localStorage.setItem('shuttle_players', JSON.stringify(playersList));
-        if (currentUser) {
-          renderAttendees();
-          recalculateSplit();
-        }
+        if (currentUser) { renderAttendees(); recalculate(); }
         renderAdminDashboard();
       }
     });
@@ -414,211 +324,89 @@
     db.collection("system").doc("timetable").onSnapshot((doc) => {
       if (doc.exists) {
         weeklyTimetables = doc.data();
-        localStorage.setItem('shuttle_timetables', JSON.stringify(weeklyTimetables));
-        renderWeeklySchedule();
-      }
-    });
-
-    db.collection("system").doc("sessionState").onSnapshot((doc) => {
-      if (doc.exists) {
-        currentCorkCount = doc.data().corkCount || 1;
-        document.getElementById('corkDisplay').innerText = currentCorkCount;
-        recalculateSplit();
+        renderTimetableCarousel();
       }
     });
   }
 
-  function savePlayersData() {
-    localStorage.setItem('shuttle_players', JSON.stringify(playersList));
-    playersList.forEach((player) => db.collection("members").doc(player.id).set(player, { merge: true }));
+  function verifyAndLogin() {
+    const phone = document.getElementById('loginPhone').value.trim();
+    const found = playersList.find(p => p.phone === phone);
+
+    if (!found) {
+      alert("⚠️ Access Denied: Phone number not registered. Please contact your Level Admin to get added.");
+      return;
+    }
+
+    currentUser = found;
+    localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
+    checkSession();
   }
 
-  function saveWeeklyScheduleCloud() {
-    localStorage.setItem('shuttle_timetables', JSON.stringify(weeklyTimetables));
-    db.collection("system").doc("timetable").set(weeklyTimetables);
-  }
-
-  function saveSessionStateCloud() {
-    db.collection("system").doc("sessionState").set({ corkCount: currentCorkCount });
-  }
-
-  // LOGIN & ROLE MANAGEMENT
-  function populateLoginDropdowns() {
-    const loginSel = document.getElementById('loginLevel');
-    const adminLvlSel = document.getElementById('adminLevelFilter');
-    const unpaidLvlSel = document.getElementById('unpaidLevelFilter');
-    const schedLvlSel = document.getElementById('scheduleLevelSelect');
-    
-    loginSel.innerHTML = '';
-    adminLvlSel.innerHTML = '';
-    unpaidLvlSel.innerHTML = '<option value="All Levels">All Levels</option>';
-    schedLvlSel.innerHTML = '';
-
-    levelsList.forEach(lvl => {
-      loginSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
-      adminLvlSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
-      unpaidLvlSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
-      schedLvlSel.innerHTML += `<option value="${lvl}">${lvl}</option>`;
-    });
-  }
-
-  function checkUserSession() {
+  function checkSession() {
     if (!currentUser) {
       document.getElementById('auth-screen').style.display = 'flex';
     } else {
       document.getElementById('auth-screen').style.display = 'none';
       document.getElementById('userPill').innerText = currentUser.name;
-      document.getElementById('playerCurrentLevelDisplay').innerText = currentUser.level;
-      renderWeeklySchedule();
+      document.getElementById('playerLevelDisplay').innerText = currentUser.level;
+      renderTimetableCarousel();
       renderAttendees();
-      recalculateSplit();
+      recalculate();
     }
   }
 
-  function loginUser() {
-    const name = document.getElementById('loginName').value.trim();
-    const phone = document.getElementById('loginPhone').value.trim();
-    const level = document.getElementById('loginLevel').value;
-
-    if (!name || !phone) {
-      alert("Please enter both your name and WhatsApp phone number.");
-      return;
-    }
-
-    currentUser = { name, phone, level };
-    localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
-    
-    // Auto add player to list if new
-    const existing = playersList.find(p => p.phone === phone);
-    if (!existing) {
-      const newPlayer = { id: `p_${Date.now()}`, name, phone, level, coming: true, isPaid: false, amountOwed: 0.250 };
-      playersList.push(newPlayer);
-      savePlayersData();
-    }
-
-    checkUserSession();
-  }
-
-  function switchUserAccount() {
+  function switchUser() {
     localStorage.removeItem('shuttle_user');
     currentUser = null;
-    checkUserSession();
+    checkSession();
   }
 
-  function toggleAdminAuth() {
-    if (isAdmin) {
-      isAdmin = false;
-      document.getElementById('authBtn').innerText = "🔒 Admin";
-      document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'none');
-      showScreen('screen-timetable');
-    } else {
-      const pin = prompt("Enter Admin PIN:");
-      if (pin === adminPIN) {
-        isAdmin = true;
-        document.getElementById('authBtn').innerText = "🔓 Lock";
-        document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
-      } else if (pin !== null) {
-        alert("Incorrect Admin PIN!");
-      }
-    }
-  }
-
-  function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
-    
-    if (screenId === 'screen-timetable') document.getElementById('nav-timetable').classList.add('active');
-    if (screenId === 'screen-game') document.getElementById('nav-game').classList.add('active');
-    if (screenId === 'screen-admin') {
-      document.getElementById('nav-admin').classList.add('active');
-      renderAdminDashboard();
-    }
-    if (screenId === 'screen-settings') {
-      document.getElementById('nav-settings').classList.add('active');
-      renderAdminSettings();
-    }
-  }
-
-  // TIMETABLE SCHEDULE
-  function renderWeeklySchedule() {
+  function renderTimetableCarousel() {
     if (!currentUser) return;
-    const level = currentUser.level;
-    const container = document.getElementById('weeklyScheduleList');
+    const container = document.getElementById('timetableCarousel');
     container.innerHTML = '';
 
-    const sched = weeklyTimetables[level] || {};
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const sched = weeklyTimetables[currentUser.level] || {};
 
-    let hasMatches = false;
     days.forEach(day => {
-      if (sched[day]) {
-        hasMatches = true;
-        container.innerHTML += `
-          <div class="attendee-item">
-            <div><strong>${day}</strong><br><small style="color:#64748b;">${sched[day]}</small></div>
-            <span class="badge-paid" style="background:var(--primary);">Active Slot</span>
-          </div>
-        `;
-      }
+      const hasSlot = sched[day];
+      container.innerHTML += `
+        <div class="day-card ${hasSlot ? 'active-slot' : ''}">
+          <div class="day-name">${day}</div>
+          <div class="time-badge">${hasSlot || 'No Match'}</div>
+        </div>
+      `;
     });
-
-    if (!hasMatches) {
-      container.innerHTML = `<small style="color:#94a3b8;">No recurring weekly matches set for ${level}. Admin can set this in Settings.</small>`;
-    }
   }
 
-  function saveWeeklyScheduleSlot() {
-    const level = document.getElementById('scheduleLevelSelect').value;
-    const day = document.getElementById('scheduleDayInput').value;
-    const timeStr = document.getElementById('scheduleTimeInput').value.trim();
-
-    if (!weeklyTimetables[level]) weeklyTimetables[level] = {};
-    
-    if (timeStr === "") {
-      delete weeklyTimetables[level][day];
-    } else {
-      weeklyTimetables[level][day] = timeStr;
-    }
-
-    saveWeeklyScheduleCloud();
-    renderWeeklySchedule();
-    alert(`Updated ${day} timetable schedule for ${level}!`);
-  }
-
-  // GAME LOG & ATTENDANCE
   function renderAttendees() {
     if (!currentUser) return;
-    const container = document.getElementById('attendeeChecklist');
-    container.innerHTML = '';
+    const grid = document.getElementById('attendeeGrid');
+    grid.innerHTML = '';
 
-    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(currentUser.level));
-
-    if (levelMembers.length === 0) {
-      container.innerHTML = `<small style="color:#adb5bd;">No members registered under ${currentUser.level} yet.</small>`;
-      return;
-    }
+    const levelMembers = playersList.filter(p => p.level === currentUser.level);
 
     levelMembers.forEach(p => {
-      const isComing = p.coming !== false;
-      container.innerHTML += `
-        <div class="attendee-item">
-          <span><strong>${p.name}</strong></span>
-          <label style="font-size: 12px; cursor:pointer;">
-            <input type="checkbox" ${isComing ? 'checked' : ''} onchange="toggleAttendee('${p.id}')"> Attending
-          </label>
+      const isAttending = p.coming !== false;
+      grid.innerHTML += `
+        <div class="player-chip ${isAttending ? 'attending' : ''}" onclick="toggleAttendee('${p.id}')">
+          <div class="avatar-circle">${p.name.charAt(0)}</div>
+          <span style="font-size:12px; font-weight:700;">${p.name}</span>
         </div>
       `;
     });
   }
 
   function toggleAttendee(id) {
-    const player = playersList.find(p => p.id === id);
-    if (player) {
-      player.coming = player.coming === false ? true : false;
-      savePlayersData();
+    const p = playersList.find(item => item.id === id);
+    if (p) {
+      p.coming = p.coming === false ? true : false;
+      localStorage.setItem('shuttle_players', JSON.stringify(playersList));
+      db.collection("members").doc(p.id).set(p, { merge: true });
       renderAttendees();
-      recalculateSplit();
+      recalculate();
     }
   }
 
@@ -626,245 +414,68 @@
     if (!isAdmin) return;
     currentCorkCount = Math.max(1, currentCorkCount + val);
     document.getElementById('corkDisplay').innerText = currentCorkCount;
-    saveSessionStateCloud();
-    recalculateSplit();
+    recalculate();
   }
 
-  function recalculateSplit() {
+  function recalculate() {
     if (!currentUser) return;
-    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(currentUser.level));
-    const activeCount = levelMembers.filter(p => p.coming !== false).length || 1;
+    const activeMembers = playersList.filter(p => p.level === currentUser.level && p.coming !== false);
+    const count = activeMembers.length || 1;
+    const total = currentCorkCount * corkPrice;
+    const share = total / count;
 
-    const totalCost = currentCorkCount * corkPriceBHD;
-    const shareCost = totalCost / activeCount;
-
-    document.getElementById('corkPriceDisplay').innerText = corkPriceBHD.toFixed(3);
-    document.getElementById('adminPhoneDisplay').innerText = `+${adminPhone}`;
-    document.getElementById('playerCountDisplay').innerText = activeCount;
-    document.getElementById('totalCostDisplay').innerText = totalCost.toFixed(3);
-    document.getElementById('splitDisplay').innerText = `BHD ${shareCost.toFixed(3)}`;
+    document.getElementById('totalCostDisplay').innerText = total.toFixed(3);
+    document.getElementById('activeCountDisplay').innerText = count;
+    document.getElementById('splitDisplay').innerText = `BHD ${share.toFixed(3)}`;
   }
 
-  function togglePaymentUI() {
-    const method = document.getElementById('paymentMethod').value;
-    const benefitBlock = document.getElementById('benefitPayBlock');
-    const submitBtn = document.getElementById('submitPayBtn');
-
-    if (method === 'BenefitPay') {
-      benefitBlock.style.display = 'block';
-      checkUploadValid();
+  function toggleAdminAuth() {
+    if (isAdmin) {
+      isAdmin = false;
+      document.getElementById('authBtn').innerText = "🔒 Admin";
+      document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'none');
     } else {
-      benefitBlock.style.display = 'none';
-      submitBtn.disabled = false;
-      submitBtn.innerText = `Record ${method} Payment`;
+      const pin = prompt("Enter Admin PIN:");
+      if (pin === adminPIN) {
+        isAdmin = true;
+        document.getElementById('authBtn').innerText = "🔓 Lock";
+        document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
+      }
     }
   }
 
-  function checkUploadValid() {
-    const fileInput = document.getElementById('screenshotInput');
-    const submitBtn = document.getElementById('submitPayBtn');
-    submitBtn.disabled = fileInput.files.length === 0;
-    submitBtn.innerText = fileInput.files.length > 0 ? "Submit Proof & Mark Paid" : "Attach Screenshot First";
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
   }
 
-  function submitSessionPayment() {
-    if (!currentUser) return;
-    const method = document.getElementById('paymentMethod').value;
-    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(currentUser.level) && p.coming !== false);
-
-    if (levelMembers.length === 0) {
-      alert("No active attending members selected!");
-      return;
-    }
-
-    const totalCost = currentCorkCount * corkPriceBHD;
-    const shareCost = totalCost / levelMembers.length;
-
-    levelMembers.forEach(m => {
-      m.amountOwed = shareCost;
-      m.isPaid = (method === 'BenefitPay');
-    });
-
-    savePlayersData();
-    alert(method === 'BenefitPay' ? "✅ Proof submitted! Payment recorded as PAID." : "Recorded Cash payment. Marked as UNPAID until Admin approval.");
-    showScreen('screen-timetable');
-  }
-
-  // ADMIN LEDGER & EXPORTS
-  function renderAdminDashboard() {
-    const filterLvl = document.getElementById('unpaidLevelFilter').value || "All Levels";
-    const container = document.getElementById('overdueList');
-    container.innerHTML = '';
-
-    const filteredMembers = playersList.filter(p => {
-      if (filterLvl === "All Levels") return true;
-      return normalizeLevel(p.level) === normalizeLevel(filterLvl);
-    });
-
-    if (filteredMembers.length === 0) {
-      container.innerHTML = `<p style="color:#64748b; text-align:center; padding:16px;">No records found.</p>`;
-      return;
-    }
-
-    filteredMembers.forEach((m) => {
-      const isPaid = m.isPaid === true;
-      const owed = m.amountOwed || 0.250;
-      const waUrl = `https://wa.me/${m.phone}?text=Hi%20${encodeURIComponent(m.name)},%20reminder%20for%20your%20badminton%20fee%20of%20BHD%20${owed.toFixed(3)}%20(${m.level}).`;
-
-      container.innerHTML += `
-        <div class="overdue-card ${isPaid ? '' : 'unpaid-bg'}">
-          <div>
-            <strong>${m.name}</strong> <span class="${isPaid ? 'badge-paid' : 'badge-unpaid'}">${isPaid ? 'PAID' : 'UNPAID'}</span><br>
-            <small style="color:#64748b;">Level: ${m.level}</small><br>
-            <span style="color:${isPaid ? 'var(--success)' : 'var(--danger)'}; font-size:12px; font-weight:bold;">
-              ${isPaid ? 'Settled' : 'Owes: BHD ' + owed.toFixed(3)}
-            </span>
-          </div>
-          <div style="display:flex; gap:6px;">
-            ${!isPaid ? `<a href="${waUrl}" target="_blank" class="btn-sm" style="background:#25D366; color:white;">📲 WA</a>` : ''}
-            <button onclick="toggleMemberPaidStatus('${m.id}')" class="btn-sm" style="background:${isPaid ? '#6c757d' : 'var(--success)'}; color:white;">
-              ${isPaid ? 'Mark Unpaid' : '✓ Mark Paid'}
-            </button>
-          </div>
-        </div>
-      `;
-    });
-  }
-
-  function toggleMemberPaidStatus(id) {
-    const member = playersList.find(p => p.id === id);
-    if (member) {
-      member.isPaid = !member.isPaid;
-      savePlayersData();
-      renderAdminDashboard();
-    }
-  }
-
-  function openReceiptModal() {
-    const filterLvl = document.getElementById('unpaidLevelFilter').value || "All Levels";
-    const modal = document.getElementById('receiptModal');
-    const itemsContainer = document.getElementById('receiptItems');
-    
-    document.getElementById('receiptDate').innerText = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    document.getElementById('receiptFlight').innerText = `Flight Filter: ${filterLvl}`;
-
-    const filtered = playersList.filter(p => filterLvl === "All Levels" || normalizeLevel(p.level) === normalizeLevel(filterLvl));
-
-    itemsContainer.innerHTML = '';
-    let totalPaid = 0; let totalUnpaid = 0;
-
-    filtered.forEach(m => {
-      const owed = m.amountOwed || 0.250;
-      if (m.isPaid) totalPaid += owed; else totalUnpaid += owed;
-
-      itemsContainer.innerHTML += `
-        <div class="receipt-row">
-          <span>${m.name} (${m.level})</span>
-          <span style="font-weight:bold; color:${m.isPaid ? 'var(--success)' : 'var(--danger)'};">
-            ${m.isPaid ? 'PAID (BHD ' + owed.toFixed(3) + ')' : 'UNPAID (BHD ' + owed.toFixed(3) + ')'}
-          </span>
-        </div>
-      `;
-    });
-
-    document.getElementById('receiptTotalPaid').innerText = `BHD ${totalPaid.toFixed(3)}`;
-    document.getElementById('receiptTotalUnpaid').innerText = `BHD ${totalUnpaid.toFixed(3)}`;
-    modal.classList.add('active');
-  }
-
-  function closeReceiptModal() {
-    document.getElementById('receiptModal').classList.remove('active');
-  }
-
-  function exportToGoogleSheetsCSV() {
-    let csvContent = "data:text/csv;charset=utf-8,ID,Name,Phone,Level,Attending,Status,Amount Owed (BHD)\n";
-    playersList.forEach(m => {
-      csvContent += [m.id, `"${m.name}"`, `"${m.phone}"`, `"${m.level}"`, m.coming !== false ? "Yes" : "No", m.isPaid ? "Paid" : "Unpaid", (m.amountOwed || 0.250).toFixed(3)].join(",") + "\n";
-    });
-    const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", `ShuttleTracker_Report_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  function renderAdminSettings() {
-    document.getElementById('settingCorkPrice').value = corkPriceBHD;
-    document.getElementById('settingAdminPhone').value = adminPhone;
-    renderAdminMembersList();
-  }
-
-  function renderAdminMembersList() {
-    const selectedLevel = document.getElementById('adminLevelFilter').value || levelsList[0];
-    const container = document.getElementById('adminFilteredPlayerList');
-    container.innerHTML = '';
-
-    const filtered = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(selectedLevel));
-
-    if (filtered.length === 0) {
-      container.innerHTML = `<small style="color:#adb5bd;">No members registered in ${selectedLevel}.</small>`;
-      return;
-    }
-
-    filtered.forEach((p) => {
-      container.innerHTML += `
-        <div class="attendee-item">
-          <span><strong>${p.name}</strong> <small style="color:#64748b;">(+${p.phone})</small></span>
-          <button onclick="removePlayer('${p.id}')" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Delete</button>
-        </div>
-      `;
-    });
-  }
-
-  function addPlayerToLevel() {
-    const level = document.getElementById('adminLevelFilter').value;
-    const name = document.getElementById('newPlayerName').value.trim();
-    const phone = document.getElementById('newPlayerPhone').value.trim();
+  function adminAddMember() {
+    const lvl = document.getElementById('addMemberLevel').value;
+    const name = document.getElementById('addMemberName').value.trim();
+    const phone = document.getElementById('addMemberPhone').value.trim();
 
     if (name && phone) {
-      playersList.push({ id: `p_${Date.now()}`, name, phone, level, coming: true, isPaid: false, amountOwed: 0.250 });
-      savePlayersData();
-      document.getElementById('newPlayerName').value = '';
-      document.getElementById('newPlayerPhone').value = '';
-      renderAdminMembersList();
-      alert(`Added ${name} to ${level}!`);
-    } else {
-      alert("Please enter both Name and Phone Number.");
+      const newP = { id: `p_${Date.now()}`, name, phone, level: lvl, coming: true, isPaid: false, amountOwed: 0.250 };
+      playersList.push(newP);
+      localStorage.setItem('shuttle_players', JSON.stringify(playersList));
+      db.collection("members").doc(newP.id).set(newP);
+      alert(`Authorized ${name} for ${lvl}!`);
     }
   }
 
-  function removePlayer(id) {
-    playersList = playersList.filter(p => p.id !== id);
-    savePlayersData();
-    db.collection("members").doc(id).delete();
-    renderAdminMembersList();
+  function populateDropdowns() {
+    const addLvl = document.getElementById('addMemberLevel');
+    const schedLvl = document.getElementById('scheduleLevelSelect');
+    addLvl.innerHTML = ''; schedLvl.innerHTML = '';
+    levels.forEach(l => {
+      addLvl.innerHTML += `<option value="${l}">${l}</option>`;
+      schedLvl.innerHTML += `<option value="${l}">${l}</option>`;
+    });
   }
 
-  function saveAdminSettings() {
-    corkPriceBHD = parseFloat(document.getElementById('settingCorkPrice').value) || 1.000;
-    adminPhone = document.getElementById('settingAdminPhone').value.trim();
-    const newPin = document.getElementById('newAdminPin').value.trim();
-
-    if (newPin && newPin.length >= 4) {
-      adminPIN = newPin;
-      localStorage.setItem('shuttle_admin_pin', newPin);
-    }
-    
-    localStorage.setItem('shuttle_cork_price', corkPriceBHD);
-    localStorage.setItem('shuttle_admin_phone', adminPhone);
-    savePlayersData();
-    
-    alert("System settings saved!");
-    showScreen('screen-timetable');
-  }
-
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
-  }
-
-  populateLoginDropdowns();
-  checkUserSession();
+  populateDropdowns();
+  checkSession();
   syncWithCloud();
 </script>
 </body>
