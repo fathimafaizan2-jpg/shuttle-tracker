@@ -36,23 +36,13 @@
       background-color: var(--bg-outer);
       margin: 0; padding: 0;
       color: var(--text);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      display: flex; justify-content: center; align-items: center; min-height: 100vh;
     }
 
     .app-frame {
-      width: 100%;
-      max-width: 430px;
-      height: 100vh;
-      max-height: 880px;
-      background: var(--bg-app);
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      width: 100%; max-width: 430px; height: 100vh; max-height: 880px;
+      background: var(--bg-app); position: relative; overflow: hidden;
+      display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }
 
     @media (min-width: 500px) {
@@ -75,7 +65,7 @@
     @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
 
     #auth-screen {
-      position: absolute; inset: 0; background: rgba(15, 23, 42, 0.9);
+      position: absolute; inset: 0; background: rgba(15, 23, 42, 0.92);
       backdrop-filter: blur(10px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
     }
     .login-card {
@@ -85,12 +75,9 @@
     }
 
     .app-header {
-      padding: 16px 20px;
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center;
-      z-index: 100;
+      padding: 16px 20px; background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center; z-index: 100;
     }
     .brand-title h3 { margin: 0; font-size: 17px; font-weight: 800; }
     .brand-title span { font-size: 9px; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
@@ -145,6 +132,7 @@
     .tab-item svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; }
     .tab-item.active { color: var(--primary); }
 
+    /* STRICT TAB SCREEN ISOLATION */
     .screen { display: none !important; }
     .screen.active { display: block !important; }
 
@@ -209,32 +197,58 @@
     <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
   </div>
 
-  <!-- AUTH SCREEN -->
+  <!-- AUTH SCREEN (PLAYER SELF-REGISTRATION & ADMIN AUTH) -->
   <div id="auth-screen">
     <div class="login-card">
       <div style="display:flex; justify-content:center; gap:8px; margin-bottom:14px;">
         <button id="authTabPlayer" onclick="switchAuthTab('player')" class="pill-btn active">Player Access</button>
-        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin Sign In</button>
+        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin Access</button>
       </div>
 
-      <!-- PLAYER AUTH -->
+      <!-- PLAYER AUTH (SELF SERVICE SIGN UP & LOGIN) -->
       <div id="authPlayerForm">
         <h3 style="margin:0 0 4px 0; font-size:18px;">Player Access</h3>
-        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Sign in using your Member ID and Password.</p>
+        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Sign in or create your player profile.</p>
 
         <input type="text" id="loginMemberID" placeholder="Member ID (e.g. NZ-101)">
+        <input type="text" id="loginPlayerName" placeholder="Full Name (e.g. Alex)">
         
+        <div style="display:flex; gap:6px;">
+          <select id="loginCountryCode" style="flex:0 0 100px;">
+            <option value="973">🇧🇭 +973</option>
+            <option value="966">🇸🇦 +966</option>
+            <option value="971">🇦🇪 +971</option>
+            <option value="968">🇴🇲 +968</option>
+            <option value="965">🇰🇼 +965</option>
+            <option value="974">🇶🇦 +974</option>
+            <option value="91">🇮🇳 +91</option>
+            <option value="44">🇬🇧 +44</option>
+            <option value="1">🇺🇸 +1</option>
+          </select>
+          <input type="text" id="loginPhone" placeholder="Mobile Phone">
+        </div>
+
+        <label style="font-size:11px; font-weight:bold; color:var(--text-muted); text-align:left; display:block;">SELECT YOUR FLIGHT LEVEL:</label>
+        <select id="loginPlayerLevel">
+          <option value="Premier">Premier</option>
+          <option value="Flight 1">Flight 1</option>
+          <option value="Flight 2">Flight 2</option>
+          <option value="Flight 3">Flight 3</option>
+          <option value="Flight 4-A" selected>Flight 4-A</option>
+          <option value="Flight 4-B">Flight 4-B</option>
+        </select>
+
         <div class="password-container">
           <input type="password" id="loginPassword" placeholder="Password">
           <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
         </div>
 
-        <button onclick="verifyAndLogin()" class="btn-submit" style="margin-top:6px;">Sign In</button>
+        <button onclick="verifyAndRegisterPlayer()" class="btn-submit" style="margin-top:6px;">Sign In / Sign Up</button>
       </div>
 
-      <!-- ADMIN LOGIN ONLY FORM (STRICT NO RE-REGISTRATION) -->
+      <!-- ADMIN AUTH -->
       <div id="authAdminForm" style="display:none;">
-        <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Login</h3>
+        <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Access</h3>
         <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Enter your Admin ID & Password.</p>
 
         <input type="text" id="adminAuthID" placeholder="Admin ID (e.g. ADM-4A)">
@@ -247,7 +261,7 @@
         <button onclick="loginAdmin()" class="btn-submit" style="margin-top:6px; background:#059669;">Sign In as Admin</button>
 
         <div id="firstTimeAdminSetup" style="display:none; margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
-          <small style="color:var(--primary); font-bold:bold;">Initial Setup Required:</small>
+          <small style="color:var(--primary); font-weight:bold;">First Time Level Admin Setup:</small>
           <input type="text" id="setupAdminName" placeholder="Full Admin Name">
           <select id="setupAdminLevel">
             <option value="Premier">Premier</option>
@@ -257,7 +271,7 @@
             <option value="Flight 4-A" selected>Flight 4-A</option>
             <option value="Flight 4-B">Flight 4-B</option>
           </select>
-          <button onclick="registerFirstAdmin()" class="btn-submit" style="background:#2563eb; margin-top:4px;">Create Primary Admin</button>
+          <button onclick="registerFirstAdmin()" class="btn-submit" style="background:#2563eb; margin-top:4px;">Register Primary Admin</button>
         </div>
       </div>
 
@@ -303,7 +317,7 @@
       </div>
     </div>
 
-    <!-- 2. GAME LOG SCREEN -->
+    <!-- 2. GAME LOG SCREEN (RESTORED SHUTTLE DETAILS & SPLIT CALCULATOR) -->
     <div id="screen-game" class="screen">
       <div class="card">
         <h4>Attendance Checklist (Real-Time)</h4>
@@ -311,7 +325,7 @@
       </div>
 
       <div class="card">
-        <h4>Shuttlecocks Used</h4>
+        <h4>Shuttlecocks Used Details</h4>
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Quantity Used:</span>
           <div style="display:flex; align-items:center; gap:10px;">
@@ -320,7 +334,7 @@
             <button id="btnCorkPlus" class="admin-only-inline" onclick="updateCorkCount(1)" style="display:none; width:30px; height:30px; border-radius:50%; background:var(--primary); border:none; color:white; font-weight:bold; cursor:pointer;">+</button>
           </div>
         </div>
-        <div style="text-align: center; color: var(--text-muted); font-size: 11px; margin-top: 4px;">Unit Price: BHD <span id="corkPriceDisplay">1.000</span></div>
+        <div style="text-align: center; color: var(--text-muted); font-size: 11px; margin-top: 4px;">Unit Cork Price: BHD <span id="corkPriceDisplay">1.000</span></div>
       </div>
 
       <div class="split-box">
@@ -371,17 +385,17 @@
         <button id="pill-schedule" class="pill-btn" onclick="switchSettingsTab('settings-schedule')">📅 Schedule</button>
       </div>
 
-      <!-- SUB-TAB 1: SYSTEM & ADMIN EDIT CREDENTIALS -->
+      <!-- SUB-TAB 1: SYSTEM CONFIG -->
       <div id="settings-config" class="settings-subtab">
         <div class="card">
-          <h4>Edit My Admin Account (<span class="adminLevelLabel"></span>)</h4>
+          <h4>Edit Admin Account (<span class="adminLevelLabel"></span>)</h4>
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">ADMIN NAME:</label>
           <input type="text" id="editAdminName">
 
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">WHATSAPP PHONE NUMBER:</label>
           <input type="text" id="settingAdminPhone">
 
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">CHANGE MY ADMIN PASSWORD:</label>
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">CHANGE ADMIN PASSWORD:</label>
           <div class="password-container">
             <input type="password" id="editAdminPassword" placeholder="New Admin Password">
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('editAdminPassword', this)">👁️</button>
@@ -394,28 +408,19 @@
         </div>
       </div>
 
-      <!-- SUB-TAB 2: MEMBERS & CREDENTIALS MANAGER -->
+      <!-- SUB-TAB 2: REGISTERED MEMBERS MANAGER -->
       <div id="settings-members" class="settings-subtab" style="display:none;">
         <div class="card">
-          <h4>Authorized Members & Top-Up (<span class="adminLevelLabel"></span>)</h4>
+          <h4>Registered Members & Top-Up (<span class="adminLevelLabel"></span>)</h4>
           <div id="adminFilteredPlayerList"></div>
-
-          <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
-          
-          <h4 style="margin-bottom:6px;">Add / Register New Member Profile</h4>
-          <input type="text" id="newPlayerName" placeholder="Full Member Name (e.g. Alex)">
-          <input type="text" id="newMemberID" placeholder="Member ID (e.g. NZ-103)">
-          <input type="text" id="newPlayerPhone" placeholder="Mobile Phone (e.g. 97339123456)">
-          <input type="password" id="newPlayerPassword" placeholder="Assign Player Password">
-          <button onclick="addPlayerToLevel()" class="btn-submit">+ Authorize & Save Credentials</button>
         </div>
       </div>
 
-      <!-- SUB-TAB 3: CO-ADMIN / DELEGATE MANAGEMENT -->
+      <!-- SUB-TAB 3: CO-ADMIN DELEGATION -->
       <div id="settings-coadmin" class="settings-subtab" style="display:none;">
         <div class="card">
           <h4>Manage Level Admins (<span class="adminLevelLabel"></span>)</h4>
-          <p style="font-size:11px; color:var(--text-muted);">Add co-admins or substitutes to manage this level in your absence.</p>
+          <p style="font-size:11px; color:var(--text-muted);">Authorize secondary admins to manage this level in your absence.</p>
           <div id="coAdminList"></div>
 
           <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
@@ -423,7 +428,7 @@
           <h4>Add Secondary Admin</h4>
           <input type="text" id="newCoAdminID" placeholder="Co-Admin ID (e.g. ADM-4A-2)">
           <input type="text" id="newCoAdminName" placeholder="Co-Admin Full Name">
-          <input type="password" id="newCoAdminPass" placeholder="Assign Co-Admin Password">
+          <input type="password" id="newCoAdminPass" placeholder="Assign Password">
           <button onclick="addCoAdmin()" class="btn-submit" style="background:#059669;">+ Authorize Co-Admin</button>
         </div>
       </div>
@@ -569,7 +574,6 @@
       document.getElementById('authTabPlayer').classList.remove('active');
       document.getElementById('authTabAdmin').classList.add('active');
 
-      // Check if primary admins exist
       if (adminAccounts.length === 0) {
         document.getElementById('firstTimeAdminSetup').style.display = 'block';
       } else {
@@ -646,29 +650,45 @@
     playersList.forEach(player => db.collection("members").doc(player.id).set(player, { merge: true }));
   }
 
-  function verifyAndLogin() {
+  // SELF SERVICE PLAYER SIGN UP & LOGIN
+  function verifyAndRegisterPlayer() {
     const memberId = document.getElementById('loginMemberID').value.trim();
+    const name = document.getElementById('loginPlayerName').value.trim();
+    const countryCode = document.getElementById('loginCountryCode').value;
+    const rawPhone = document.getElementById('loginPhone').value.trim();
+    const level = document.getElementById('loginPlayerLevel').value;
     const password = document.getElementById('loginPassword').value.trim();
 
     if (!memberId || !password) {
-      alert("Please enter Member ID and Password!");
+      alert("Please enter at least Member ID and Password!");
       return;
     }
 
-    let player = playersList.find(p => p.memberId === memberId);
+    let existing = playersList.find(p => p.memberId === memberId);
 
-    if (player) {
-      if (player.password && player.password !== password) {
-        alert("Incorrect password!");
+    if (existing) {
+      if (existing.password && existing.password !== password) {
+        alert("Incorrect Password!");
         return;
       }
-      currentUser = player;
-      savePlayersData();
-      localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
-      checkUserSession();
+      currentUser = existing;
     } else {
-      alert("Member ID not found. Please ask your Level Admin to register your account.");
+      if (!name) {
+        alert("Please enter your Full Name to sign up!");
+        return;
+      }
+      const fullPhone = countryCode + rawPhone.replace(/[^0-9]/g, "");
+      currentUser = {
+        id: `p_${Date.now()}`,
+        name, memberId, phone: fullPhone, password,
+        level, coming: true, wallet: 0.000, locked: false, paidCurrent: false
+      };
+      playersList.push(currentUser);
     }
+
+    savePlayersData();
+    localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
+    checkUserSession();
   }
 
   function registerFirstAdmin() {
@@ -1198,21 +1218,6 @@
     document.getElementById('lightboxModal').classList.remove('active');
   }
 
-  function exportToGoogleSheetsCSV() {
-    if (!isAdmin) return;
-    let csvContent = "data:text/csv;charset=utf-8,Member ID,Name,Phone,Level,Attending,Wallet Balance (BHD)\n";
-    const filtered = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel));
-    filtered.forEach(m => {
-      csvContent += [`"${m.memberId||''}"`, `"${m.name}"`, `"${m.phone||''}"`, `"${m.level}"`, m.coming !== false ? "Yes" : "No", (m.wallet || 0).toFixed(3)].join(",") + "\n";
-    });
-    const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", `ShuttleTracker_${adminLevel}_Report.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
   function saveWeeklyScheduleSlot() {
     if (!isAdmin) return;
     const day = document.getElementById('scheduleDayInput').value;
@@ -1226,31 +1231,6 @@
     db.collection("system").doc("timetable").set(weeklyTimetables);
     renderTimetableCarousel();
     alert(`Updated ${day} schedule slot for ${adminLevel}!`);
-  }
-
-  function addPlayerToLevel() {
-    if (!isAdmin) return;
-    const name = document.getElementById('newPlayerName').value.trim();
-    const memberId = document.getElementById('newMemberID').value.trim();
-    const phone = document.getElementById('newPlayerPhone').value.trim();
-    const password = document.getElementById('newPlayerPassword').value.trim();
-
-    if (name && memberId && password) {
-      playersList.push({
-        id: `p_${Date.now()}`,
-        name, memberId, phone, password,
-        level: adminLevel, coming: true, wallet: 0.000, locked: false, paidCurrent: false
-      });
-      savePlayersData();
-      document.getElementById('newPlayerName').value = '';
-      document.getElementById('newMemberID').value = '';
-      document.getElementById('newPlayerPhone').value = '';
-      document.getElementById('newPlayerPassword').value = '';
-      renderAdminDashboard();
-      alert(`Authorized member ${name} (${memberId}) for ${adminLevel}!`);
-    } else {
-      alert("Please fill in Member Name, Member ID, and Password.");
-    }
   }
 
   function renderAdminSettings() {
