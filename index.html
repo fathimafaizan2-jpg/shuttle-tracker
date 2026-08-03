@@ -5,14 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Shuttle Tracker | NuZan</title>
 
-  <!-- PWA & Branding Meta -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1e293b">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -65,7 +63,6 @@
       }
     }
 
-    /* SPLASH SCREEN */
     #splash-screen {
       position: absolute; inset: 0;
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -81,7 +78,6 @@
     .progress-bar-fill { width: 0%; height: 100%; background: #38bdf8; animation: loadProgress 1.4s ease-in-out forwards; }
     @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
 
-    /* AUTH OVERLAY */
     #auth-screen {
       position: absolute; inset: 0; background: rgba(15, 23, 42, 0.9);
       backdrop-filter: blur(10px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -92,7 +88,6 @@
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-height: 90vh; overflow-y: auto;
     }
 
-    /* HEADER BAR */
     .app-header {
       padding: 16px 20px;
       background: rgba(255, 255, 255, 0.85);
@@ -104,7 +99,6 @@
     .brand-title h3 { margin: 0; font-size: 17px; font-weight: 800; }
     .brand-title span { font-size: 9px; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
 
-    /* SCROLLABLE CONTENT BODY */
     .app-body {
       flex: 1;
       overflow-y: auto;
@@ -165,16 +159,24 @@
       flex: 1; display: flex; flex-direction: column; align-items: center;
       justify-content: center; background: none; border: none;
       color: var(--text-muted); font-size: 10px; font-weight: 700;
-      cursor: pointer; padding: 6px 0; gap: 3px;
+      cursor: pointer; padding: 6px 0; gap: 3px; position: relative;
     }
     .tab-item svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; }
     .tab-item.active { color: var(--primary); }
     .admin-only { display: none; }
 
+    /* NOTIFICATION BADGE FOR UPDATES TAB */
+    .notif-badge {
+      position: absolute; top: 4px; right: 26px;
+      width: 8px; height: 8px; background: var(--danger);
+      border-radius: 50%; display: none;
+    }
+    .notif-badge.active { display: block; }
+
     .screen { display: none; }
     .screen.active { display: block; }
 
-    select, input[type="text"], input[type="number"], input[type="password"] {
+    select, input[type="text"], input[type="number"], input[type="password"], input[type="file"] {
       width: 100%; padding: 11px; margin: 4px 0 10px 0; border: 1px solid var(--border);
       border-radius: 12px; font-size: 13px; background: #f8fafc; color: var(--text);
     }
@@ -201,8 +203,15 @@
     .lightbox-modal.active { display: flex; }
     .lightbox-img { max-width: 100%; max-height: 80vh; border-radius: 12px; }
 
-    .wa-btn-icon { background: #25D366; color: white; border: none; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
-    
+    /* EXACT GREEN WHATSAPP SQUARE ICON BUTTON */
+    .wa-sq-btn {
+      width: 34px; height: 34px; background: #25D366;
+      border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+      text-decoration: none; border: none; cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .wa-sq-btn svg { width: 22px; height: 22px; fill: white; }
+
     .password-container { position: relative; width: 100%; }
     .password-toggle-btn { position: absolute; right: 10px; top: 11px; background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-muted); }
   </style>
@@ -223,41 +232,73 @@
     <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
   </div>
 
-  <!-- AUTH / LOGIN OVERLAY (NO DROPDOWN) -->
+  <!-- AUTH SCREEN WITH PLAYER & ADMIN MODES -->
   <div id="auth-screen">
     <div class="login-card">
-      <h3 style="margin:0 0 4px 0; font-size:18px;">Player Access</h3>
-      <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Sign in using your name and member ID.</p>
-      
-      <input type="text" id="loginNameInput" placeholder="Full Name (e.g. Alex)">
-      <input type="text" id="loginMemberID" placeholder="Your Member ID">
-      
-      <div style="display:flex; gap:6px;">
-        <select id="loginCountryCode" style="flex:0 0 100px;">
-          <option value="973">🇧🇭 +973</option>
-          <option value="966">🇸🇦 +966</option>
-          <option value="971">🇦🇪 +971</option>
-          <option value="968">🇴🇲 +968</option>
-          <option value="965">🇰🇼 +965</option>
-          <option value="974">🇶🇦 +974</option>
-          <option value="91">🇮🇳 +91</option>
-          <option value="44">🇬🇧 +44</option>
-          <option value="1">🇺🇸 +1</option>
+      <div style="display:flex; justify-content:center; gap:8px; margin-bottom:14px;">
+        <button id="authTabPlayer" onclick="switchAuthTab('player')" class="pill-btn active">Player Login</button>
+        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin Sign In</button>
+      </div>
+
+      <!-- PLAYER AUTH FORM -->
+      <div id="authPlayerForm">
+        <h3 style="margin:0 0 4px 0; font-size:18px;">Player Access</h3>
+        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Sign in using your name and member ID.</p>
+        
+        <input type="text" id="loginNameInput" placeholder="Full Name (e.g. Alex)">
+        <input type="text" id="loginMemberID" placeholder="Your Member ID">
+        
+        <div style="display:flex; gap:6px;">
+          <select id="loginCountryCode" style="flex:0 0 100px;">
+            <option value="973">🇧🇭 +973</option>
+            <option value="966">🇸🇦 +966</option>
+            <option value="971">🇦🇪 +971</option>
+            <option value="968">🇴🇲 +968</option>
+            <option value="965">🇰🇼 +965</option>
+            <option value="974">🇶🇦 +974</option>
+            <option value="91">🇮🇳 +91</option>
+            <option value="44">🇬🇧 +44</option>
+            <option value="1">🇺🇸 +1</option>
+          </select>
+          <input type="text" id="loginPhone" placeholder="Mobile Number">
+        </div>
+
+        <div class="password-container">
+          <input type="password" id="loginPassword" placeholder="Password">
+          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
+        </div>
+
+        <button onclick="verifyAndLogin()" class="btn-submit" style="margin-top:6px;">Sign In / Register</button>
+        
+        <div style="margin-top:12px; display:flex; justify-content:space-between;">
+          <button onclick="recoverPasswordPrompt()" style="background:none; border:none; color:var(--primary); font-size:11px; font-weight:bold; cursor:pointer;">Forgot Password?</button>
+          <button onclick="openProfileUpdateModal()" style="background:none; border:none; color:var(--text-muted); font-size:11px; font-weight:bold; cursor:pointer;">Update Profile</button>
+        </div>
+      </div>
+
+      <!-- ADMIN AUTH FORM -->
+      <div id="authAdminForm" style="display:none;">
+        <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Sign In</h3>
+        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Select your assigned flight level and enter your Level PIN.</p>
+        
+        <label style="font-size:11px; font-weight:bold; color:var(--text-muted); text-align:left; display:block;">SELECT FLIGHT LEVEL:</label>
+        <select id="adminLevelSelect">
+          <option value="Premier">Premier</option>
+          <option value="Flight 1">Flight 1</option>
+          <option value="Flight 2">Flight 2</option>
+          <option value="Flight 3">Flight 3</option>
+          <option value="Flight 4-A" selected>Flight 4-A</option>
+          <option value="Flight 4-B">Flight 4-B</option>
         </select>
-        <input type="text" id="loginPhone" placeholder="Mobile Number">
+
+        <div class="password-container">
+          <input type="password" id="adminPinInput" placeholder="Level PIN (Default 1234)">
+          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('adminPinInput', this)">👁️</button>
+        </div>
+
+        <button onclick="loginAsLevelAdmin()" class="btn-submit" style="margin-top:6px; background:#059669;">Sign In as Level Admin</button>
       </div>
 
-      <div class="password-container">
-        <input type="password" id="loginPassword" placeholder="Password">
-        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
-      </div>
-
-      <button onclick="verifyAndLogin()" class="btn-submit" style="margin-top:6px;">Sign In / Register</button>
-      
-      <div style="margin-top:12px; display:flex; justify-content:space-between;">
-        <button onclick="recoverPasswordPrompt()" style="background:none; border:none; color:var(--primary); font-size:11px; font-weight:bold; cursor:pointer;">Forgot Password?</button>
-        <button onclick="openProfileUpdateModal()" style="background:none; border:none; color:var(--text-muted); font-size:11px; font-weight:bold; cursor:pointer;">Update Profile</button>
-      </div>
     </div>
   </div>
 
@@ -344,13 +385,16 @@
 
       <div class="card admin-only">
         <h4>Post New Update / Flyer</h4>
-        <input type="text" id="updateText" placeholder="Announcement Title / Message">
-        <input type="text" id="updateImageUrl" placeholder="Flyer Image Link (e.g. https://.../flyer.jpg)">
+        <input type="text" id="updateText" placeholder="Announcement Title / Caption">
+        
+        <label style="font-size:11px; font-weight:bold; color:var(--text-muted); display:block; margin-top:4px;">Upload Flyer Image (Camera / Gallery):</label>
+        <input type="file" id="updateImageFile" accept="image/*">
+
         <button onclick="postAnnouncement()" class="btn-submit">+ Post Update to Level</button>
       </div>
     </div>
 
-    <!-- UNPAID STATEMENT PAGE (SINGLE RECURRENCE REMOVED) -->
+    <!-- UNPAID STATEMENT PAGE -->
     <div id="screen-unpaid" class="screen admin-only">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
         <h3 style="margin:0; font-size:15px;">Unpaid Shuttle Statements</h3>
@@ -359,9 +403,8 @@
       <div id="unpaidStatementList"></div>
     </div>
 
-    <!-- ADMIN SETTINGS WITH CLEAN SUB-TAB NAVIGATION -->
+    <!-- ADMIN SETTINGS -->
     <div id="screen-settings" class="screen admin-only">
-      
       <div class="pills-bar">
         <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ System</button>
         <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Members & Top-Up</button>
@@ -447,7 +490,8 @@
       <svg viewBox="0 0 24 24"><path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/></svg>
       Game Log
     </button>
-    <button id="nav-updates" class="tab-item" onclick="showScreen('screen-updates')">
+    <button id="nav-updates" class="tab-item" onclick="markUpdatesRead(); showScreen('screen-updates');">
+      <div id="notifBadge" class="notif-badge"></div>
       <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       Updates
     </button>
@@ -541,6 +585,21 @@
   ];
 
   let levelAnnouncements = JSON.parse(localStorage.getItem('shuttle_announcements')) || [];
+  let lastReadPostCount = parseInt(localStorage.getItem('shuttle_last_read_posts') || "0");
+
+  function switchAuthTab(tab) {
+    if (tab === 'player') {
+      document.getElementById('authPlayerForm').style.display = 'block';
+      document.getElementById('authAdminForm').style.display = 'none';
+      document.getElementById('authTabPlayer').classList.add('active');
+      document.getElementById('authTabAdmin').classList.remove('active');
+    } else {
+      document.getElementById('authPlayerForm').style.display = 'none';
+      document.getElementById('authAdminForm').style.display = 'block';
+      document.getElementById('authTabPlayer').classList.remove('active');
+      document.getElementById('authTabAdmin').classList.add('active');
+    }
+  }
 
   function togglePasswordVisibility(fieldId, btn) {
     const input = document.getElementById(fieldId);
@@ -580,7 +639,29 @@
       snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
       levelAnnouncements = list;
       renderAnnouncements();
+      checkUnreadAnnouncements();
     });
+  }
+
+  function checkUnreadAnnouncements() {
+    if (!currentUser) return;
+    const targetLevel = isAdmin ? adminLevel : currentUser.level;
+    const currentCount = levelAnnouncements.filter(a => normalizeLevel(a.level) === normalizeLevel(targetLevel)).length;
+
+    if (currentCount > lastReadPostCount) {
+      document.getElementById('notifBadge').classList.add('active');
+    } else {
+      document.getElementById('notifBadge').classList.remove('active');
+    }
+  }
+
+  function markUpdatesRead() {
+    if (!currentUser) return;
+    const targetLevel = isAdmin ? adminLevel : currentUser.level;
+    const currentCount = levelAnnouncements.filter(a => normalizeLevel(a.level) === normalizeLevel(targetLevel)).length;
+    lastReadPostCount = currentCount;
+    localStorage.setItem('shuttle_last_read_posts', lastReadPostCount.toString());
+    document.getElementById('notifBadge').classList.remove('active');
   }
 
   function savePlayersData() {
@@ -630,6 +711,28 @@
     checkUserSession();
   }
 
+  function loginAsLevelAdmin() {
+    const selectedLevel = document.getElementById('adminLevelSelect').value;
+    const pinInput = document.getElementById('adminPinInput').value.trim();
+
+    const expectedPin = levelPins[selectedLevel] || "1234";
+
+    if (pinInput === expectedPin) {
+      isAdmin = true;
+      adminLevel = selectedLevel;
+      document.getElementById('authBtn').innerText = `🔓 ${adminLevel}`;
+      document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
+      document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = adminLevel);
+      
+      document.getElementById('auth-screen').style.display = 'none';
+      renderAttendees();
+      renderAdminDashboard();
+      showScreen('screen-timetable');
+    } else {
+      alert("Incorrect Level PIN!");
+    }
+  }
+
   function recoverPasswordPrompt() {
     const memberId = prompt("Enter your Member ID:");
     const phone = prompt("Enter your Mobile Number (e.g. 97339123456):");
@@ -658,23 +761,25 @@
   }
 
   function checkUserSession() {
-    if (!currentUser) {
+    if (!currentUser && !isAdmin) {
       document.getElementById('auth-screen').style.display = 'flex';
     } else {
       document.getElementById('auth-screen').style.display = 'none';
-      document.getElementById('userPill').innerText = currentUser.name;
-      document.getElementById('playerCurrentLevelDisplay').innerText = currentUser.level;
-      
-      const wallet = currentUser.wallet || 0;
-      document.getElementById('userWalletDisplay').innerText = `BHD ${wallet.toFixed(3)}`;
-      
-      const badge = document.getElementById('userWalletBadge');
-      if (wallet <= 0) {
-        badge.innerText = "OUT OF CREDIT"; badge.className = "badge-out";
-      } else if (wallet < 0.250) {
-        badge.innerText = "LOW BALANCE"; badge.className = "badge-low";
-      } else {
-        badge.innerText = "ACTIVE CREDIT"; badge.className = "badge-paid";
+      if (currentUser) {
+        document.getElementById('userPill').innerText = currentUser.name;
+        document.getElementById('playerCurrentLevelDisplay').innerText = currentUser.level;
+        
+        const wallet = currentUser.wallet || 0;
+        document.getElementById('userWalletDisplay').innerText = `BHD ${wallet.toFixed(3)}`;
+        
+        const badge = document.getElementById('userWalletBadge');
+        if (wallet <= 0) {
+          badge.innerText = "OUT OF CREDIT"; badge.className = "badge-out";
+        } else if (wallet < 0.250) {
+          badge.innerText = "LOW BALANCE"; badge.className = "badge-low";
+        } else {
+          badge.innerText = "ACTIVE CREDIT"; badge.className = "badge-paid";
+        }
       }
 
       renderTimetableCarousel();
@@ -687,6 +792,10 @@
   function switchUserAccount() {
     localStorage.removeItem('shuttle_user');
     currentUser = null;
+    isAdmin = false;
+    adminLevel = null;
+    document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'none');
+    document.getElementById('authBtn').innerText = "🔒 Admin";
     checkUserSession();
   }
 
@@ -698,21 +807,8 @@
       document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'none');
       showScreen('screen-timetable');
     } else {
-      const selectedLvl = prompt("Select Admin Flight Level:\n(Premier, Flight 1, Flight 2, Flight 3, Flight 4-A, Flight 4-B)", currentUser ? currentUser.level : "Flight 4-A");
-      if (!selectedLvl || !levelsList.includes(selectedLvl)) return;
-
-      const pin = prompt(`Enter Level PIN for ${selectedLvl}:`);
-      if (pin === (levelPins[selectedLvl] || "1234")) {
-        isAdmin = true;
-        adminLevel = selectedLvl;
-        document.getElementById('authBtn').innerText = `🔓 ${adminLevel}`;
-        document.querySelectorAll('.admin-only').forEach(e => e.style.display = 'block');
-        document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = adminLevel);
-        renderAttendees();
-        renderAdminDashboard();
-      } else if (pin !== null) {
-        alert("Incorrect Level PIN!");
-      }
+      document.getElementById('auth-screen').style.display = 'flex';
+      switchAuthTab('admin');
     }
   }
 
@@ -748,12 +844,13 @@
   }
 
   function renderTimetableCarousel() {
-    if (!currentUser) return;
+    if (!currentUser && !isAdmin) return;
     const container = document.getElementById('timetableCarousel');
     container.innerHTML = '';
 
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const sched = weeklyTimetables[currentUser.level] || {};
+    const targetLevel = isAdmin ? adminLevel : currentUser.level;
+    const sched = weeklyTimetables[targetLevel] || {};
 
     days.forEach(day => {
       const hasSlot = sched[day];
@@ -767,7 +864,7 @@
   }
 
   function renderAttendees() {
-    if (!currentUser) return;
+    if (!currentUser && !isAdmin) return;
     const container = document.getElementById('attendeeChecklist');
     container.innerHTML = '';
 
@@ -845,7 +942,7 @@
   }
 
   function recalculateSplit() {
-    if (!currentUser) return;
+    if (!currentUser && !isAdmin) return;
     const targetLevel = isAdmin ? adminLevel : currentUser.level;
     const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(targetLevel));
     const activeCount = levelMembers.filter(p => p.coming !== false).length || 1;
@@ -917,7 +1014,9 @@
             <strong>${m.name}</strong> <small style="color:#64748b;">(${m.memberId||'No ID'})</small><br>
             <span style="color:var(--danger); font-size:11px; font-weight:bold;">Due Share: BHD ${shareCost.toFixed(3)}</span>
           </div>
-          <a href="${waUrl}" target="_blank" class="wa-btn-icon">📲 Send Reminder</a>
+          <a href="${waUrl}" target="_blank" class="wa-sq-btn" title="Send WhatsApp Reminder">
+            <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
+          </a>
         </div>
       `;
     });
@@ -975,10 +1074,12 @@
             <strong>${p.name}</strong> <small style="color:#64748b;">(${p.memberId||'No ID'})</small><br>
             <small style="color:#64748b;">Balance: BHD ${(p.wallet||0).toFixed(3)}</small>
           </div>
-          <div style="display:flex; gap:4px;">
-            <a href="${waUrl}" target="_blank" class="wa-btn-icon">📲 WA</a>
-            <button onclick="quickTopUpPrompt('${p.id}')" style="background:var(--primary); color:white; border:none; padding:4px 8px; border-radius:6px; cursor:pointer;">+ Credit</button>
-            <button onclick="removePlayer('${p.id}')" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:6px; cursor:pointer;">Delete</button>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <a href="${waUrl}" target="_blank" class="wa-sq-btn" title="Notify Member">
+              <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
+            </a>
+            <button onclick="quickTopUpPrompt('${p.id}')" style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">+ Credit</button>
+            <button onclick="removePlayer('${p.id}')" style="background:var(--danger); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">Delete</button>
           </div>
         </div>
       `;
@@ -1004,29 +1105,39 @@
   function postAnnouncement() {
     if (!isAdmin) return;
     const title = document.getElementById('updateText').value.trim();
-    const imgUrl = document.getElementById('updateImageUrl').value.trim();
+    const fileInput = document.getElementById('updateImageFile');
 
-    if (!title && !imgUrl) {
-      alert("Please enter title text or flyer image URL.");
+    if (!title && (!fileInput.files || fileInput.files.length === 0)) {
+      alert("Please enter a title or pick a flyer image!");
       return;
     }
 
-    const newPost = {
-      id: `ann_${Date.now()}`,
-      level: adminLevel,
-      title,
-      imageUrl: imgUrl,
-      date: new Date().toLocaleDateString('en-GB')
+    const publishPost = (base64Img) => {
+      const newPost = {
+        id: `ann_${Date.now()}`,
+        level: adminLevel,
+        title,
+        imageUrl: base64Img || "",
+        date: new Date().toLocaleDateString('en-GB')
+      };
+
+      db.collection("announcements").doc(newPost.id).set(newPost);
+      document.getElementById('updateText').value = '';
+      fileInput.value = '';
+      alert("Flyer / Announcement posted to level!");
     };
 
-    db.collection("announcements").doc(newPost.id).set(newPost);
-    document.getElementById('updateText').value = '';
-    document.getElementById('updateImageUrl').value = '';
-    alert("Flyer / Announcement posted to level!");
+    if (fileInput.files && fileInput.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (e) => publishPost(e.target.result);
+      reader.readAsDataURL(fileInput.files[0]);
+    } else {
+      publishPost("");
+    }
   }
 
   function renderAnnouncements() {
-    if (!currentUser) return;
+    if (!currentUser && !isAdmin) return;
     const container = document.getElementById('updatesList');
     container.innerHTML = '';
 
@@ -1038,7 +1149,7 @@
       return;
     }
 
-    filtered.reverse().forEach(a => {
+    filtered.slice().reverse().forEach(a => {
       container.innerHTML += `
         <div class="card" style="margin-bottom:10px; background:#f8fafc;">
           <small style="color:var(--text-muted); font-size:10px;">${a.date} • ${a.level}</small>
@@ -1097,7 +1208,6 @@
       savePlayersData();
       document.getElementById('newPlayerName').value = '';
       renderAdminDashboard();
-      alert(`Authorized member ${name} for ${adminLevel}!`);
     } else {
       alert("Please enter Member Name.");
     }
