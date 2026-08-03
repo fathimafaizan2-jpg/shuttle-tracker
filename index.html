@@ -214,7 +214,7 @@
     <div class="login-card">
       <div style="display:flex; justify-content:center; gap:8px; margin-bottom:14px;">
         <button id="authTabPlayer" onclick="switchAuthTab('player')" class="pill-btn active">Player Access</button>
-        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin Sign Up / Login</button>
+        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin Sign In</button>
       </div>
 
       <!-- PLAYER AUTH -->
@@ -232,30 +232,33 @@
         <button onclick="verifyAndLogin()" class="btn-submit" style="margin-top:6px;">Sign In</button>
       </div>
 
-      <!-- ADMIN AUTH (ID, NAME, PASSWORD & LEVEL) -->
+      <!-- ADMIN LOGIN ONLY FORM (STRICT NO RE-REGISTRATION) -->
       <div id="authAdminForm" style="display:none;">
-        <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Account</h3>
-        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Sign up or log in with your Admin ID & Credentials.</p>
+        <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Login</h3>
+        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Enter your Admin ID & Password.</p>
 
         <input type="text" id="adminAuthID" placeholder="Admin ID (e.g. ADM-4A)">
-        <input type="text" id="adminAuthName" placeholder="Admin Full Name">
-        
-        <label style="font-size:11px; font-weight:bold; color:var(--text-muted); text-align:left; display:block;">ASSIGNED FLIGHT LEVEL:</label>
-        <select id="adminLevelSelect">
-          <option value="Premier">Premier</option>
-          <option value="Flight 1">Flight 1</option>
-          <option value="Flight 2">Flight 2</option>
-          <option value="Flight 3">Flight 3</option>
-          <option value="Flight 4-A" selected>Flight 4-A</option>
-          <option value="Flight 4-B">Flight 4-B</option>
-        </select>
 
         <div class="password-container">
           <input type="password" id="adminAuthPass" placeholder="Admin Password">
           <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('adminAuthPass', this)">👁️</button>
         </div>
 
-        <button onclick="loginOrRegisterAdmin()" class="btn-submit" style="margin-top:6px; background:#059669;">Sign In / Sign Up as Admin</button>
+        <button onclick="loginAdmin()" class="btn-submit" style="margin-top:6px; background:#059669;">Sign In as Admin</button>
+
+        <div id="firstTimeAdminSetup" style="display:none; margin-top:14px; border-top:1px solid var(--border); padding-top:10px;">
+          <small style="color:var(--primary); font-bold:bold;">Initial Setup Required:</small>
+          <input type="text" id="setupAdminName" placeholder="Full Admin Name">
+          <select id="setupAdminLevel">
+            <option value="Premier">Premier</option>
+            <option value="Flight 1">Flight 1</option>
+            <option value="Flight 2">Flight 2</option>
+            <option value="Flight 3">Flight 3</option>
+            <option value="Flight 4-A" selected>Flight 4-A</option>
+            <option value="Flight 4-B">Flight 4-B</option>
+          </select>
+          <button onclick="registerFirstAdmin()" class="btn-submit" style="background:#2563eb; margin-top:4px;">Create Primary Admin</button>
+        </div>
       </div>
 
     </div>
@@ -362,23 +365,32 @@
     <!-- 5. ADMIN SETTINGS -->
     <div id="screen-settings" class="screen">
       <div class="pills-bar">
-        <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ System</button>
-        <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Members & Credentials</button>
+        <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ System & Profile</button>
+        <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Members</button>
+        <button id="pill-coadmin" class="pill-btn" onclick="switchSettingsTab('settings-coadmin')">🔐 Delegate Admins</button>
         <button id="pill-schedule" class="pill-btn" onclick="switchSettingsTab('settings-schedule')">📅 Schedule</button>
-        <button id="pill-reports" class="pill-btn" onclick="switchSettingsTab('settings-reports')">📊 Export</button>
       </div>
 
-      <!-- SUB-TAB 1: SYSTEM CONFIG -->
+      <!-- SUB-TAB 1: SYSTEM & ADMIN EDIT CREDENTIALS -->
       <div id="settings-config" class="settings-subtab">
         <div class="card">
-          <h4>System Parameters (<span class="adminLevelLabel"></span>)</h4>
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">LEVEL ADMIN PHONE:</label>
-          <input type="text" id="settingAdminPhone" value="97339123456">
+          <h4>Edit My Admin Account (<span class="adminLevelLabel"></span>)</h4>
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">ADMIN NAME:</label>
+          <input type="text" id="editAdminName">
+
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">WHATSAPP PHONE NUMBER:</label>
+          <input type="text" id="settingAdminPhone">
+
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">CHANGE MY ADMIN PASSWORD:</label>
+          <div class="password-container">
+            <input type="password" id="editAdminPassword" placeholder="New Admin Password">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('editAdminPassword', this)">👁️</button>
+          </div>
 
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">CORK UNIT PRICE (BHD):</label>
-          <input type="number" id="settingCorkPrice" step="0.050" value="1.000">
+          <input type="number" id="settingCorkPrice" step="0.050">
 
-          <button class="btn-submit" onclick="saveAdminSettings()">Save Level Settings</button>
+          <button class="btn-submit" onclick="saveAdminSettings()">Save Profile & System Parameters</button>
         </div>
       </div>
 
@@ -399,7 +411,24 @@
         </div>
       </div>
 
-      <!-- SUB-TAB 3: SCHEDULE MANAGER -->
+      <!-- SUB-TAB 3: CO-ADMIN / DELEGATE MANAGEMENT -->
+      <div id="settings-coadmin" class="settings-subtab" style="display:none;">
+        <div class="card">
+          <h4>Manage Level Admins (<span class="adminLevelLabel"></span>)</h4>
+          <p style="font-size:11px; color:var(--text-muted);">Add co-admins or substitutes to manage this level in your absence.</p>
+          <div id="coAdminList"></div>
+
+          <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
+
+          <h4>Add Secondary Admin</h4>
+          <input type="text" id="newCoAdminID" placeholder="Co-Admin ID (e.g. ADM-4A-2)">
+          <input type="text" id="newCoAdminName" placeholder="Co-Admin Full Name">
+          <input type="password" id="newCoAdminPass" placeholder="Assign Co-Admin Password">
+          <button onclick="addCoAdmin()" class="btn-submit" style="background:#059669;">+ Authorize Co-Admin</button>
+        </div>
+      </div>
+
+      <!-- SUB-TAB 4: SCHEDULE MANAGER -->
       <div id="settings-schedule" class="settings-subtab" style="display:none;">
         <div class="card">
           <h4>Weekly Schedule Manager (<span class="adminLevelLabel"></span>)</h4>
@@ -416,16 +445,6 @@
             <input type="text" id="scheduleTimeInput" placeholder="8:00 PM - 10:00 PM">
           </div>
           <button onclick="saveWeeklyScheduleSlot()" class="btn-submit">Update Day Slot</button>
-        </div>
-      </div>
-
-      <!-- SUB-TAB 4: REPORTS & EXPORT -->
-      <div id="settings-reports" class="settings-subtab" style="display:none;">
-        <div class="card">
-          <h4>Data Reports & Export</h4>
-          <button onclick="exportToGoogleSheetsCSV()" style="width:100%; padding:10px; background:#0f766e; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:12px;">
-            📊 Export Level Data to CSV
-          </button>
         </div>
       </div>
 
@@ -515,16 +534,15 @@
   const db = firebase.firestore();
 
   let isAdmin = false;
+  let currentAdminObj = null;
   let adminLevel = null;
   let currentUser = JSON.parse(localStorage.getItem('shuttle_user')) || null;
   let corkPriceBHD = parseFloat(localStorage.getItem('shuttle_cork_price')) || 1.000;
   let adminPhone = localStorage.getItem('shuttle_admin_phone') || "97339123456";
   let currentCorkCount = 1;
 
-  const levelsList = ["Premier", "Flight 1", "Flight 2", "Flight 3", "Flight 4-A", "Flight 4-B"];
-  
   let adminAccounts = JSON.parse(localStorage.getItem('shuttle_admin_accounts')) || [
-    { adminId: "ADM-4A", name: "Admin 4A", password: "123", level: "Flight 4-A" }
+    { adminId: "ADM-4A", name: "Admin Flight 4A", password: "123", level: "Flight 4-A" }
   ];
 
   let weeklyTimetables = JSON.parse(localStorage.getItem('shuttle_timetables')) || {
@@ -550,6 +568,13 @@
       document.getElementById('authAdminForm').style.display = 'block';
       document.getElementById('authTabPlayer').classList.remove('active');
       document.getElementById('authTabAdmin').classList.add('active');
+
+      // Check if primary admins exist
+      if (adminAccounts.length === 0) {
+        document.getElementById('firstTimeAdminSetup').style.display = 'block';
+      } else {
+        document.getElementById('firstTimeAdminSetup').style.display = 'none';
+      }
     }
   }
 
@@ -646,37 +671,52 @@
     }
   }
 
-  function loginOrRegisterAdmin() {
+  function registerFirstAdmin() {
     const adminId = document.getElementById('adminAuthID').value.trim();
-    const name = document.getElementById('adminAuthName').value.trim();
+    const name = document.getElementById('setupAdminName').value.trim();
     const password = document.getElementById('adminAuthPass').value.trim();
-    const level = document.getElementById('adminLevelSelect').value;
+    const level = document.getElementById('setupAdminLevel').value;
+
+    if (!adminId || !name || !password) {
+      alert("Please fill in Admin ID, Admin Name, and Password!");
+      return;
+    }
+
+    currentAdminObj = { adminId, name, password, level };
+    adminAccounts.push(currentAdminObj);
+    localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
+
+    isAdmin = true;
+    adminLevel = level;
+    activateAdminMode();
+  }
+
+  function loginAdmin() {
+    const adminId = document.getElementById('adminAuthID').value.trim();
+    const password = document.getElementById('adminAuthPass').value.trim();
 
     if (!adminId || !password) {
       alert("Please enter Admin ID and Password!");
       return;
     }
 
-    let existing = adminAccounts.find(a => a.adminId === adminId);
+    let found = adminAccounts.find(a => a.adminId === adminId);
 
-    if (existing) {
-      if (existing.password !== password) {
+    if (found) {
+      if (found.password !== password) {
         alert("Incorrect Admin Password!");
         return;
       }
-      adminLevel = existing.level;
+      currentAdminObj = found;
+      adminLevel = found.level;
+      isAdmin = true;
+      activateAdminMode();
     } else {
-      if (!name) {
-        alert("Please enter Admin Name for registration.");
-        return;
-      }
-      existing = { adminId, name, password, level };
-      adminAccounts.push(existing);
-      localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
-      adminLevel = level;
+      alert("Admin ID not found!");
     }
+  }
 
-    isAdmin = true;
+  function activateAdminMode() {
     document.getElementById('authBtn').innerText = `🔓 ${adminLevel}`;
     document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'flex');
     document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'inline-block');
@@ -686,6 +726,7 @@
     document.getElementById('auth-screen').style.display = 'none';
     renderAttendees();
     renderAdminDashboard();
+    renderCoAdmins();
     showScreen('screen-timetable');
   }
 
@@ -723,6 +764,7 @@
     currentUser = null;
     isAdmin = false;
     adminLevel = null;
+    currentAdminObj = null;
     document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'none');
     document.getElementById('adminPostCard').style.display = 'none';
@@ -734,6 +776,7 @@
     if (isAdmin) {
       isAdmin = false;
       adminLevel = null;
+      currentAdminObj = null;
       document.getElementById('authBtn').innerText = "🔒 Admin";
       document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'none');
       document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'none');
@@ -772,8 +815,11 @@
     
     if (subtabId === 'settings-config') document.getElementById('pill-config').classList.add('active');
     if (subtabId === 'settings-members') document.getElementById('pill-members').classList.add('active');
+    if (subtabId === 'settings-coadmin') {
+      document.getElementById('pill-coadmin').classList.add('active');
+      renderCoAdmins();
+    }
     if (subtabId === 'settings-schedule') document.getElementById('pill-schedule').classList.add('active');
-    if (subtabId === 'settings-reports') document.getElementById('pill-reports').classList.add('active');
   }
 
   function renderTimetableCarousel() {
@@ -1019,6 +1065,56 @@
     });
   }
 
+  function renderCoAdmins() {
+    if (!isAdmin) return;
+    const container = document.getElementById('coAdminList');
+    container.innerHTML = '';
+
+    const list = adminAccounts.filter(a => normalizeLevel(a.level) === normalizeLevel(adminLevel));
+
+    list.forEach(a => {
+      container.innerHTML += `
+        <div class="attendee-item">
+          <div>
+            <strong>${a.name}</strong> <small style="color:#64748b;">(${a.adminId})</small><br>
+            <small style="color:var(--primary);">Level: ${a.level}</small>
+          </div>
+          <button onclick="removeCoAdmin('${a.adminId}')" style="background:var(--danger); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">Remove</button>
+        </div>
+      `;
+    });
+  }
+
+  function addCoAdmin() {
+    if (!isAdmin) return;
+    const adminId = document.getElementById('newCoAdminID').value.trim();
+    const name = document.getElementById('newCoAdminName').value.trim();
+    const password = document.getElementById('newCoAdminPass').value.trim();
+
+    if (adminId && name && password) {
+      adminAccounts.push({ adminId, name, password, level: adminLevel });
+      localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
+      document.getElementById('newCoAdminID').value = '';
+      document.getElementById('newCoAdminName').value = '';
+      document.getElementById('newCoAdminPass').value = '';
+      renderCoAdmins();
+      alert(`Secondary Admin ${name} authorized for ${adminLevel}!`);
+    } else {
+      alert("Please enter Co-Admin ID, Name, and Password.");
+    }
+  }
+
+  function removeCoAdmin(adminId) {
+    if (!isAdmin) return;
+    if (adminAccounts.length <= 1) {
+      alert("You cannot remove the only admin account!");
+      return;
+    }
+    adminAccounts = adminAccounts.filter(a => a.adminId !== adminId);
+    localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
+    renderCoAdmins();
+  }
+
   function quickTopUpPrompt(id) {
     const member = playersList.find(p => p.id === id);
     if (member) {
@@ -1158,6 +1254,10 @@
   }
 
   function renderAdminSettings() {
+    if (currentAdminObj) {
+      document.getElementById('editAdminName').value = currentAdminObj.name || '';
+      document.getElementById('editAdminPassword').value = currentAdminObj.password || '';
+    }
     document.getElementById('settingCorkPrice').value = corkPriceBHD;
     document.getElementById('settingAdminPhone').value = adminPhone;
     renderAdminDashboard();
@@ -1175,12 +1275,19 @@
     if (!isAdmin) return;
     corkPriceBHD = parseFloat(document.getElementById('settingCorkPrice').value) || 1.000;
     adminPhone = document.getElementById('settingAdminPhone').value.trim();
-    
+
+    const newAdminName = document.getElementById('editAdminName').value.trim();
+    const newAdminPass = document.getElementById('editAdminPassword').value.trim();
+
+    if (currentAdminObj && newAdminName) currentAdminObj.name = newAdminName;
+    if (currentAdminObj && newAdminPass) currentAdminObj.password = newAdminPass;
+
+    localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
     localStorage.setItem('shuttle_cork_price', corkPriceBHD);
     localStorage.setItem('shuttle_admin_phone', adminPhone);
     savePlayersData();
     
-    alert(`Settings saved for level ${adminLevel}!`);
+    alert(`Settings and Admin Credentials saved for ${adminLevel}!`);
     showScreen('screen-timetable');
   }
 
