@@ -162,7 +162,7 @@
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
-      display: flex; justify-content: space-around; align-items: center;
+      display: flex; justify-space-around; align-items: center;
       padding-bottom: 6px;
       z-index: 500;
     }
@@ -275,8 +275,9 @@
         <button onclick="switchUserAccount()" style="background:#e2e8f0; border:none; color:#334155; padding:6px 10px; border-radius:8px; font-size:10px; font-weight:700; cursor:pointer;">Switch User</button>
       </div>
 
+      <!-- PRIVATE WALLET CARD (ONLY VISIBLE TO CURRENT USER) -->
       <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:white;">
-        <h4 style="color:#94a3b8;">Your Wallet Balance</h4>
+        <h4 style="color:#94a3b8;">Your Wallet Balance (Private)</h4>
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <h2 id="userWalletDisplay" style="margin:0; font-size:26px; font-weight:800; color:#38bdf8;">BHD 0.000</h2>
           <span id="userWalletBadge" class="badge-paid">ACTIVE</span>
@@ -696,13 +697,19 @@
       // Enable controls ONLY if it's user's own row (or if Admin is unlocked)
       const canEdit = (isSelf && !isLocked) || isAdmin;
 
+      // STRICT PRIVACY FIX: Show wallet info ONLY to the user themselves (or to Admin)
+      let walletText = '';
+      if (isSelf || isAdmin) {
+        walletText = `<br><small style="color:${(p.wallet||0)<=0?'var(--danger)':'var(--text-muted)'};">
+          Credit: BHD ${(p.wallet||0).toFixed(3)} ${(p.wallet||0)<=0?'(OUT)':''}
+        </small>`;
+      }
+
       container.innerHTML += `
         <div class="attendee-item">
           <div>
-            <strong>${p.name}</strong> ${isSelf ? '<small style="color:var(--primary); font-weight:bold;">(You)</small>' : ''}<br>
-            <small style="color:${(p.wallet||0)<=0?'var(--danger)':'var(--text-muted)'};">
-              Credit: BHD ${(p.wallet||0).toFixed(3)} ${(p.wallet||0)<=0?'(OUT)':''}
-            </small>
+            <strong>${p.name}</strong> ${isSelf ? '<small style="color:var(--primary); font-weight:bold;">(You)</small>' : ''}
+            ${walletText}
           </div>
           <div class="att-btn-group">
             <button class="att-btn yes ${isComing ? 'active' : ''}" 
