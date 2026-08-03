@@ -133,7 +133,7 @@
     .app-tabbar {
       position: absolute; bottom: 0; left: 0; right: 0; height: 65px;
       background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px);
-      border-top: 1px solid var(--border); display: flex; justify-content: space-around;
+      border-top: 1px solid var(--border); display: flex; justify-space-around;
       align-items: center; padding-bottom: 6px; z-index: 500;
     }
     .tab-item {
@@ -145,7 +145,6 @@
     .tab-item svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; }
     .tab-item.active { color: var(--primary); }
 
-    /* STRICT SCREEN VISIBILITY (PREVENTS ACCIDENTAL BLEED) */
     .screen { display: none !important; }
     .screen.active { display: block !important; }
 
@@ -214,8 +213,8 @@
   <div id="auth-screen">
     <div class="login-card">
       <div style="display:flex; justify-content:center; gap:8px; margin-bottom:14px;">
-        <button id="authTabPlayer" onclick="switchAuthTab('player')" class="pill-btn active">Player Login</button>
-        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin Sign In</button>
+        <button id="authTabPlayer" onclick="switchAuthTab('player')" class="pill-btn active">Player Access</button>
+        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin Sign Up / Login</button>
       </div>
 
       <!-- PLAYER AUTH -->
@@ -233,12 +232,15 @@
         <button onclick="verifyAndLogin()" class="btn-submit" style="margin-top:6px;">Sign In</button>
       </div>
 
-      <!-- ADMIN AUTH -->
+      <!-- ADMIN AUTH (ID, NAME, PASSWORD & LEVEL) -->
       <div id="authAdminForm" style="display:none;">
-        <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Sign In</h3>
-        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Select your flight level and enter your Level PIN.</p>
+        <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Account</h3>
+        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Sign up or log in with your Admin ID & Credentials.</p>
+
+        <input type="text" id="adminAuthID" placeholder="Admin ID (e.g. ADM-4A)">
+        <input type="text" id="adminAuthName" placeholder="Admin Full Name">
         
-        <label style="font-size:11px; font-weight:bold; color:var(--text-muted); text-align:left; display:block;">SELECT FLIGHT LEVEL:</label>
+        <label style="font-size:11px; font-weight:bold; color:var(--text-muted); text-align:left; display:block;">ASSIGNED FLIGHT LEVEL:</label>
         <select id="adminLevelSelect">
           <option value="Premier">Premier</option>
           <option value="Flight 1">Flight 1</option>
@@ -249,11 +251,11 @@
         </select>
 
         <div class="password-container">
-          <input type="password" id="adminPinInput" placeholder="Level PIN (Default 1234)">
-          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('adminPinInput', this)">👁️</button>
+          <input type="password" id="adminAuthPass" placeholder="Admin Password">
+          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('adminAuthPass', this)">👁️</button>
         </div>
 
-        <button onclick="loginAsLevelAdmin()" class="btn-submit" style="margin-top:6px; background:#059669;">Sign In as Level Admin</button>
+        <button onclick="loginOrRegisterAdmin()" class="btn-submit" style="margin-top:6px; background:#059669;">Sign In / Sign Up as Admin</button>
       </div>
 
     </div>
@@ -372,12 +374,6 @@
           <h4>System Parameters (<span class="adminLevelLabel"></span>)</h4>
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">LEVEL ADMIN PHONE:</label>
           <input type="text" id="settingAdminPhone" value="97339123456">
-
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">LEVEL ADMIN PIN:</label>
-          <div class="password-container">
-            <input type="password" id="newAdminPin" placeholder="Change Level PIN">
-            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('newAdminPin', this)">👁️</button>
-          </div>
 
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">CORK UNIT PRICE (BHD):</label>
           <input type="number" id="settingCorkPrice" step="0.050" value="1.000">
@@ -527,10 +523,9 @@
 
   const levelsList = ["Premier", "Flight 1", "Flight 2", "Flight 3", "Flight 4-A", "Flight 4-B"];
   
-  let levelPins = JSON.parse(localStorage.getItem('shuttle_level_pins')) || {
-    "Premier": "1111", "Flight 1": "2222", "Flight 2": "3333",
-    "Flight 3": "4444", "Flight 4-A": "1234", "Flight 4-B": "5555"
-  };
+  let adminAccounts = JSON.parse(localStorage.getItem('shuttle_admin_accounts')) || [
+    { adminId: "ADM-4A", name: "Admin 4A", password: "123", level: "Flight 4-A" }
+  ];
 
   let weeklyTimetables = JSON.parse(localStorage.getItem('shuttle_timetables')) || {
     "Flight 4-A": { "Sunday": "8:00 PM - 10:00 PM", "Tuesday": "8:00 PM - 10:00 PM", "Friday": "6:00 PM - 9:00 PM" }
@@ -651,28 +646,47 @@
     }
   }
 
-  function loginAsLevelAdmin() {
-    const selectedLevel = document.getElementById('adminLevelSelect').value;
-    const pinInput = document.getElementById('adminPinInput').value.trim();
-    const expectedPin = levelPins[selectedLevel] || "1234";
+  function loginOrRegisterAdmin() {
+    const adminId = document.getElementById('adminAuthID').value.trim();
+    const name = document.getElementById('adminAuthName').value.trim();
+    const password = document.getElementById('adminAuthPass').value.trim();
+    const level = document.getElementById('adminLevelSelect').value;
 
-    if (pinInput === expectedPin) {
-      isAdmin = true;
-      adminLevel = selectedLevel;
-      document.getElementById('authBtn').innerText = `🔓 ${adminLevel}`;
-      
-      document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'flex');
-      document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'inline-block');
-      document.getElementById('adminPostCard').style.display = 'block';
-      document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = adminLevel);
-      
-      document.getElementById('auth-screen').style.display = 'none';
-      renderAttendees();
-      renderAdminDashboard();
-      showScreen('screen-timetable');
-    } else {
-      alert("Incorrect Level PIN!");
+    if (!adminId || !password) {
+      alert("Please enter Admin ID and Password!");
+      return;
     }
+
+    let existing = adminAccounts.find(a => a.adminId === adminId);
+
+    if (existing) {
+      if (existing.password !== password) {
+        alert("Incorrect Admin Password!");
+        return;
+      }
+      adminLevel = existing.level;
+    } else {
+      if (!name) {
+        alert("Please enter Admin Name for registration.");
+        return;
+      }
+      existing = { adminId, name, password, level };
+      adminAccounts.push(existing);
+      localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
+      adminLevel = level;
+    }
+
+    isAdmin = true;
+    document.getElementById('authBtn').innerText = `🔓 ${adminLevel}`;
+    document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'flex');
+    document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'inline-block');
+    document.getElementById('adminPostCard').style.display = 'block';
+    document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = adminLevel);
+    
+    document.getElementById('auth-screen').style.display = 'none';
+    renderAttendees();
+    renderAdminDashboard();
+    showScreen('screen-timetable');
   }
 
   function checkUserSession() {
@@ -1161,12 +1175,6 @@
     if (!isAdmin) return;
     corkPriceBHD = parseFloat(document.getElementById('settingCorkPrice').value) || 1.000;
     adminPhone = document.getElementById('settingAdminPhone').value.trim();
-    const newPin = document.getElementById('newAdminPin').value.trim();
-
-    if (newPin && newPin.length >= 4) {
-      levelPins[adminLevel] = newPin;
-      localStorage.setItem('shuttle_level_pins', JSON.stringify(levelPins));
-    }
     
     localStorage.setItem('shuttle_cork_price', corkPriceBHD);
     localStorage.setItem('shuttle_admin_phone', adminPhone);
