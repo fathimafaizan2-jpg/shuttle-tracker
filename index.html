@@ -34,8 +34,7 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg-outer);
-      margin: 0; padding: 0;
-      color: var(--text);
+      margin: 0; padding: 0; color: var(--text);
       display: flex; justify-content: center; align-items: center; min-height: 100vh;
     }
 
@@ -93,6 +92,24 @@
     }
     .card h4 { margin: 0 0 10px 0; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
+    /* MATCH COUNTDOWN ALERT BANNER */
+    .match-alert-banner {
+      background: #334155; color: white; padding: 12px; border-radius: 14px;
+      font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .match-alert-banner.high-alert {
+      background: #dc2626; color: white; animation: pulseRed 1.5s infinite;
+    }
+    @keyframes pulseRed { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+
+    /* ROTATING AD BANNERS */
+    .ad-banner-card {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      color: white; border-radius: 16px; padding: 14px; text-align: center; margin-bottom: 14px; border: 1px solid #4338ca;
+    }
+    .ad-banner-card img { width: 100%; border-radius: 10px; margin-top: 8px; }
+
     .timetable-carousel-wrapper { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
     .timetable-carousel-wrapper::-webkit-scrollbar { display: none; }
     .day-card {
@@ -137,7 +154,7 @@
     .screen.active { display: block !important; }
 
     .notif-badge {
-      position: absolute; top: 4px; right: 26px;
+      position: absolute; top: 4px; right: 22px;
       width: 8px; height: 8px; background: var(--danger);
       border-radius: 50%; display: none;
     }
@@ -196,9 +213,10 @@
   <!-- AUTH SCREEN -->
   <div id="auth-screen">
     <div class="login-card">
-      <div style="display:flex; justify-content:center; gap:8px; margin-bottom:14px;">
-        <button id="authTabPlayer" onclick="switchAuthTab('player')" class="pill-btn active">Player Login</button>
-        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin Access</button>
+      <div style="display:flex; justify-content:center; gap:6px; margin-bottom:14px;">
+        <button id="authTabPlayer" onclick="switchAuthTab('player')" class="pill-btn active">Player</button>
+        <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin</button>
+        <button id="authTabSuper" onclick="switchAuthTab('super')" class="pill-btn">Super Admin</button>
       </div>
 
       <!-- PLAYER AUTH -->
@@ -216,7 +234,7 @@
         <button onclick="loginPlayer()" class="btn-submit" style="margin-top:6px;">Sign In to Club App</button>
       </div>
 
-      <!-- ADMIN AUTH -->
+      <!-- LEVEL ADMIN AUTH -->
       <div id="authAdminForm" style="display:none;">
         <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Access</h3>
         <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Enter your Admin ID & Password.</p>
@@ -228,32 +246,28 @@
           <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('adminAuthPass', this)">👁️</button>
         </div>
 
-        <button onclick="loginAdmin()" class="btn-submit" style="margin-top:6px; background:#059669;">Sign In as Admin</button>
+        <button onclick="loginAdmin()" class="btn-submit" style="margin-top:6px; background:#059669;">Sign In as Level Admin</button>
+      </div>
 
-        <div style="margin-top:14px; border-top:1px dashed var(--border); padding-top:10px;">
-          <small style="color:var(--primary); font-weight:bold;">Register New Level Admin:</small>
-          <input type="text" id="setupAdminID" placeholder="New Admin ID (e.g. ADM-1)">
-          <input type="text" id="setupAdminName" placeholder="Admin Full Name">
-          <select id="setupAdminLevel">
-            <option value="Premier">Premier</option>
-            <option value="Flight 1">Flight 1</option>
-            <option value="Flight 2">Flight 2</option>
-            <option value="Flight 3">Flight 3</option>
-            <option value="Flight 4-A">Flight 4-A</option>
-            <option value="Flight 4-B">Flight 4-B</option>
-          </select>
-          <div class="password-container">
-            <input type="password" id="setupAdminPass" placeholder="New Admin Password">
-            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('setupAdminPass', this)">👁️</button>
-          </div>
-          <button onclick="registerNewAdmin()" class="btn-submit" style="background:#2563eb; margin-top:4px;">Register New Admin</button>
+      <!-- SUPER ADMIN AUTH -->
+      <div id="authSuperForm" style="display:none;">
+        <h3 style="margin:0 0 4px 0; font-size:18px;">Super Admin Portal</h3>
+        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Master access across all Indian Club flights.</p>
+
+        <input type="text" id="superAuthID" placeholder="Super Admin ID (SUPER-ADMIN)">
+
+        <div class="password-container">
+          <input type="password" id="superAuthPass" placeholder="Master Password (123456)">
+          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('superAuthPass', this)">👁️</button>
         </div>
+
+        <button onclick="loginSuperAdmin()" class="btn-submit" style="margin-top:6px; background:#7c3aed;">Sign In as Super Admin</button>
       </div>
 
     </div>
   </div>
 
-  <!-- HEADER BAR WITH SIMPLE DROPDOWN -->
+  <!-- HEADER BAR WITH MENU -->
   <div class="app-header">
     <div class="brand-title">
       <h3>🏸 Indian Club Tracker</h3>
@@ -273,6 +287,18 @@
     
     <!-- 1. SCHEDULE SCREEN -->
     <div id="screen-timetable" class="screen active">
+      <!-- SPONSOR ADVERT BANNER -->
+      <div id="adBannerContainer" class="ad-banner-card">
+        <small style="font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#a5b4fc;">Club Sponsor Announcement</small>
+        <h4 style="margin:2px 0 0 0; font-size:13px; color:white;" id="adTitleDisplay">🎾 Pro Sports Shop - 15% Member Discount</h4>
+        <div id="adImageWrapper"></div>
+      </div>
+
+      <!-- MATCH ALERT COUNTDOWN BANNER -->
+      <div id="matchAlertBanner" class="match-alert-banner">
+        <span>🗓️ Next Match: Today at 8:00 PM (In 4 Hours)</span>
+      </div>
+
       <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
         <div>
           <h4 style="margin:0;">Assigned Level</h4>
@@ -281,7 +307,7 @@
       </div>
 
       <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:white;">
-        <h4 style="color:#94a3b8;">Your Wallet Balance (Private)</h4>
+        <h4 style="color:#94a3b8;">Your Private Credit Balance</h4>
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <h2 id="userWalletDisplay" style="margin:0; font-size:26px; font-weight:800; color:#38bdf8;">BHD 0.000</h2>
           <span id="userWalletBadge" class="badge-paid">ACTIVE</span>
@@ -294,7 +320,7 @@
       </div>
     </div>
 
-    <!-- 2. GAME LOG SCREEN (TUBE-BASED CALCULATION ENGINE) -->
+    <!-- 2. GAME LOG SCREEN -->
     <div id="screen-game" class="screen">
       <div class="card">
         <h4>Attendance Checklist (Real-Time)</h4>
@@ -303,7 +329,7 @@
 
       <!-- SHUTTLECOCK & TUBE ENGINE CARD -->
       <div class="card">
-        <h4>Shuttlecock Tube Inventory & Daily Usage</h4>
+        <h4>Shuttlecock Inventory & Daily Usage</h4>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Shuttles Used Today:</span>
           <div style="display:flex; align-items:center; gap:10px;">
@@ -323,7 +349,7 @@
             <strong style="color:var(--text);"><span id="shuttlesPerTubeDisplay">12</span> Shuttles</strong>
           </div>
           <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--border); padding-top:4px;">
-            <span>Calculated Single Shuttle Price:</span>
+            <span>Single Shuttle Price:</span>
             <strong style="color:var(--primary);">BHD <span id="singleShuttlePriceDisplay">0.500</span></strong>
           </div>
         </div>
@@ -332,7 +358,7 @@
       <div class="split-box">
         <small style="color: #475569; font-weight: 700; font-size:10px;">YOUR REQUIRED PAYMENT SHARE</small>
         <h3 id="splitDisplay">BHD 0.250</h3>
-        <small style="color: #64748b; font-size:10px;">(Total Game Cost: BHD <span id="totalCostDisplay">0.500</span> ÷ <span id="playerCountDisplay">2</span> Attending)</small>
+        <small style="color: #64748b; font-size:10px;">(Total Cost: BHD <span id="totalCostDisplay">0.500</span> ÷ <span id="playerCountDisplay">2</span> Attending)</small>
       </div>
 
       <div class="card">
@@ -343,7 +369,15 @@
       </div>
     </div>
 
-    <!-- 3. ANNOUNCEMENTS & FLYERS TAB -->
+    <!-- 3. PERSONAL LOG TAB (ATTENDED VS MISSED) -->
+    <div id="screen-mylog" class="screen">
+      <div class="card">
+        <h4>My Game Attendance & Payment Log</h4>
+        <div id="myPersonalLogList"></div>
+      </div>
+    </div>
+
+    <!-- 4. DUAL UPDATES TAB (CLUB FLYERS + RSS NEWS) -->
     <div id="screen-updates" class="screen">
       <div class="card">
         <h4>Flight Announcements & Flyers</h4>
@@ -357,9 +391,24 @@
         <input type="file" id="updateImageFile" accept="image/*">
         <button onclick="postAnnouncement()" class="btn-submit">+ Post Update to Level</button>
       </div>
+
+      <!-- LIVE GLOBAL BADMINTON RSS FEED -->
+      <div class="card">
+        <h4>🌐 Live World Badminton News (RSS)</h4>
+        <div id="rssNewsContainer" style="font-size:11px; color:var(--text-muted);">
+          <div style="padding:8px 0; border-bottom:1px solid var(--border);">
+            <strong style="color:var(--text); font-size:12px;">🏸 BWF World Tour Updates</strong><br>
+            <span>Latest match scores and official tournament schedules updated live.</span>
+          </div>
+          <div style="padding:8px 0;">
+            <strong style="color:var(--text); font-size:12px;">🏆 Indian Club Championship 2026</strong><br>
+            <span>Registration opens next week for all flight levels.</span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- 4. UNPAID STATEMENT PAGE -->
+    <!-- 5. UNPAID STATEMENT PAGE -->
     <div id="screen-unpaid" class="screen">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
         <h3 style="margin:0; font-size:15px;">Unpaid Shuttle Statements</h3>
@@ -368,13 +417,14 @@
       <div id="unpaidStatementList"></div>
     </div>
 
-    <!-- 5. ADMIN SETTINGS -->
+    <!-- 6. ADMIN SETTINGS -->
     <div id="screen-settings" class="screen">
       <div class="pills-bar">
-        <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ System & Tube Pricing</button>
-        <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Members & Register</button>
+        <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ System & Tube</button>
+        <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Members</button>
         <button id="pill-coadmin" class="pill-btn" onclick="switchSettingsTab('settings-coadmin')">🔐 Delegate Admins</button>
         <button id="pill-schedule" class="pill-btn" onclick="switchSettingsTab('settings-schedule')">📅 Schedule</button>
+        <button id="pill-super" class="pill-btn is-super-only" style="display:none;" onclick="switchSettingsTab('settings-super')">👑 Super Admin</button>
       </div>
 
       <!-- SUB-TAB 1: SYSTEM & TUBE PRICING CONFIG -->
@@ -400,11 +450,11 @@
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('editAdminPassword', this)">👁️</button>
           </div>
 
-          <button class="btn-submit" onclick="saveAdminSettings()">Save Tube Pricing & System Parameters</button>
+          <button class="btn-submit" onclick="saveAdminSettings()">Save Tube Pricing & Parameters</button>
         </div>
       </div>
 
-      <!-- SUB-TAB 2: REGISTERED MEMBERS MANAGER (ADMIN REGISTER PLAYER) -->
+      <!-- SUB-TAB 2: REGISTERED MEMBERS MANAGER -->
       <div id="settings-members" class="settings-subtab" style="display:none;">
         <div class="card">
           <h4>Register Player & Assign Temp Credentials (<span class="adminLevelLabel"></span>)</h4>
@@ -458,6 +508,34 @@
         </div>
       </div>
 
+      <!-- SUB-TAB 5: SUPER ADMIN CONTROLS -->
+      <div id="settings-super" class="settings-subtab" style="display:none;">
+        <div class="card">
+          <h4>👑 Super Admin Banner & Level Creator</h4>
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD TITLE:</label>
+          <input type="text" id="superAdTitle" placeholder="e.g. Pro Sports Shop - 15% Off">
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD BANNER IMAGE:</label>
+          <input type="file" id="superAdImage" accept="image/*">
+          <button onclick="saveSponsorAd()" class="btn-submit" style="background:#7c3aed; margin-bottom:12px;">Save Global Sponsor Ad</button>
+
+          <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
+
+          <h4 style="margin-bottom:6px;">Create Flight Level & Assign Admin</h4>
+          <input type="text" id="superNewAdminID" placeholder="Admin ID (e.g. ADM-PREMIER)">
+          <input type="text" id="superNewAdminName" placeholder="Admin Name">
+          <input type="password" id="superNewAdminPass" placeholder="Admin Password">
+          <select id="superNewAdminLevel">
+            <option value="Premier">Premier</option>
+            <option value="Flight 1">Flight 1</option>
+            <option value="Flight 2">Flight 2</option>
+            <option value="Flight 3">Flight 3</option>
+            <option value="Flight 4-A">Flight 4-A</option>
+            <option value="Flight 4-B">Flight 4-B</option>
+          </select>
+          <button onclick="createLevelAdminBySuper()" class="btn-submit" style="background:#059669;">Create Level Admin Account</button>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -471,6 +549,10 @@
     <button id="nav-game" class="tab-item" onclick="showScreen('screen-game')">
       <svg viewBox="0 0 24 24"><path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/></svg>
       Game Log
+    </button>
+    <button id="nav-mylog" class="tab-item" onclick="showScreen('screen-mylog')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      My Log
     </button>
     <button id="nav-updates" class="tab-item" onclick="markUpdatesRead(); showScreen('screen-updates');">
       <div id="notifBadge" class="notif-badge"></div>
@@ -509,7 +591,7 @@
     <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
     
     <div class="receipt-row" style="font-weight:bold; font-size:12px; color:var(--danger);">
-      <span>Total Outstanding Dues:</span>
+      <span>Total Cumulative Dues:</span>
       <span id="receiptTotalPaid">BHD 0.000</span>
     </div>
 
@@ -544,11 +626,11 @@
   const db = firebase.firestore();
 
   let isAdmin = false;
+  let isSuperAdmin = false;
   let currentAdminObj = null;
   let adminLevel = null;
   let currentUser = JSON.parse(localStorage.getItem('shuttle_user')) || null;
   
-  // TUBE INVENTORY PARAMETERS
   let tubePriceBHD = parseFloat(localStorage.getItem('shuttle_tube_price')) || 6.000;
   let shuttlesPerTube = parseInt(localStorage.getItem('shuttle_per_tube')) || 12;
   let adminPhone = localStorage.getItem('shuttle_admin_phone') || "97339123456";
@@ -565,8 +647,8 @@
   };
 
   let playersList = JSON.parse(localStorage.getItem('shuttle_players')) || [
-    { id: "p1", name: "Alex", memberId: "IC-101", phone: "97339123456", password: "123", level: "Flight 4-A", coming: true, wallet: 1.000, locked: false, paidCurrent: false },
-    { id: "p2", name: "Syed", memberId: "IC-102", phone: "97339000000", password: "123", level: "Flight 4-A", coming: true, wallet: 0.000, locked: false, paidCurrent: false }
+    { id: "p1", name: "Alex", memberId: "IC-101", phone: "97339123456", password: "123", level: "Flight 4-A", coming: true, wallet: 1.000, locked: false, pendingDues: 0.000, logs: [] },
+    { id: "p2", name: "Syed", memberId: "IC-102", phone: "97339000000", password: "123", level: "Flight 4-A", coming: true, wallet: 0.000, locked: false, pendingDues: 0.500, logs: [] }
   ];
 
   let levelAnnouncements = JSON.parse(localStorage.getItem('shuttle_announcements')) || [];
@@ -594,17 +676,13 @@
   }
 
   function switchAuthTab(tab) {
-    if (tab === 'player') {
-      document.getElementById('authPlayerForm').style.display = 'block';
-      document.getElementById('authAdminForm').style.display = 'none';
-      document.getElementById('authTabPlayer').classList.add('active');
-      document.getElementById('authTabAdmin').classList.remove('active');
-    } else {
-      document.getElementById('authPlayerForm').style.display = 'none';
-      document.getElementById('authAdminForm').style.display = 'block';
-      document.getElementById('authTabPlayer').classList.remove('active');
-      document.getElementById('authTabAdmin').classList.add('active');
-    }
+    document.getElementById('authPlayerForm').style.display = tab === 'player' ? 'block' : 'none';
+    document.getElementById('authAdminForm').style.display = tab === 'admin' ? 'block' : 'none';
+    document.getElementById('authSuperForm').style.display = tab === 'super' ? 'block' : 'none';
+
+    document.getElementById('authTabPlayer').classList.toggle('active', tab === 'player');
+    document.getElementById('authTabAdmin').classList.toggle('active', tab === 'admin');
+    document.getElementById('authTabSuper').classList.toggle('active', tab === 'super');
   }
 
   function togglePasswordVisibility(fieldId, btn) {
@@ -637,6 +715,7 @@
         renderAttendees();
         recalculateSplit();
         renderAdminDashboard();
+        renderPersonalLogs();
       }
     });
 
@@ -696,28 +775,8 @@
       localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
       checkUserSession();
     } else {
-      alert("Member ID not found! Please ask your Level Admin to register your account.");
+      alert("Member ID not recognized! Please ask your Level Admin to pre-register your account.");
     }
-  }
-
-  function registerNewAdmin() {
-    const adminId = document.getElementById('setupAdminID').value.trim();
-    const name = document.getElementById('setupAdminName').value.trim();
-    const password = document.getElementById('setupAdminPass').value.trim();
-    const level = document.getElementById('setupAdminLevel').value;
-
-    if (!adminId || !name || !password) {
-      alert("Please fill in Admin ID, Admin Name, and Password!");
-      return;
-    }
-
-    currentAdminObj = { adminId, name, password, level };
-    adminAccounts.push(currentAdminObj);
-    localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
-
-    isAdmin = true;
-    adminLevel = level;
-    activateAdminMode();
   }
 
   function loginAdmin() {
@@ -739,9 +798,25 @@
       currentAdminObj = found;
       adminLevel = found.level;
       isAdmin = true;
+      isSuperAdmin = false;
       activateAdminMode();
     } else {
       alert("Admin ID not found!");
+    }
+  }
+
+  function loginSuperAdmin() {
+    const superId = document.getElementById('superAuthID').value.trim();
+    const superPass = document.getElementById('superAuthPass').value.trim();
+
+    if (superId === "SUPER-ADMIN" && superPass === "123456") {
+      isAdmin = true;
+      isSuperAdmin = true;
+      adminLevel = "Premier";
+      activateAdminMode();
+      document.querySelectorAll('.is-super-only').forEach(e => e.style.display = 'block');
+    } else {
+      alert("Incorrect Super Admin Credentials!");
     }
   }
 
@@ -783,6 +858,7 @@
       renderAttendees();
       recalculateSplit();
       renderAnnouncements();
+      renderPersonalLogs();
     }
   }
 
@@ -790,10 +866,12 @@
     localStorage.removeItem('shuttle_user');
     currentUser = null;
     isAdmin = false;
+    isSuperAdmin = false;
     adminLevel = null;
     currentAdminObj = null;
     document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'none');
+    document.querySelectorAll('.is-super-only').forEach(e => e.style.display = 'none');
     document.getElementById('adminPostCard').style.display = 'none';
     checkUserSession();
   }
@@ -806,6 +884,10 @@
     
     if (screenId === 'screen-timetable') document.getElementById('nav-timetable').classList.add('active');
     if (screenId === 'screen-game') document.getElementById('nav-game').classList.add('active');
+    if (screenId === 'screen-mylog') {
+      document.getElementById('nav-mylog').classList.add('active');
+      renderPersonalLogs();
+    }
     if (screenId === 'screen-updates') document.getElementById('nav-updates').classList.add('active');
     if (screenId === 'screen-unpaid') {
       document.getElementById('nav-unpaid').classList.add('active');
@@ -830,6 +912,7 @@
       renderCoAdmins();
     }
     if (subtabId === 'settings-schedule') document.getElementById('pill-schedule').classList.add('active');
+    if (subtabId === 'settings-super') document.getElementById('pill-super').classList.add('active');
   }
 
   function renderTimetableCarousel() {
@@ -936,7 +1019,6 @@
     const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(targetLevel));
     const activeCount = levelMembers.filter(p => p.coming !== false).length || 1;
 
-    // TUBE-BASED PRICE ENGINE
     const singleShuttlePrice = tubePriceBHD / (shuttlesPerTube || 12);
     const totalGameCost = currentCorkCount * singleShuttlePrice;
     const shareCost = totalGameCost / activeCount;
@@ -958,12 +1040,22 @@
     const shareCost = (currentCorkCount * singleShuttlePrice) / activeCount;
 
     if ((currentUser.wallet || 0) < shareCost) {
-      alert(`⚠️ Insufficient Wallet Credit! Your share is BHD ${shareCost.toFixed(3)}, but your balance is BHD ${(currentUser.wallet||0).toFixed(3)}. Please top up or pay via BenefitPay/Cash.`);
-      return;
+      alert(`⚠️ Insufficient Wallet Credit! Share is BHD ${shareCost.toFixed(3)}, balance is BHD ${(currentUser.wallet||0).toFixed(3)}. Unpaid amount added to pending dues.`);
+      currentUser.pendingDues = (currentUser.pendingDues || 0) + shareCost;
+    } else {
+      currentUser.wallet = (currentUser.wallet || 0) - shareCost;
     }
 
-    currentUser.wallet = (currentUser.wallet || 0) - shareCost;
     currentUser.paidCurrent = true;
+    
+    if (!currentUser.logs) currentUser.logs = [];
+    currentUser.logs.push({
+      date: new Date().toLocaleDateString('en-GB'),
+      attended: true,
+      amount: shareCost,
+      method: 'Wallet Credit'
+    });
+
     savePlayersData();
 
     const waMsg = `Hi Admin, ${currentUser.name} paid BHD ${shareCost.toFixed(3)} using Wallet Credit (${currentUser.level}). Remaining Balance: BHD ${currentUser.wallet.toFixed(3)}.`;
@@ -981,10 +1073,50 @@
     const shareCost = (currentCorkCount * singleShuttlePrice) / activeCount;
 
     currentUser.paidCurrent = true;
+    if (!currentUser.logs) currentUser.logs = [];
+    currentUser.logs.push({
+      date: new Date().toLocaleDateString('en-GB'),
+      attended: true,
+      amount: shareCost,
+      method: methodName
+    });
+
     savePlayersData();
 
     const waMsg = `Hi Admin, ${currentUser.name} has settled BHD ${shareCost.toFixed(3)} for ${currentUser.level} session via ${methodName}.`;
     window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(waMsg)}`, '_blank');
+  }
+
+  function renderPersonalLogs() {
+    const container = document.getElementById('myPersonalLogList');
+    container.innerHTML = '';
+
+    if (!currentUser) {
+      container.innerHTML = `<p style="color:#64748b; font-size:12px; text-align:center;">Please log in to view your attendance history.</p>`;
+      return;
+    }
+
+    const logs = currentUser.logs || [];
+
+    if (logs.length === 0) {
+      container.innerHTML = `<p style="color:#64748b; font-size:12px; text-align:center;">No match logs recorded yet for ${currentUser.name}.</p>`;
+      return;
+    }
+
+    logs.slice().reverse().forEach(log => {
+      container.innerHTML += `
+        <div class="attendee-item">
+          <div>
+            <strong>${log.date}</strong><br>
+            <small style="color:var(--text-muted);">Status: ${log.attended ? 'Attended (Yes)' : 'Missed (No)'}</small>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-weight:bold; color:var(--primary); font-size:12px;">BHD ${(log.amount||0).toFixed(3)}</span><br>
+            <small style="color:var(--success); font-weight:bold;">${log.method||'Settled'}</small>
+          </div>
+        </div>
+      `;
+    });
   }
 
   function renderUnpaidStatements() {
@@ -992,7 +1124,7 @@
     const container = document.getElementById('unpaidStatementList');
     container.innerHTML = '';
 
-    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && p.coming !== false && p.paidCurrent !== true);
+    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && (p.pendingDues > 0 || (p.coming !== false && p.paidCurrent !== true)));
 
     if (levelMembers.length === 0) {
       container.innerHTML = `<p style="color:#059669; font-weight:bold; text-align:center; padding:12px;">🎉 All attending players in ${adminLevel} have paid!</p>`;
@@ -1000,23 +1132,39 @@
     }
 
     const singleShuttlePrice = tubePriceBHD / (shuttlesPerTube || 12);
-    const shareCost = (currentCorkCount * singleShuttlePrice) / (playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && p.coming !== false).length || 1);
+    const currentShare = (currentCorkCount * singleShuttlePrice) / (playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && p.coming !== false).length || 1);
 
     levelMembers.forEach((m) => {
-      const waUrl = `https://wa.me/${m.phone}?text=Hi%20${encodeURIComponent(m.name)},%20reminder%20to%20settle%20your%20shuttle%20share%20of%20BHD%20${shareCost.toFixed(3)}%20for%20${encodeURIComponent(adminLevel)}.`;
+      const totalOwed = (m.pendingDues || 0) + (m.paidCurrent ? 0 : currentShare);
+      const waUrl = `https://wa.me/${m.phone}?text=Hi%20${encodeURIComponent(m.name)},%20reminder%20to%20settle%20your%20cumulative%20shuttle%20dues%20of%20BHD%20${totalOwed.toFixed(3)}%20for%20${encodeURIComponent(adminLevel)}.`;
 
       container.innerHTML += `
         <div class="attendee-item">
           <div>
             <strong>${m.name}</strong> <small style="color:#64748b;">(${m.memberId||'No ID'})</small><br>
-            <span style="color:var(--danger); font-size:11px; font-weight:bold;">Due Share: BHD ${shareCost.toFixed(3)}</span>
+            <span style="color:var(--danger); font-size:11px; font-weight:bold;">Cumulative Dues: BHD ${totalOwed.toFixed(3)}</span>
           </div>
-          <a href="${waUrl}" target="_blank" class="wa-sq-btn" title="Send WhatsApp Reminder">
-            <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
-          </a>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button onclick="clearMemberDues('${m.id}')" style="background:var(--success); color:white; border:none; border-radius:6px; padding:6px 8px; font-weight:bold; cursor:pointer; font-size:10px;">Mark Paid</button>
+            <a href="${waUrl}" target="_blank" class="wa-sq-btn" title="Send WhatsApp Reminder">
+              <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
+            </a>
+          </div>
         </div>
       `;
     });
+  }
+
+  function clearMemberDues(id) {
+    if (!isAdmin) return;
+    const member = playersList.find(p => p.id === id);
+    if (member) {
+      member.pendingDues = 0.000;
+      member.paidCurrent = true;
+      savePlayersData();
+      renderUnpaidStatements();
+      alert(`Cleared outstanding dues for ${member.name}!`);
+    }
   }
 
   function openReceiptModal() {
@@ -1026,24 +1174,25 @@
     document.getElementById('receiptDate').innerText = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     document.getElementById('receiptFlight').innerText = `Flight: ${adminLevel}`;
 
-    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && p.coming !== false && p.paidCurrent !== true);
+    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && (p.pendingDues > 0 || (p.coming !== false && p.paidCurrent !== true)));
     const singleShuttlePrice = tubePriceBHD / (shuttlesPerTube || 12);
-    const shareCost = (currentCorkCount * singleShuttlePrice) / (playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && p.coming !== false).length || 1);
+    const currentShare = (currentCorkCount * singleShuttlePrice) / (playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && p.coming !== false).length || 1);
 
     itemsContainer.innerHTML = '';
-    let totalDues = 0;
+    let grandTotalDues = 0;
 
     levelMembers.forEach(m => {
-      totalDues += shareCost;
+      const totalOwed = (m.pendingDues || 0) + (m.paidCurrent ? 0 : currentShare);
+      grandTotalDues += totalOwed;
       itemsContainer.innerHTML += `
         <div class="receipt-row">
           <span>${m.name} (${m.memberId||'ID N/A'})</span>
-          <span style="font-weight:bold; color:var(--danger);">BHD ${shareCost.toFixed(3)}</span>
+          <span style="font-weight:bold; color:var(--danger);">BHD ${totalOwed.toFixed(3)}</span>
         </div>
       `;
     });
 
-    document.getElementById('receiptTotalPaid').innerText = `BHD ${totalDues.toFixed(3)}`;
+    document.getElementById('receiptTotalPaid').innerText = `BHD ${grandTotalDues.toFixed(3)}`;
     modal.classList.add('active');
   }
 
@@ -1070,7 +1219,7 @@
         <div class="attendee-item">
           <div>
             <strong>${p.name}</strong> <small style="color:#64748b;">(${p.memberId||'No ID'})</small><br>
-            <small style="color:#64748b;">Balance: BHD ${(p.wallet||0).toFixed(3)}</small>
+            <small style="color:#64748b;">Balance: BHD ${(p.wallet||0).toFixed(3)} | Dues: BHD ${(p.pendingDues||0).toFixed(3)}</small>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
             <a href="${waUrl}" target="_blank" class="wa-sq-btn" title="Notify Member">
@@ -1096,10 +1245,17 @@
       return;
     }
 
+    // DUPLICATE CHECK
+    let duplicate = playersList.find(p => p.memberId === memberId || p.name.toLowerCase() === name.toLowerCase());
+    if (duplicate) {
+      alert(`⚠️ Error: Player with Member ID [${memberId}] or Name [${name}] already exists!`);
+      return;
+    }
+
     playersList.push({
       id: `p_${Date.now()}`,
       name, memberId, phone, password,
-      level: adminLevel, coming: true, wallet: 0.000, locked: false, paidCurrent: false
+      level: adminLevel, coming: true, wallet: 0.000, locked: false, pendingDues: 0.000, paidCurrent: false, logs: []
     });
 
     savePlayersData();
@@ -1148,6 +1304,38 @@
     } else {
       alert("Please enter Co-Admin ID, Name, and Password.");
     }
+  }
+
+  function createLevelAdminBySuper() {
+    if (!isSuperAdmin) return;
+    const adminId = document.getElementById('superNewAdminID').value.trim();
+    const name = document.getElementById('superNewAdminName').value.trim();
+    const password = document.getElementById('superNewAdminPass').value.trim();
+    const level = document.getElementById('superNewAdminLevel').value;
+
+    if (adminId && name && password) {
+      adminAccounts.push({ adminId, name, password, level });
+      localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
+      alert(`Created Level Admin ${name} (${adminId}) for ${level}!`);
+    }
+  }
+
+  function saveSponsorAd() {
+    if (!isSuperAdmin) return;
+    const title = document.getElementById('superAdTitle').value.trim();
+    const fileInput = document.getElementById('superAdImage');
+
+    if (title) document.getElementById('adTitleDisplay').innerText = title;
+
+    if (fileInput.files && fileInput.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('adImageWrapper').innerHTML = `<img src="${e.target.result}">`;
+      };
+      reader.readAsDataURL(fileInput.files[0]);
+    }
+
+    alert("Global Sponsor Banner updated!");
   }
 
   function removeCoAdmin(adminId) {
