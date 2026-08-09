@@ -94,6 +94,13 @@
     }
     .card h4 { margin: 0 0 10px 0; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
+    /* ROTATING AD BANNERS */
+    .ad-banner-card {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      color: white; border-radius: 16px; padding: 14px; text-align: center; margin-bottom: 14px; border: 1px solid #4338ca;
+    }
+    .ad-banner-card img { width: 100%; border-radius: 10px; margin-top: 8px; }
+
     .stock-alert-card {
       background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
       padding: 12px; border-radius: 14px; font-size: 11px; font-weight: bold; margin-bottom: 12px;
@@ -251,14 +258,13 @@
     </div>
   </div>
 
-  <!-- HEADER BAR WITH DYNAMIC FLIGHT SWITCHER & ACCOUNT MENU -->
+  <!-- HEADER BAR WITH ACCOUNT MENU DROPDOWN -->
   <div class="app-header">
     <div class="brand-title">
       <h3>🏸 Indian Club Badminton</h3>
       <span>Powered by NuZan AI Studio</span>
     </div>
     <div style="display:flex; align-items:center; gap:6px;">
-      <!-- DYNAMIC FLIGHT SWITCHER FOR SUPER ADMIN -->
       <select id="superFlightSwitcher" onchange="changeActiveFlightLevel(this.value)" style="display:none; padding:4px 6px; border-radius:10px; font-size:10px; font-weight:bold; background:#7c3aed; color:white; border:none; margin:0;">
         <option value="Premier">Premier</option>
         <option value="Flight 1">Flight 1</option>
@@ -279,8 +285,14 @@
   <!-- SCROLLABLE CONTENT BODY -->
   <div class="app-body">
     
-    <!-- 1. SCHEDULE SCREEN -->
+    <!-- 1. SCHEDULE SCREEN WITH SPONSOR AD CARD -->
     <div id="screen-timetable" class="screen active">
+      <div id="adBannerContainer" class="ad-banner-card">
+        <small style="font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#a5b4fc;">Club Sponsor Announcement</small>
+        <h4 style="margin:2px 0 0 0; font-size:13px; color:white;" id="adTitleDisplay">🎾 Pro Sports Shop - 15% Member Discount</h4>
+        <div id="adImageWrapper"></div>
+      </div>
+
       <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
         <div>
           <h4 style="margin:0;">Assigned Flight Level</h4>
@@ -309,7 +321,7 @@
         <div id="attendeeChecklist"></div>
       </div>
 
-      <!-- ACCURATE TUBE MATH INVENTORY CARD -->
+      <!-- TUBE-BASED CALCULATION ENGINE CARD -->
       <div class="card">
         <h4>Shuttlecock Tube Inventory & Usage</h4>
         
@@ -361,7 +373,15 @@
       </div>
     </div>
 
-    <!-- 3. SUMMARY TAB -->
+    <!-- 3. MY LOG SCREEN (PERSONAL ATTENDANCE & FINANCIAL LOGS) -->
+    <div id="screen-mylog" class="screen">
+      <div class="card">
+        <h4>My Game Attendance & Payment Log</h4>
+        <div id="myPersonalLogList"></div>
+      </div>
+    </div>
+
+    <!-- 4. SUMMARY TAB -->
     <div id="screen-summary" class="screen">
       <div class="card">
         <h4>Inventory & Session Summary (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
@@ -386,7 +406,7 @@
       </div>
     </div>
 
-    <!-- 4. UNPAID STATEMENT PAGE WITH WHATSAPP SUMMARY -->
+    <!-- 5. UNPAID STATEMENT PAGE WITH WHATSAPP SUMMARY -->
     <div id="screen-unpaid" class="screen">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
         <h3 style="margin:0; font-size:14px;">Unpaid Statements</h3>
@@ -400,7 +420,7 @@
       <div id="unpaidStatementList"></div>
     </div>
 
-    <!-- 5. ADMIN SETTINGS -->
+    <!-- 6. ADMIN SETTINGS -->
     <div id="screen-settings" class="screen">
       <div class="pills-bar">
         <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ Tubes & System</button>
@@ -461,10 +481,19 @@
         </div>
       </div>
 
-      <!-- SUB-TAB 4: SUPER ADMIN DELEGATION PORTAL -->
+      <!-- SUB-TAB 4: SUPER ADMIN DELEGATION & ADS PORTAL -->
       <div id="settings-super" class="settings-subtab" style="display:none;">
         <div class="card">
-          <h4>👑 Super Admin Level & Delegation Portal</h4>
+          <h4>👑 Super Admin Sponsor Ad & Delegation Portal</h4>
+          
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD TITLE:</label>
+          <input type="text" id="superAdTitle" placeholder="e.g. Pro Sports Shop - 15% Off">
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD BANNER IMAGE:</label>
+          <input type="file" id="superAdImage" accept="image/*">
+          <button onclick="saveSponsorAd()" class="btn-submit" style="background:#7c3aed; margin-bottom:12px;">Save Global Sponsor Ad</button>
+
+          <hr style="border:none; border-top:1px dashed var(--border); margin:10px 0;">
+
           <label style="font-size:11px; font-weight:bold; color:var(--text-muted);">SELECT FLIGHT LEVEL:</label>
           <select id="superSelectLevel" onchange="renderSuperAdminFlightPlayers(this.value)">
             <option value="Premier">Premier</option>
@@ -475,13 +504,11 @@
             <option value="Flight 4-B">Flight 4-B</option>
           </select>
 
-          <hr style="border:none; border-top:1px dashed var(--border); margin:10px 0;">
-
           <h4>Assign Primary / Delegate Admin</h4>
           <input type="text" id="superAdminID" placeholder="Admin ID (e.g. ADM-4A)">
           <input type="text" id="superAdminName" placeholder="Admin Name">
           <input type="password" id="superAdminPass" placeholder="Admin Password">
-          <button onclick="assignAdminBySuper()" class="btn-submit" style="background:#7c3aed;">Assign Level Admin</button>
+          <button onclick="assignAdminBySuper()" class="btn-submit" style="background:#059669;">Assign Level Admin</button>
 
           <h4 style="margin-top:14px;">Flight Members List</h4>
           <div id="superFlightPlayerList"></div>
@@ -502,8 +529,12 @@
       <svg viewBox="0 0 24 24"><path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/></svg>
       Game Log
     </button>
-    <button id="nav-summary" class="tab-item" onclick="showScreen('screen-summary')">
+    <button id="nav-mylog" class="tab-item" onclick="showScreen('screen-mylog')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      My Log
+    </button>
+    <button id="nav-summary" class="tab-item" onclick="showScreen('screen-summary')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
       Summary
     </button>
     <button id="nav-unpaid" class="tab-item admin-only-tab" style="display:none;" onclick="showScreen('screen-unpaid')">
@@ -591,8 +622,12 @@
   };
 
   let playersList = JSON.parse(localStorage.getItem('shuttle_players')) || [
-    { id: "p1", name: "Alex", memberId: "IC-101", phone: "97339123456", password: "123", level: "Flight 4-A", coming: true, wallet: 1.000, locked: false, pendingDues: 0.000 },
-    { id: "p2", name: "Syed", memberId: "IC-102", phone: "97339000000", password: "123", level: "Flight 4-A", coming: true, wallet: 0.000, locked: false, pendingDues: 0.500 }
+    { id: "p1", name: "Alex", memberId: "IC-101", phone: "97339123456", password: "123", level: "Flight 4-A", coming: true, wallet: 1.000, locked: false, pendingDues: 0.000, logs: [
+      { date: "09/08/2026", attended: true, amount: 0.500, method: "Wallet Credit" }
+    ] },
+    { id: "p2", name: "Syed", memberId: "IC-102", phone: "97339000000", password: "123", level: "Flight 4-A", coming: true, wallet: 0.000, locked: false, pendingDues: 0.500, logs: [
+      { date: "09/08/2026", attended: true, amount: 0.500, method: "Unpaid" }
+    ] }
   ];
 
   function changeActiveFlightLevel(newLevel) {
@@ -665,6 +700,7 @@
         renderAttendees();
         recalculateSplit();
         renderAdminDashboard();
+        renderPersonalLogs();
       }
     });
   }
@@ -777,6 +813,7 @@
       renderTimetableCarousel();
       renderAttendees();
       recalculateSplit();
+      renderPersonalLogs();
     }
   }
 
@@ -802,6 +839,10 @@
     
     if (screenId === 'screen-timetable') document.getElementById('nav-timetable').classList.add('active');
     if (screenId === 'screen-game') document.getElementById('nav-game').classList.add('active');
+    if (screenId === 'screen-mylog') {
+      document.getElementById('nav-mylog').classList.add('active');
+      renderPersonalLogs();
+    }
     if (screenId === 'screen-summary') document.getElementById('nav-summary').classList.add('active');
     if (screenId === 'screen-unpaid') {
       document.getElementById('nav-unpaid').classList.add('active');
@@ -992,6 +1033,14 @@
     }
 
     currentUser.paidCurrent = true;
+    if (!currentUser.logs) currentUser.logs = [];
+    currentUser.logs.push({
+      date: new Date().toLocaleDateString('en-GB'),
+      attended: true,
+      amount: shareCost,
+      method: "Wallet Credit"
+    });
+
     savePlayersData();
 
     const waMsg = `Hi Admin, ${currentUser.name} paid BHD ${shareCost.toFixed(3)} using Wallet Credit (${currentUser.level}). Remaining Balance: BHD ${currentUser.wallet.toFixed(3)}.`;
@@ -1009,10 +1058,50 @@
     const shareCost = (currentCorkCount * singleShuttlePrice) / activeCount;
 
     currentUser.paidCurrent = true;
+    if (!currentUser.logs) currentUser.logs = [];
+    currentUser.logs.push({
+      date: new Date().toLocaleDateString('en-GB'),
+      attended: true,
+      amount: shareCost,
+      method: methodName
+    });
+
     savePlayersData();
 
     const waMsg = `Hi Admin, ${currentUser.name} has settled BHD ${shareCost.toFixed(3)} for ${currentUser.level} session via ${methodName}.`;
     window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(waMsg)}`, '_blank');
+  }
+
+  function renderPersonalLogs() {
+    const container = document.getElementById('myPersonalLogList');
+    container.innerHTML = '';
+
+    if (!currentUser) {
+      container.innerHTML = `<p style="color:#64748b; font-size:12px; text-align:center;">Please log in to view your personal match logs.</p>`;
+      return;
+    }
+
+    const logs = currentUser.logs || [];
+
+    if (logs.length === 0) {
+      container.innerHTML = `<p style="color:#64748b; font-size:12px; text-align:center;">No match logs recorded yet for ${currentUser.name}.</p>`;
+      return;
+    }
+
+    logs.slice().reverse().forEach(log => {
+      container.innerHTML += `
+        <div class="attendee-item">
+          <div>
+            <strong>Date: ${log.date}</strong><br>
+            <small style="color:var(--text-muted);">Status: ${log.attended ? 'Attended (Yes)' : 'Missed (No)'}</small>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-weight:bold; color:var(--primary); font-size:12px;">BHD ${(log.amount||0).toFixed(3)}</span><br>
+            <small style="color:var(--success); font-weight:bold;">${log.method||'Settled'}</small>
+          </div>
+        </div>
+      `;
+    });
   }
 
   function renderUnpaidStatements() {
@@ -1202,7 +1291,7 @@
     playersList.push({
       id: `p_${Date.now()}`,
       name, memberId, phone, password,
-      level: adminLevel, coming: true, wallet: 0.000, locked: false, pendingDues: 0.000
+      level: adminLevel, coming: true, wallet: 0.000, locked: false, pendingDues: 0.000, logs: []
     });
 
     savePlayersData();
@@ -1251,6 +1340,24 @@
     } else {
       alert("Please fill in Admin ID, Name, and Password!");
     }
+  }
+
+  function saveSponsorAd() {
+    if (!isSuperAdmin) return;
+    const title = document.getElementById('superAdTitle').value.trim();
+    const fileInput = document.getElementById('superAdImage');
+
+    if (title) document.getElementById('adTitleDisplay').innerText = title;
+
+    if (fileInput.files && fileInput.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('adImageWrapper').innerHTML = `<img src="${e.target.result}">`;
+      };
+      reader.readAsDataURL(fileInput.files[0]);
+    }
+
+    alert("Global Sponsor Banner updated!");
   }
 
   function removeCoAdmin(adminId) {
