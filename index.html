@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Indian Club Shuttle Tracker | NuZan AI Studio</title>
+  <title>Indian Club Badminton Section | NuZan AI Studio</title>
 
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1e293b">
@@ -52,15 +52,18 @@
       position: absolute; inset: 0;
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
       color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease;
+      z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; text-align: center; padding: 20px;
     }
-    .brand-icon-wrapper {
-      width: 68px; height: 68px; background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 20px;
-      display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
-      font-weight: 900; font-size: 22px; color: #38bdf8; letter-spacing: 1px;
+
+    /* INDIAN CLUB EMBLEM LOGO STYLING */
+    .indian-club-logo {
+      width: 80px; height: 80px; background: #ffffff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+      border: 3px solid #38bdf8; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
     }
-    .progress-bar-container { width: 120px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin: 16px 0; }
+    .indian-club-logo svg { width: 48px; height: 48px; fill: #1e293b; }
+
+    .progress-bar-container { width: 140px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin: 16px 0; }
     .progress-bar-fill { width: 0%; height: 100%; background: #38bdf8; animation: loadProgress 1.4s ease-in-out forwards; }
     @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
 
@@ -77,9 +80,9 @@
     .app-header {
       padding: 12px 16px; background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center; z-index: 100;
+      display: flex; justify-space-between; align-items: center; z-index: 100;
     }
-    .brand-title h3 { margin: 0; font-size: 15px; font-weight: 800; }
+    .brand-title h3 { margin: 0; font-size: 14px; font-weight: 800; color: var(--text); }
     .brand-title span { font-size: 8px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; text-transform: uppercase; }
 
     .app-body { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 110px; }
@@ -92,23 +95,10 @@
     }
     .card h4 { margin: 0 0 10px 0; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
-    /* MATCH COUNTDOWN ALERT BANNER */
-    .match-alert-banner {
-      background: #334155; color: white; padding: 12px; border-radius: 14px;
-      font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 12px;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+    .stock-alert-card {
+      background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
+      padding: 12px; border-radius: 14px; font-size: 11px; font-weight: bold; margin-bottom: 12px;
     }
-    .match-alert-banner.high-alert {
-      background: #dc2626; color: white; animation: pulseRed 1.5s infinite;
-    }
-    @keyframes pulseRed { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
-
-    /* ROTATING AD BANNERS */
-    .ad-banner-card {
-      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-      color: white; border-radius: 16px; padding: 14px; text-align: center; margin-bottom: 14px; border: 1px solid #4338ca;
-    }
-    .ad-banner-card img { width: 100%; border-radius: 10px; margin-top: 8px; }
 
     .timetable-carousel-wrapper { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
     .timetable-carousel-wrapper::-webkit-scrollbar { display: none; }
@@ -153,13 +143,6 @@
     .screen { display: none !important; }
     .screen.active { display: block !important; }
 
-    .notif-badge {
-      position: absolute; top: 4px; right: 22px;
-      width: 8px; height: 8px; background: var(--danger);
-      border-radius: 50%; display: none;
-    }
-    .notif-badge.active { display: block; }
-
     select, input[type="text"], input[type="number"], input[type="password"], input[type="file"] {
       width: 100%; padding: 11px; margin: 4px 0 10px 0; border: 1px solid var(--border);
       border-radius: 12px; font-size: 13px; background: #f8fafc; color: var(--text);
@@ -173,20 +156,6 @@
     .att-btn.no.active { background: var(--danger); color: white; border-color: var(--danger); }
     .att-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .badge-paid { background: var(--success); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
-    .badge-out { background: var(--danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
-    .badge-low { background: var(--warning); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
-
-    .receipt-modal { display: none; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 9000; padding: 16px; backdrop-filter: blur(4px); }
-    .receipt-modal.active { display: flex; }
-    .receipt-content { background: white; padding: 20px; border-radius: 18px; width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; }
-    .receipt-header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 12px; margin-bottom: 12px; }
-    .receipt-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
-
-    .lightbox-modal { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; padding: 16px; }
-    .lightbox-modal.active { display: flex; }
-    .lightbox-img { max-width: 100%; max-height: 80vh; border-radius: 12px; }
-
     .wa-sq-btn {
       width: 34px; height: 34px; background: #25D366;
       border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
@@ -196,21 +165,31 @@
 
     .password-container { position: relative; width: 100%; }
     .password-toggle-btn { position: absolute; right: 10px; top: 11px; background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-muted); }
+
+    .receipt-modal { display: none; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 9000; padding: 16px; backdrop-filter: blur(4px); }
+    .receipt-modal.active { display: flex; }
+    .receipt-content { background: white; padding: 20px; border-radius: 18px; width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; }
+    .receipt-header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 12px; margin-bottom: 12px; }
+    .receipt-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
   </style>
 </head>
 <body>
 
 <div class="app-frame">
 
-  <!-- SPLASH SCREEN -->
+  <!-- SPLASH / WELCOME SCREEN -->
   <div id="splash-screen">
-    <div class="brand-icon-wrapper">ICST</div>
-    <h3 style="margin:0; font-size:18px;">Indian Club Shuttle Tracker</h3>
-    <small style="color:#94a3b8; margin-top:4px; font-size:10px; letter-spacing:0.5px;">Powered by NuZan AI Studio</small>
+    <div class="indian-club-logo">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/>
+      </svg>
+    </div>
+    <h3 style="margin:0; font-size:18px;">Welcome to Indian Club Badminton Section</h3>
+    <small style="color:#38bdf8; margin-top:6px; font-size:11px; font-weight:bold; letter-spacing:0.5px;">Powered by NuZan AI Studio</small>
     <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
   </div>
 
-  <!-- AUTH SCREEN -->
+  <!-- AUTH / LOGIN OVERLAY -->
   <div id="auth-screen">
     <div class="login-card">
       <div style="display:flex; justify-content:center; gap:6px; margin-bottom:14px;">
@@ -221,7 +200,7 @@
 
       <!-- PLAYER AUTH -->
       <div id="authPlayerForm">
-        <h3 style="margin:0 0 4px 0; font-size:18px;">Player Access</h3>
+        <h3 style="margin:0 0 4px 0; font-size:18px;">Player Login</h3>
         <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Sign in using your Member ID and Password assigned by Admin.</p>
 
         <input type="text" id="loginMemberID" placeholder="Member ID (e.g. IC-101)">
@@ -231,12 +210,12 @@
           <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
         </div>
 
-        <button onclick="loginPlayer()" class="btn-submit" style="margin-top:6px;">Sign In to Club App</button>
+        <button onclick="loginPlayer()" class="btn-submit" style="margin-top:6px;">Sign In to App</button>
       </div>
 
       <!-- LEVEL ADMIN AUTH -->
       <div id="authAdminForm" style="display:none;">
-        <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Access</h3>
+        <h3 style="margin:0 0 4px 0; font-size:18px;">Level Admin Login</h3>
         <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Enter your Admin ID & Password.</p>
 
         <input type="text" id="adminAuthID" placeholder="Admin ID (Default: ADM-4A)">
@@ -252,7 +231,7 @@
       <!-- SUPER ADMIN AUTH -->
       <div id="authSuperForm" style="display:none;">
         <h3 style="margin:0 0 4px 0; font-size:18px;">Super Admin Portal</h3>
-        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Master access across all Indian Club flights.</p>
+        <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Master control across all Indian Club levels.</p>
 
         <input type="text" id="superAuthID" placeholder="Super Admin ID (SUPER-ADMIN)">
 
@@ -267,10 +246,10 @@
     </div>
   </div>
 
-  <!-- HEADER BAR WITH MENU -->
+  <!-- HEADER BAR WITH ACCOUNT MENU DROPDOWN -->
   <div class="app-header">
     <div class="brand-title">
-      <h3>🏸 Indian Club Tracker</h3>
+      <h3>🏸 Indian Club Badminton</h3>
       <span>Powered by NuZan AI Studio</span>
     </div>
     <div style="display:flex; align-items:center; gap:6px;">
@@ -287,21 +266,9 @@
     
     <!-- 1. SCHEDULE SCREEN -->
     <div id="screen-timetable" class="screen active">
-      <!-- SPONSOR ADVERT BANNER -->
-      <div id="adBannerContainer" class="ad-banner-card">
-        <small style="font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#a5b4fc;">Club Sponsor Announcement</small>
-        <h4 style="margin:2px 0 0 0; font-size:13px; color:white;" id="adTitleDisplay">🎾 Pro Sports Shop - 15% Member Discount</h4>
-        <div id="adImageWrapper"></div>
-      </div>
-
-      <!-- MATCH ALERT COUNTDOWN BANNER -->
-      <div id="matchAlertBanner" class="match-alert-banner">
-        <span>🗓️ Next Match: Today at 8:00 PM (In 4 Hours)</span>
-      </div>
-
       <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <h4 style="margin:0;">Assigned Level</h4>
+          <h4 style="margin:0;">Assigned Flight Level</h4>
           <span id="playerCurrentLevelDisplay" style="font-size:15px; font-weight:800; color:var(--primary);">Flight 4-A</span>
         </div>
       </div>
@@ -327,9 +294,15 @@
         <div id="attendeeChecklist"></div>
       </div>
 
-      <!-- SHUTTLECOCK & TUBE ENGINE CARD -->
+      <!-- TUBE-BASED CALCULATION ENGINE CARD -->
       <div class="card">
-        <h4>Shuttlecock Inventory & Daily Usage</h4>
+        <h4>Shuttlecock Tube Inventory & Usage</h4>
+        
+        <div id="stockAlertBox" class="stock-alert-card" style="display:none;">
+          ⚠️ Low Shuttle Stock! Less than 1 tube available.
+          <button onclick="sendRefillAlertWhatsApp()" style="background:#dc2626; color:white; border:none; border-radius:6px; padding:4px 8px; font-size:10px; font-weight:bold; margin-top:4px; cursor:pointer;">📲 Send Refill Alert to Admin</button>
+        </div>
+
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Shuttles Used Today:</span>
           <div style="display:flex; align-items:center; gap:10px;">
@@ -341,15 +314,19 @@
 
         <div style="background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:10px; font-size:11px; color:var(--text-muted);">
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span>Tube Unit Price:</span>
+            <span>Tubes Stocked:</span>
+            <strong style="color:var(--text);"><span id="tubeCountDisplay">2</span> Tubes (24 Shuttles)</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span>Price Per Tube:</span>
             <strong style="color:var(--text);">BHD <span id="tubePriceDisplay">6.000</span></strong>
           </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span>Shuttles Per Tube:</span>
-            <strong style="color:var(--text);"><span id="shuttlesPerTubeDisplay">12</span> Shuttles</strong>
+            <span>Available Shuttles in Inventory:</span>
+            <strong style="color:var(--success);"><span id="availableShuttlesDisplay">23</span> Remaining</strong>
           </div>
           <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--border); padding-top:4px;">
-            <span>Single Shuttle Price:</span>
+            <span>Price Per Shuttle (BHD 6.000 ÷ 12):</span>
             <strong style="color:var(--primary);">BHD <span id="singleShuttlePriceDisplay">0.500</span></strong>
           </div>
         </div>
@@ -358,7 +335,7 @@
       <div class="split-box">
         <small style="color: #475569; font-weight: 700; font-size:10px;">YOUR REQUIRED PAYMENT SHARE</small>
         <h3 id="splitDisplay">BHD 0.250</h3>
-        <small style="color: #64748b; font-size:10px;">(Total Cost: BHD <span id="totalCostDisplay">0.500</span> ÷ <span id="playerCountDisplay">2</span> Attending)</small>
+        <small style="color: #64748b; font-size:10px;">(Total Game Cost: BHD <span id="totalCostDisplay">0.500</span> ÷ <span id="playerCountDisplay">2</span> Attending)</small>
       </div>
 
       <div class="card">
@@ -369,74 +346,64 @@
       </div>
     </div>
 
-    <!-- 3. PERSONAL LOG TAB (ATTENDED VS MISSED) -->
-    <div id="screen-mylog" class="screen">
+    <!-- 3. SUMMARY TAB -->
+    <div id="screen-summary" class="screen">
       <div class="card">
-        <h4>My Game Attendance & Payment Log</h4>
-        <div id="myPersonalLogList"></div>
-      </div>
-    </div>
-
-    <!-- 4. DUAL UPDATES TAB (CLUB FLYERS + RSS NEWS) -->
-    <div id="screen-updates" class="screen">
-      <div class="card">
-        <h4>Flight Announcements & Flyers</h4>
-        <div id="updatesList"></div>
-      </div>
-
-      <div id="adminPostCard" class="card" style="display:none;">
-        <h4>Post New Update / Flyer</h4>
-        <input type="text" id="updateText" placeholder="Announcement Title / Caption">
-        <label style="font-size:11px; font-weight:bold; color:var(--text-muted); display:block; margin-top:4px;">Upload Flyer Image (Camera / Gallery):</label>
-        <input type="file" id="updateImageFile" accept="image/*">
-        <button onclick="postAnnouncement()" class="btn-submit">+ Post Update to Level</button>
-      </div>
-
-      <!-- LIVE GLOBAL BADMINTON RSS FEED -->
-      <div class="card">
-        <h4>🌐 Live World Badminton News (RSS)</h4>
-        <div id="rssNewsContainer" style="font-size:11px; color:var(--text-muted);">
-          <div style="padding:8px 0; border-bottom:1px solid var(--border);">
-            <strong style="color:var(--text); font-size:12px;">🏸 BWF World Tour Updates</strong><br>
-            <span>Latest match scores and official tournament schedules updated live.</span>
+        <h4>Inventory & Session Summary</h4>
+        <div style="font-size:12px; line-height:1.8;">
+          <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:6px;">
+            <span>Total Tubes Added:</span>
+            <strong id="summaryTotalTubes">2 Tubes</strong>
           </div>
-          <div style="padding:8px 0;">
-            <strong style="color:var(--text); font-size:12px;">🏆 Indian Club Championship 2026</strong><br>
-            <span>Registration opens next week for all flight levels.</span>
+          <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:6px;">
+            <span>Total Shuttles Available:</span>
+            <strong id="summaryTotalShuttles">24 Shuttles</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:6px;">
+            <span>Shuttles Consumed Today:</span>
+            <strong id="summaryShuttlesUsed" style="color:var(--danger);">1 Shuttle</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Remaining Tube Valuation:</span>
+            <strong id="summaryStockValue" style="color:var(--success);">BHD 11.500</strong>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 5. UNPAID STATEMENT PAGE -->
+    <!-- 4. UNPAID STATEMENT PAGE WITH WHATSAPP SUMMARY -->
     <div id="screen-unpaid" class="screen">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-        <h3 style="margin:0; font-size:15px;">Unpaid Shuttle Statements</h3>
-        <button onclick="openReceiptModal()" style="background:var(--primary); color:white; font-weight:bold; padding:6px 12px; border-radius:8px; border:none; cursor:pointer; font-size:11px;">🖨️ Print Statement</button>
+        <h3 style="margin:0; font-size:14px;">Unpaid Statements</h3>
+        <div style="display:flex; gap:4px;">
+          <button onclick="sendAdminUnpaidSummaryWhatsApp()" class="wa-sq-btn" title="Send WhatsApp Summary to Admin">
+            <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
+          </button>
+          <button onclick="openReceiptModal()" style="background:var(--primary); color:white; font-weight:bold; padding:6px 10px; border-radius:8px; border:none; cursor:pointer; font-size:11px;">🖨️ Statement</button>
+        </div>
       </div>
       <div id="unpaidStatementList"></div>
     </div>
 
-    <!-- 6. ADMIN SETTINGS -->
+    <!-- 5. ADMIN SETTINGS -->
     <div id="screen-settings" class="screen">
       <div class="pills-bar">
-        <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ System & Tube</button>
+        <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ Tubes & System</button>
         <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Members</button>
         <button id="pill-coadmin" class="pill-btn" onclick="switchSettingsTab('settings-coadmin')">🔐 Delegate Admins</button>
-        <button id="pill-schedule" class="pill-btn" onclick="switchSettingsTab('settings-schedule')">📅 Schedule</button>
         <button id="pill-super" class="pill-btn is-super-only" style="display:none;" onclick="switchSettingsTab('settings-super')">👑 Super Admin</button>
       </div>
 
-      <!-- SUB-TAB 1: SYSTEM & TUBE PRICING CONFIG -->
+      <!-- SUB-TAB 1: TUBE & STOCK CONFIG -->
       <div id="settings-config" class="settings-subtab">
         <div class="card">
-          <h4>Tube Inventory & System Settings (<span class="adminLevelLabel"></span>)</h4>
+          <h4>Tube Stocking & Parameters (<span class="adminLevelLabel"></span>)</h4>
           
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">PRICE PER SHUTTLE TUBE (BHD):</label>
-          <input type="number" id="settingTubePrice" step="0.100" value="6.000">
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">ADD NUMBER OF TUBES (12 SHUTTLES/PACK):</label>
+          <input type="number" id="settingTubePacks" value="2">
 
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">NUMBER OF SHUTTLES PER TUBE:</label>
-          <input type="number" id="settingShuttlesPerTube" value="12">
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">PRICE PER TUBE (BHD):</label>
+          <input type="number" id="settingTubePrice" step="0.100" value="6.000">
 
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">WHATSAPP ADMIN PHONE NUMBER:</label>
           <input type="text" id="settingAdminPhone" value="97339123456">
@@ -450,7 +417,7 @@
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('editAdminPassword', this)">👁️</button>
           </div>
 
-          <button class="btn-submit" onclick="saveAdminSettings()">Save Tube Pricing & Parameters</button>
+          <button class="btn-submit" onclick="saveAdminSettings()">Save Tube Inventory & Parameters</button>
         </div>
       </div>
 
@@ -471,68 +438,38 @@
         </div>
       </div>
 
-      <!-- SUB-TAB 3: CO-ADMIN DELEGATION -->
+      <!-- SUB-TAB 3: DELEGATE ADMINS -->
       <div id="settings-coadmin" class="settings-subtab" style="display:none;">
         <div class="card">
           <h4>Manage Level Admins (<span class="adminLevelLabel"></span>)</h4>
-          <p style="font-size:11px; color:var(--text-muted);">Authorize secondary admins to manage this level in your absence.</p>
           <div id="coAdminList"></div>
-
-          <hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">
-
-          <h4>Add Secondary Admin</h4>
-          <input type="text" id="newCoAdminID" placeholder="Co-Admin ID (e.g. ADM-4A-2)">
-          <input type="text" id="newCoAdminName" placeholder="Co-Admin Full Name">
-          <input type="password" id="newCoAdminPass" placeholder="Assign Password">
-          <button onclick="addCoAdmin()" class="btn-submit" style="background:#059669;">+ Authorize Co-Admin</button>
         </div>
       </div>
 
-      <!-- SUB-TAB 4: SCHEDULE MANAGER -->
-      <div id="settings-schedule" class="settings-subtab" style="display:none;">
-        <div class="card">
-          <h4>Weekly Schedule Manager (<span class="adminLevelLabel"></span>)</h4>
-          <div style="display:flex; gap:6px;">
-            <select id="scheduleDayInput">
-              <option value="Sunday">Sunday</option>
-              <option value="Monday">Monday</option>
-              <option value="Tuesday">Tuesday</option>
-              <option value="Wednesday">Wednesday</option>
-              <option value="Thursday">Thursday</option>
-              <option value="Friday">Friday</option>
-              <option value="Saturday">Saturday</option>
-            </select>
-            <input type="text" id="scheduleTimeInput" placeholder="8:00 PM - 10:00 PM">
-          </div>
-          <button onclick="saveWeeklyScheduleSlot()" class="btn-submit">Update Day Slot</button>
-        </div>
-      </div>
-
-      <!-- SUB-TAB 5: SUPER ADMIN CONTROLS -->
+      <!-- SUB-TAB 4: SUPER ADMIN DELEGATION PORTAL -->
       <div id="settings-super" class="settings-subtab" style="display:none;">
         <div class="card">
-          <h4>👑 Super Admin Banner & Level Creator</h4>
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD TITLE:</label>
-          <input type="text" id="superAdTitle" placeholder="e.g. Pro Sports Shop - 15% Off">
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD BANNER IMAGE:</label>
-          <input type="file" id="superAdImage" accept="image/*">
-          <button onclick="saveSponsorAd()" class="btn-submit" style="background:#7c3aed; margin-bottom:12px;">Save Global Sponsor Ad</button>
-
-          <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
-
-          <h4 style="margin-bottom:6px;">Create Flight Level & Assign Admin</h4>
-          <input type="text" id="superNewAdminID" placeholder="Admin ID (e.g. ADM-PREMIER)">
-          <input type="text" id="superNewAdminName" placeholder="Admin Name">
-          <input type="password" id="superNewAdminPass" placeholder="Admin Password">
-          <select id="superNewAdminLevel">
+          <h4>👑 Super Admin Level & Delegation Portal</h4>
+          <label style="font-size:11px; font-weight:bold; color:var(--text-muted);">SELECT FLIGHT LEVEL:</label>
+          <select id="superSelectLevel" onchange="renderSuperAdminFlightPlayers(this.value)">
             <option value="Premier">Premier</option>
             <option value="Flight 1">Flight 1</option>
             <option value="Flight 2">Flight 2</option>
             <option value="Flight 3">Flight 3</option>
-            <option value="Flight 4-A">Flight 4-A</option>
+            <option value="Flight 4-A" selected>Flight 4-A</option>
             <option value="Flight 4-B">Flight 4-B</option>
           </select>
-          <button onclick="createLevelAdminBySuper()" class="btn-submit" style="background:#059669;">Create Level Admin Account</button>
+
+          <hr style="border:none; border-top:1px dashed var(--border); margin:10px 0;">
+
+          <h4>Assign Primary / Delegate Admin</h4>
+          <input type="text" id="superAdminID" placeholder="Admin ID (e.g. ADM-4A)">
+          <input type="text" id="superAdminName" placeholder="Admin Name">
+          <input type="password" id="superAdminPass" placeholder="Admin Password">
+          <button onclick="assignAdminBySuper()" class="btn-submit" style="background:#7c3aed;">Assign Level Admin</button>
+
+          <h4 style="margin-top:14px;">Flight Members List</h4>
+          <div id="superFlightPlayerList"></div>
         </div>
       </div>
 
@@ -550,14 +487,9 @@
       <svg viewBox="0 0 24 24"><path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/></svg>
       Game Log
     </button>
-    <button id="nav-mylog" class="tab-item" onclick="showScreen('screen-mylog')">
+    <button id="nav-summary" class="tab-item" onclick="showScreen('screen-summary')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      My Log
-    </button>
-    <button id="nav-updates" class="tab-item" onclick="markUpdatesRead(); showScreen('screen-updates');">
-      <div id="notifBadge" class="notif-badge"></div>
-      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      Updates
+      Summary
     </button>
     <button id="nav-unpaid" class="tab-item admin-only-tab" style="display:none;" onclick="showScreen('screen-unpaid')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -571,17 +503,12 @@
 
 </div>
 
-<!-- LIGHTBOX MODAL -->
-<div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox()">
-  <img id="lightboxImg" class="lightbox-img" src="" alt="Flyer">
-</div>
-
 <!-- PRINT STATEMENT MODAL -->
 <div id="receiptModal" class="receipt-modal">
   <div class="receipt-content">
     <div class="receipt-header">
-      <h2 style="margin:0; font-size:16px;">🏸 Indian Club Shuttle Tracker</h2>
-      <small style="color:var(--text-muted); font-weight:bold;">NuZan AI Studio Operations Statement</small><br>
+      <h2 style="margin:0; font-size:15px;">🏸 Indian Club Badminton Section</h2>
+      <small style="color:var(--text-muted); font-weight:bold;">Powered by NuZan AI Studio</small><br>
       <small id="receiptDate" style="color:var(--text-muted);"></small><br>
       <small id="receiptFlight" style="font-weight:bold; color:var(--primary);"></small>
     </div>
@@ -591,7 +518,7 @@
     <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
     
     <div class="receipt-row" style="font-weight:bold; font-size:12px; color:var(--danger);">
-      <span>Total Cumulative Dues:</span>
+      <span>Total Outstanding Flight Dues:</span>
       <span id="receiptTotalPaid">BHD 0.000</span>
     </div>
 
@@ -631,8 +558,10 @@
   let adminLevel = null;
   let currentUser = JSON.parse(localStorage.getItem('shuttle_user')) || null;
   
+  // TUBE & MULTI-PACK ENGINE
+  let tubePacks = parseInt(localStorage.getItem('shuttle_tube_packs')) || 2;
+  let shuttlesPerTube = 12; // Static capacity per pack
   let tubePriceBHD = parseFloat(localStorage.getItem('shuttle_tube_price')) || 6.000;
-  let shuttlesPerTube = parseInt(localStorage.getItem('shuttle_per_tube')) || 12;
   let adminPhone = localStorage.getItem('shuttle_admin_phone') || "97339123456";
   let currentCorkCount = 1;
 
@@ -647,12 +576,9 @@
   };
 
   let playersList = JSON.parse(localStorage.getItem('shuttle_players')) || [
-    { id: "p1", name: "Alex", memberId: "IC-101", phone: "97339123456", password: "123", level: "Flight 4-A", coming: true, wallet: 1.000, locked: false, pendingDues: 0.000, logs: [] },
-    { id: "p2", name: "Syed", memberId: "IC-102", phone: "97339000000", password: "123", level: "Flight 4-A", coming: true, wallet: 0.000, locked: false, pendingDues: 0.500, logs: [] }
+    { id: "p1", name: "Alex", memberId: "IC-101", phone: "97339123456", password: "123", level: "Flight 4-A", coming: true, wallet: 1.000, locked: false, pendingDues: 0.000 },
+    { id: "p2", name: "Syed", memberId: "IC-102", phone: "97339000000", password: "123", level: "Flight 4-A", coming: true, wallet: 0.000, locked: false, pendingDues: 0.500 }
   ];
-
-  let levelAnnouncements = JSON.parse(localStorage.getItem('shuttle_announcements')) || [];
-  let lastReadPostCount = parseInt(localStorage.getItem('shuttle_last_read_posts') || "0");
 
   function handleAccountMenu(action) {
     if (action === 'logout') {
@@ -715,38 +641,8 @@
         renderAttendees();
         recalculateSplit();
         renderAdminDashboard();
-        renderPersonalLogs();
       }
     });
-
-    db.collection("announcements").onSnapshot((snapshot) => {
-      let list = [];
-      snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-      levelAnnouncements = list;
-      renderAnnouncements();
-      checkUnreadAnnouncements();
-    });
-  }
-
-  function checkUnreadAnnouncements() {
-    if (!currentUser && !isAdmin) return;
-    const targetLevel = isAdmin ? adminLevel : currentUser.level;
-    const currentCount = levelAnnouncements.filter(a => normalizeLevel(a.level) === normalizeLevel(targetLevel)).length;
-
-    if (currentCount > lastReadPostCount) {
-      document.getElementById('notifBadge').classList.add('active');
-    } else {
-      document.getElementById('notifBadge').classList.remove('active');
-    }
-  }
-
-  function markUpdatesRead() {
-    if (!currentUser && !isAdmin) return;
-    const targetLevel = isAdmin ? adminLevel : currentUser.level;
-    const currentCount = levelAnnouncements.filter(a => normalizeLevel(a.level) === normalizeLevel(targetLevel)).length;
-    lastReadPostCount = currentCount;
-    localStorage.setItem('shuttle_last_read_posts', lastReadPostCount.toString());
-    document.getElementById('notifBadge').classList.remove('active');
   }
 
   function savePlayersData() {
@@ -775,7 +671,7 @@
       localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
       checkUserSession();
     } else {
-      alert("Member ID not recognized! Please ask your Level Admin to pre-register your account.");
+      alert("Member ID not found! Please ask your Level Admin to pre-register your account.");
     }
   }
 
@@ -823,7 +719,6 @@
   function activateAdminMode() {
     document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'flex');
     document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'inline-block');
-    document.getElementById('adminPostCard').style.display = 'block';
     document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = adminLevel);
     
     document.getElementById('auth-screen').style.display = 'none';
@@ -857,8 +752,6 @@
       renderTimetableCarousel();
       renderAttendees();
       recalculateSplit();
-      renderAnnouncements();
-      renderPersonalLogs();
     }
   }
 
@@ -872,7 +765,6 @@
     document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.is-super-only').forEach(e => e.style.display = 'none');
-    document.getElementById('adminPostCard').style.display = 'none';
     checkUserSession();
   }
 
@@ -884,11 +776,7 @@
     
     if (screenId === 'screen-timetable') document.getElementById('nav-timetable').classList.add('active');
     if (screenId === 'screen-game') document.getElementById('nav-game').classList.add('active');
-    if (screenId === 'screen-mylog') {
-      document.getElementById('nav-mylog').classList.add('active');
-      renderPersonalLogs();
-    }
-    if (screenId === 'screen-updates') document.getElementById('nav-updates').classList.add('active');
+    if (screenId === 'screen-summary') document.getElementById('nav-summary').classList.add('active');
     if (screenId === 'screen-unpaid') {
       document.getElementById('nav-unpaid').classList.add('active');
       renderUnpaidStatements();
@@ -912,7 +800,10 @@
       renderCoAdmins();
     }
     if (subtabId === 'settings-schedule') document.getElementById('pill-schedule').classList.add('active');
-    if (subtabId === 'settings-super') document.getElementById('pill-super').classList.add('active');
+    if (subtabId === 'settings-super') {
+      document.getElementById('pill-super').classList.add('active');
+      renderSuperAdminFlightPlayers('Premier');
+    }
   }
 
   function renderTimetableCarousel() {
@@ -1019,24 +910,47 @@
     const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(targetLevel));
     const activeCount = levelMembers.filter(p => p.coming !== false).length || 1;
 
-    const singleShuttlePrice = tubePriceBHD / (shuttlesPerTube || 12);
+    // MULTI-TUBE COMPUTATION LOGIC
+    const totalShuttlesLoaded = tubePacks * 12;
+    const availableShuttles = Math.max(0, totalShuttlesLoaded - currentCorkCount);
+    const singleShuttlePrice = (tubePacks * tubePriceBHD) / totalShuttlesLoaded;
     const totalGameCost = currentCorkCount * singleShuttlePrice;
     const shareCost = totalGameCost / activeCount;
 
+    document.getElementById('tubeCountDisplay').innerText = tubePacks;
     document.getElementById('tubePriceDisplay').innerText = tubePriceBHD.toFixed(3);
-    document.getElementById('shuttlesPerTubeDisplay').innerText = shuttlesPerTube;
+    document.getElementById('shuttlesPerTubeDisplay').innerText = totalShuttlesLoaded;
+    document.getElementById('availableShuttlesDisplay').innerText = availableShuttles;
     document.getElementById('singleShuttlePriceDisplay').innerText = singleShuttlePrice.toFixed(3);
     
     document.getElementById('playerCountDisplay').innerText = activeCount;
     document.getElementById('totalCostDisplay').innerText = totalGameCost.toFixed(3);
     document.getElementById('splitDisplay').innerText = `BHD ${shareCost.toFixed(3)}`;
+
+    // LOW STOCK WARNING (IF LESS THAN 1 TUBE = 12 SHUTTLES REMAINING)
+    if (availableShuttles < 12) {
+      document.getElementById('stockAlertBox').style.display = 'block';
+    } else {
+      document.getElementById('stockAlertBox').style.display = 'none';
+    }
+
+    // SUMMARY TAB UPDATES
+    document.getElementById('summaryTotalTubes').innerText = `${tubePacks} Tubes (${totalShuttlesLoaded} Shuttles)`;
+    document.getElementById('summaryTotalShuttles').innerText = `${availableShuttles} Available`;
+    document.getElementById('summaryShuttlesUsed').innerText = `${currentCorkCount} Shuttles`;
+    document.getElementById('summaryStockValue').innerText = `BHD ${(availableShuttles * singleShuttlePrice).toFixed(3)}`;
+  }
+
+  function sendRefillAlertWhatsApp() {
+    const waMsg = `⚠️ ALERT Admin: Shuttle stock for ${adminLevel || 'Flight'} is low! Less than 12 shuttles remaining. Please refill inventory.`;
+    window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(waMsg)}`, '_blank');
   }
 
   function payViaWallet() {
     if (!currentUser) return;
     const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(currentUser.level) && p.coming !== false);
     const activeCount = levelMembers.length || 1;
-    const singleShuttlePrice = tubePriceBHD / (shuttlesPerTube || 12);
+    const singleShuttlePrice = (tubePacks * tubePriceBHD) / (tubePacks * 12);
     const shareCost = (currentCorkCount * singleShuttlePrice) / activeCount;
 
     if ((currentUser.wallet || 0) < shareCost) {
@@ -1047,15 +961,6 @@
     }
 
     currentUser.paidCurrent = true;
-    
-    if (!currentUser.logs) currentUser.logs = [];
-    currentUser.logs.push({
-      date: new Date().toLocaleDateString('en-GB'),
-      attended: true,
-      amount: shareCost,
-      method: 'Wallet Credit'
-    });
-
     savePlayersData();
 
     const waMsg = `Hi Admin, ${currentUser.name} paid BHD ${shareCost.toFixed(3)} using Wallet Credit (${currentUser.level}). Remaining Balance: BHD ${currentUser.wallet.toFixed(3)}.`;
@@ -1069,54 +974,14 @@
     if (!currentUser) return;
     const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(currentUser.level) && p.coming !== false);
     const activeCount = levelMembers.length || 1;
-    const singleShuttlePrice = tubePriceBHD / (shuttlesPerTube || 12);
+    const singleShuttlePrice = (tubePacks * tubePriceBHD) / (tubePacks * 12);
     const shareCost = (currentCorkCount * singleShuttlePrice) / activeCount;
 
     currentUser.paidCurrent = true;
-    if (!currentUser.logs) currentUser.logs = [];
-    currentUser.logs.push({
-      date: new Date().toLocaleDateString('en-GB'),
-      attended: true,
-      amount: shareCost,
-      method: methodName
-    });
-
     savePlayersData();
 
     const waMsg = `Hi Admin, ${currentUser.name} has settled BHD ${shareCost.toFixed(3)} for ${currentUser.level} session via ${methodName}.`;
     window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(waMsg)}`, '_blank');
-  }
-
-  function renderPersonalLogs() {
-    const container = document.getElementById('myPersonalLogList');
-    container.innerHTML = '';
-
-    if (!currentUser) {
-      container.innerHTML = `<p style="color:#64748b; font-size:12px; text-align:center;">Please log in to view your attendance history.</p>`;
-      return;
-    }
-
-    const logs = currentUser.logs || [];
-
-    if (logs.length === 0) {
-      container.innerHTML = `<p style="color:#64748b; font-size:12px; text-align:center;">No match logs recorded yet for ${currentUser.name}.</p>`;
-      return;
-    }
-
-    logs.slice().reverse().forEach(log => {
-      container.innerHTML += `
-        <div class="attendee-item">
-          <div>
-            <strong>${log.date}</strong><br>
-            <small style="color:var(--text-muted);">Status: ${log.attended ? 'Attended (Yes)' : 'Missed (No)'}</small>
-          </div>
-          <div style="text-align:right;">
-            <span style="font-weight:bold; color:var(--primary); font-size:12px;">BHD ${(log.amount||0).toFixed(3)}</span><br>
-            <small style="color:var(--success); font-weight:bold;">${log.method||'Settled'}</small>
-          </div>
-        </div>
-      `;
-    });
   }
 
   function renderUnpaidStatements() {
@@ -1131,12 +996,12 @@
       return;
     }
 
-    const singleShuttlePrice = tubePriceBHD / (shuttlesPerTube || 12);
+    const singleShuttlePrice = (tubePacks * tubePriceBHD) / (tubePacks * 12);
     const currentShare = (currentCorkCount * singleShuttlePrice) / (playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && p.coming !== false).length || 1);
 
     levelMembers.forEach((m) => {
       const totalOwed = (m.pendingDues || 0) + (m.paidCurrent ? 0 : currentShare);
-      const waUrl = `https://wa.me/${m.phone}?text=Hi%20${encodeURIComponent(m.name)},%20reminder%20to%20settle%20your%20cumulative%20shuttle%20dues%20of%20BHD%20${totalOwed.toFixed(3)}%20for%20${encodeURIComponent(adminLevel)}.`;
+      const waUrl = `https://wa.me/${m.phone}?text=Hi%20${encodeURIComponent(m.name)},%20reminder%20to%20settle%20your%20cumulative%20shuttle%20dues%20of%20BHD%20${totalOwed.toFixed(3)}%20for%20Indian%20Club%20${encodeURIComponent(adminLevel)}.`;
 
       container.innerHTML += `
         <div class="attendee-item">
@@ -1153,6 +1018,25 @@
         </div>
       `;
     });
+  }
+
+  function sendAdminUnpaidSummaryWhatsApp() {
+    if (!isAdmin) return;
+    const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && (p.pendingDues > 0 || (p.coming !== false && p.paidCurrent !== true)));
+    const singleShuttlePrice = (tubePacks * tubePriceBHD) / (tubePacks * 12);
+    const currentShare = (currentCorkCount * singleShuttlePrice) / (playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && p.coming !== false).length || 1);
+
+    let summaryText = `📋 *Indian Club Badminton Dues Summary (${adminLevel})*\n\n`;
+    let totalFlightDues = 0;
+
+    levelMembers.forEach(m => {
+      const owed = (m.pendingDues || 0) + (m.paidCurrent ? 0 : currentShare);
+      totalFlightDues += owed;
+      summaryText += `• ${m.name} (${m.memberId||'ID'}): BHD ${owed.toFixed(3)}\n`;
+    });
+
+    summaryText += `\n*Total Outstanding Dues: BHD ${totalFlightDues.toFixed(3)}*`;
+    window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(summaryText)}`, '_blank');
   }
 
   function clearMemberDues(id) {
@@ -1175,7 +1059,7 @@
     document.getElementById('receiptFlight').innerText = `Flight: ${adminLevel}`;
 
     const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && (p.pendingDues > 0 || (p.coming !== false && p.paidCurrent !== true)));
-    const singleShuttlePrice = tubePriceBHD / (shuttlesPerTube || 12);
+    const singleShuttlePrice = (tubePacks * tubePriceBHD) / (tubePacks * 12);
     const currentShare = (currentCorkCount * singleShuttlePrice) / (playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(adminLevel) && p.coming !== false).length || 1);
 
     itemsContainer.innerHTML = '';
@@ -1213,7 +1097,7 @@
     }
 
     filtered.forEach((p) => {
-      const waUrl = `https://wa.me/${p.phone}?text=Hi%20${encodeURIComponent(p.name)},%20your%20ShuttleTracker%20wallet%20has%20been%20updated.%20Current%20Balance:%20BHD%20${(p.wallet||0).toFixed(3)}.`;
+      const waUrl = `https://wa.me/${p.phone}?text=Hi%20${encodeURIComponent(p.name)},%20your%20Indian%20Club%20wallet%20has%20been%20updated.%20Current%20Balance:%20BHD%20${(p.wallet||0).toFixed(3)}.`;
 
       container.innerHTML += `
         <div class="attendee-item">
@@ -1233,6 +1117,31 @@
     });
   }
 
+  function renderSuperAdminFlightPlayers(lvl) {
+    if (!isSuperAdmin) return;
+    const container = document.getElementById('superFlightPlayerList');
+    container.innerHTML = '';
+
+    const filtered = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(lvl));
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<p style="color:#64748b; font-size:11px;">No members registered under ${lvl}.</p>`;
+      return;
+    }
+
+    filtered.forEach(p => {
+      container.innerHTML += `
+        <div class="attendee-item">
+          <div>
+            <strong>${p.name}</strong> <small>(${p.memberId})</small><br>
+            <small style="color:var(--text-muted);">Phone: ${p.phone||'N/A'}</small>
+          </div>
+          <span style="font-size:11px; font-weight:bold; color:var(--primary);">${p.level}</span>
+        </div>
+      `;
+    });
+  }
+
   function addPlayerByAdmin() {
     if (!isAdmin) return;
     const memberId = document.getElementById('newMemberID').value.trim();
@@ -1245,7 +1154,6 @@
       return;
     }
 
-    // DUPLICATE CHECK
     let duplicate = playersList.find(p => p.memberId === memberId || p.name.toLowerCase() === name.toLowerCase());
     if (duplicate) {
       alert(`⚠️ Error: Player with Member ID [${memberId}] or Name [${name}] already exists!`);
@@ -1255,7 +1163,7 @@
     playersList.push({
       id: `p_${Date.now()}`,
       name, memberId, phone, password,
-      level: adminLevel, coming: true, wallet: 0.000, locked: false, pendingDues: 0.000, paidCurrent: false, logs: []
+      level: adminLevel, coming: true, wallet: 0.000, locked: false, pendingDues: 0.000
     });
 
     savePlayersData();
@@ -1306,36 +1214,23 @@
     }
   }
 
-  function createLevelAdminBySuper() {
+  function assignAdminBySuper() {
     if (!isSuperAdmin) return;
-    const adminId = document.getElementById('superNewAdminID').value.trim();
-    const name = document.getElementById('superNewAdminName').value.trim();
-    const password = document.getElementById('superNewAdminPass').value.trim();
-    const level = document.getElementById('superNewAdminLevel').value;
+    const adminId = document.getElementById('superAdminID').value.trim();
+    const name = document.getElementById('superAdminName').value.trim();
+    const password = document.getElementById('superAdminPass').value.trim();
+    const level = document.getElementById('superSelectLevel').value;
 
     if (adminId && name && password) {
       adminAccounts.push({ adminId, name, password, level });
       localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
-      alert(`Created Level Admin ${name} (${adminId}) for ${level}!`);
+      document.getElementById('superAdminID').value = '';
+      document.getElementById('superAdminName').value = '';
+      document.getElementById('superAdminPass').value = '';
+      alert(`Assigned Level Admin ${name} (${adminId}) to ${level}!`);
+    } else {
+      alert("Please fill in Admin ID, Name, and Password!");
     }
-  }
-
-  function saveSponsorAd() {
-    if (!isSuperAdmin) return;
-    const title = document.getElementById('superAdTitle').value.trim();
-    const fileInput = document.getElementById('superAdImage');
-
-    if (title) document.getElementById('adTitleDisplay').innerText = title;
-
-    if (fileInput.files && fileInput.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        document.getElementById('adImageWrapper').innerHTML = `<img src="${e.target.result}">`;
-      };
-      reader.readAsDataURL(fileInput.files[0]);
-    }
-
-    alert("Global Sponsor Banner updated!");
   }
 
   function removeCoAdmin(adminId) {
@@ -1359,77 +1254,10 @@
         savePlayersData();
         renderAdminDashboard();
         
-        const waUrl = `https://wa.me/${member.phone}?text=Hi%20${encodeURIComponent(member.name)},%20BHD%20${amt.toFixed(3)}%20credit%20has%20been%20added%20to%20your%20ShuttleTracker%20wallet.%20New%20Balance:%20BHD%20${member.wallet.toFixed(3)}.`;
+        const waUrl = `https://wa.me/${member.phone}?text=Hi%20${encodeURIComponent(member.name)},%20BHD%20${amt.toFixed(3)}%20credit%20has%20been%20added%20to%20your%20Indian%20Club%20wallet.%20New%20Balance:%20BHD%20${member.wallet.toFixed(3)}.`;
         window.open(waUrl, '_blank');
       }
     }
-  }
-
-  function postAnnouncement() {
-    if (!isAdmin) return;
-    const title = document.getElementById('updateText').value.trim();
-    const fileInput = document.getElementById('updateImageFile');
-
-    if (!title && (!fileInput.files || fileInput.files.length === 0)) {
-      alert("Please enter a title or pick a flyer image!");
-      return;
-    }
-
-    const publishPost = (base64Img) => {
-      const newPost = {
-        id: `ann_${Date.now()}`,
-        level: adminLevel,
-        title,
-        imageUrl: base64Img || "",
-        date: new Date().toLocaleDateString('en-GB')
-      };
-
-      db.collection("announcements").doc(newPost.id).set(newPost);
-      document.getElementById('updateText').value = '';
-      fileInput.value = '';
-      alert("Flyer / Announcement posted to level!");
-    };
-
-    if (fileInput.files && fileInput.files[0]) {
-      const reader = new FileReader();
-      reader.onload = (e) => publishPost(e.target.result);
-      reader.readAsDataURL(fileInput.files[0]);
-    } else {
-      publishPost("");
-    }
-  }
-
-  function renderAnnouncements() {
-    if (!currentUser && !isAdmin) return;
-    const container = document.getElementById('updatesList');
-    container.innerHTML = '';
-
-    const targetLevel = isAdmin ? adminLevel : currentUser.level;
-    const filtered = levelAnnouncements.filter(a => normalizeLevel(a.level) === normalizeLevel(targetLevel));
-
-    if (filtered.length === 0) {
-      container.innerHTML = `<p style="color:#64748b; font-size:12px; text-align:center;">No announcements posted for ${targetLevel} yet.</p>`;
-      return;
-    }
-
-    filtered.slice().reverse().forEach(a => {
-      container.innerHTML += `
-        <div class="card" style="margin-bottom:10px; background:#f8fafc;">
-          <small style="color:var(--text-muted); font-size:10px;">${a.date} • ${a.level}</small>
-          <h4 style="margin:4px 0; color:var(--text); text-transform:none; font-size:13px;">${a.title}</h4>
-          ${a.imageUrl ? `<img src="${a.imageUrl}" style="width:100%; border-radius:10px; margin-top:6px; cursor:pointer;" onclick="expandFlyer('${a.imageUrl}')">` : ''}
-        </div>
-      `;
-    });
-  }
-
-  function expandFlyer(url) {
-    document.getElementById('lightboxImg').src = url;
-    document.getElementById('lightboxModal').classList.add('active');
-  }
-
-  function closeLightbox() {
-    document.getElementById('lightboxModal').classList.remove('active');
   }
 
   function saveWeeklyScheduleSlot() {
@@ -1452,8 +1280,8 @@
       document.getElementById('editAdminName').value = currentAdminObj.name || '';
       document.getElementById('editAdminPassword').value = currentAdminObj.password || '';
     }
+    document.getElementById('settingTubePacks').value = tubePacks;
     document.getElementById('settingTubePrice').value = tubePriceBHD;
-    document.getElementById('settingShuttlesPerTube').value = shuttlesPerTube;
     document.getElementById('settingAdminPhone').value = adminPhone;
     renderAdminDashboard();
   }
@@ -1468,8 +1296,8 @@
 
   function saveAdminSettings() {
     if (!isAdmin) return;
+    tubePacks = parseInt(document.getElementById('settingTubePacks').value) || 2;
     tubePriceBHD = parseFloat(document.getElementById('settingTubePrice').value) || 6.000;
-    shuttlesPerTube = parseInt(document.getElementById('settingShuttlesPerTube').value) || 12;
     adminPhone = document.getElementById('settingAdminPhone').value.trim();
 
     const newAdminName = document.getElementById('editAdminName').value.trim();
@@ -1478,13 +1306,13 @@
     if (currentAdminObj && newAdminName) currentAdminObj.name = newAdminName;
     if (currentAdminObj && newAdminPass) currentAdminObj.password = newAdminPass;
 
+    localStorage.setItem('shuttle_tube_packs', tubePacks);
     localStorage.setItem('shuttle_tube_price', tubePriceBHD);
-    localStorage.setItem('shuttle_per_tube', shuttlesPerTube);
     localStorage.setItem('shuttle_admin_accounts', JSON.stringify(adminAccounts));
     localStorage.setItem('shuttle_admin_phone', adminPhone);
     savePlayersData();
     
-    alert(`Tube pricing and Admin settings saved for ${adminLevel}!`);
+    alert(`Tube stock and parameters saved for ${adminLevel}!`);
     showScreen('screen-timetable');
   }
 
