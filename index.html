@@ -48,6 +48,7 @@
       .app-frame { border-radius: 36px; border: 8px solid #334155; height: 840px; }
     }
 
+    /* SPLASH / WELCOME SCREEN */
     #splash-screen {
       position: absolute; inset: 0;
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -66,6 +67,7 @@
     .progress-bar-fill { width: 0%; height: 100%; background: #38bdf8; animation: loadProgress 1.4s ease-in-out forwards; }
     @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
 
+    /* AUTH OVERLAY */
     #auth-screen {
       position: absolute; inset: 0; background: rgba(15, 23, 42, 0.92);
       backdrop-filter: blur(10px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -76,15 +78,48 @@
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-height: 90vh; overflow-y: auto;
     }
 
+    /* HEADER BAR */
     .app-header {
-      padding: 12px 16px; background: rgba(255, 255, 255, 0.85);
+      padding: 14px 18px; background: rgba(255, 255, 255, 0.9);
       backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
-      display: flex; justify-space-between; align-items: center; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center; z-index: 100;
     }
-    .brand-title h3 { margin: 0; font-size: 14px; font-weight: 800; color: var(--text); }
-    .brand-title span { font-size: 8px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.8px; text-transform: uppercase; }
+    .brand-title h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
 
-    .app-body { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 110px; }
+    /* HAMBURGER SIDE DRAWER MENU */
+    .menu-btn {
+      background: #f1f5f9; border: 1px solid var(--border);
+      padding: 6px 12px; border-radius: 12px; font-size: 13px; font-weight: 800;
+      cursor: pointer; color: var(--text); display: flex; align-items: center; gap: 6px;
+    }
+
+    .side-drawer-overlay {
+      position: absolute; inset: 0; background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px); z-index: 9000; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .side-drawer-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .side-drawer {
+      position: absolute; top: 0; right: -280px; width: 280px; height: 100%;
+      background: #ffffff; z-index: 9500; transition: right 0.3s ease;
+      display: flex; flex-direction: column; padding: 20px 16px; box-shadow: -10px 0 25px rgba(0,0,0,0.15);
+    }
+    .side-drawer.active { right: 0; }
+
+    .drawer-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
+    }
+    .drawer-item {
+      display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+      border-radius: 14px; color: var(--text); font-size: 13px; font-weight: 700;
+      cursor: pointer; text-decoration: none; margin-bottom: 4px; transition: background 0.2s ease;
+    }
+    .drawer-item:hover, .drawer-item.active { background: #eff6ff; color: var(--primary); }
+    .drawer-item svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+    .app-body { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 60px; }
     .app-body::-webkit-scrollbar { display: none; }
 
     .card {
@@ -130,21 +165,6 @@
     }
     .pill-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-    .app-tabbar {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 65px;
-      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px);
-      border-top: 1px solid var(--border); display: flex; justify-space-around;
-      align-items: center; padding-bottom: 6px; z-index: 500;
-    }
-    .tab-item {
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; background: none; border: none;
-      color: var(--text-muted); font-size: 9px; font-weight: 700;
-      cursor: pointer; padding: 6px 0; gap: 3px; position: relative;
-    }
-    .tab-item svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; }
-    .tab-item.active { color: var(--primary); }
-
     .screen { display: none !important; }
     .screen.active { display: block !important; }
 
@@ -177,7 +197,13 @@
     .password-container { position: relative; width: 100%; }
     .password-toggle-btn { position: absolute; right: 10px; top: 11px; background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-muted); }
 
-    .receipt-modal { display: none; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 9000; padding: 16px; backdrop-filter: blur(4px); }
+    /* FOOTER ATTRIBUTION */
+    .app-footer {
+      text-align: center; padding: 12px; font-size: 10px; font-weight: bold;
+      color: var(--text-muted); border-top: 1px solid var(--border); background: #ffffff;
+    }
+
+    .receipt-modal { display: none; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 9999; padding: 16px; backdrop-filter: blur(4px); }
     .receipt-modal.active { display: flex; }
     .receipt-content { background: white; padding: 20px; border-radius: 18px; width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; }
     .receipt-header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 12px; margin-bottom: 12px; }
@@ -200,7 +226,7 @@
     <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
   </div>
 
-  <!-- AUTH / LOGIN OVERLAY -->
+  <!-- AUTH SCREEN -->
   <div id="auth-screen">
     <div class="login-card">
       <div style="display:flex; justify-content:center; gap:6px; margin-bottom:14px;">
@@ -257,11 +283,10 @@
     </div>
   </div>
 
-  <!-- HEADER BAR WITH FLIGHT SELECTOR & ACCOUNT MENU -->
+  <!-- HEADER BAR WITH HAMBURGER BUTTON -->
   <div class="app-header">
     <div class="brand-title">
       <h3>🏸 Indian Club Badminton</h3>
-      <span>Powered by NuZan AI Studio</span>
     </div>
     <div style="display:flex; align-items:center; gap:6px;">
       <select id="superFlightSwitcher" onchange="changeActiveFlightLevel(this.value)" style="display:none; padding:4px 6px; border-radius:10px; font-size:10px; font-weight:bold; background:#7c3aed; color:white; border:none; margin:0;">
@@ -273,11 +298,66 @@
         <option value="Flight 4-B">Flight 4-B</option>
       </select>
 
-      <select id="accountMenuDropdown" onchange="handleAccountMenu(this.value)" style="padding:5px 8px; border-radius:12px; font-size:11px; font-weight:bold; background:#fff; border:1px solid var(--border); margin:0; width:auto;">
-        <option value="">👤 Account Menu</option>
-        <option value="update">⚙️ Update Credentials</option>
-        <option value="logout">🚪 Log Out / Switch Account</option>
-      </select>
+      <button class="menu-btn" onclick="toggleSideDrawer(true)">
+        <span>☰</span> Menu
+      </button>
+    </div>
+  </div>
+
+  <!-- SIDE DRAWER OVERLAY & MENU -->
+  <div id="drawerOverlay" class="side-drawer-overlay" onclick="toggleSideDrawer(false)"></div>
+  <div id="sideDrawer" class="side-drawer">
+    <div class="drawer-header">
+      <div>
+        <h4 style="margin:0; font-size:14px; font-weight:800;">Navigation</h4>
+        <small id="userDrawerBadge" style="color:var(--text-muted); font-size:10px;">Guest User</small>
+      </div>
+      <button onclick="toggleSideDrawer(false)" style="background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
+    </div>
+
+    <div class="drawer-item active" id="dnav-timetable" onclick="navigateToDrawer('screen-timetable')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+      Schedule
+    </div>
+
+    <div class="drawer-item" id="dnav-game" onclick="navigateToDrawer('screen-game')">
+      <svg viewBox="0 0 24 24"><path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/></svg>
+      Game Log & Attendance
+    </div>
+
+    <div class="drawer-item" id="dnav-mylog" onclick="navigateToDrawer('screen-mylog')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      My Attendance Log
+    </div>
+
+    <div class="drawer-item" id="dnav-summary" onclick="navigateToDrawer('screen-summary')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+      Tube Stock Summary
+    </div>
+
+    <div class="drawer-item" id="dnav-updates" onclick="navigateToDrawer('screen-updates')">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+      Announcements & Ads
+    </div>
+
+    <div class="drawer-item admin-only-tab" id="dnav-unpaid" style="display:none;" onclick="navigateToDrawer('screen-unpaid')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+      Unpaid Statements
+    </div>
+
+    <div class="drawer-item admin-only-tab" id="dnav-settings" style="display:none;" onclick="navigateToDrawer('screen-settings')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33"/></svg>
+      System Settings
+    </div>
+
+    <hr style="border:none; border-top:1px solid var(--border); margin:16px 0 8px 0;">
+
+    <div class="drawer-item" onclick="promptUpdateCredentials()" style="color:var(--primary);">
+      ⚙️ Update Credentials
+    </div>
+
+    <div class="drawer-item" onclick="switchUserAccount()" style="color:var(--danger);">
+      🚪 Log Out
     </div>
   </div>
 
@@ -286,7 +366,6 @@
     
     <!-- 1. SCHEDULE SCREEN -->
     <div id="screen-timetable" class="screen active">
-      <!-- SPONSOR ADVERTISEMENT BANNER -->
       <div id="adBannerContainer" class="ad-banner-card">
         <small style="font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#a5b4fc;">Club Sponsor Announcement</small>
         <h4 style="margin:2px 0 0 0; font-size:13px; color:white;" id="adTitleDisplay">🎾 Pro Sports Shop - 15% Member Discount</h4>
@@ -321,7 +400,6 @@
         <div id="attendeeChecklist"></div>
       </div>
 
-      <!-- TUBE-BASED CALCULATION ENGINE CARD -->
       <div class="card">
         <h4>Shuttlecock Tube Inventory & Usage</h4>
         
@@ -373,7 +451,7 @@
       </div>
     </div>
 
-    <!-- 3. MY LOG SCREEN (PERSONAL MATCH LOGS) -->
+    <!-- 3. MY LOG SCREEN -->
     <div id="screen-mylog" class="screen">
       <div class="card">
         <h4>My Attendance & Payment History</h4>
@@ -487,7 +565,16 @@
 
       <div id="settings-super" class="settings-subtab" style="display:none;">
         <div class="card">
-          <h4>👑 Super Admin Level & Delegation Portal</h4>
+          <h4>👑 Super Admin Sponsor Ad & Delegation Portal</h4>
+          
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD TITLE:</label>
+          <input type="text" id="superAdTitle" placeholder="e.g. Pro Sports Shop - 15% Off">
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD BANNER IMAGE:</label>
+          <input type="file" id="superAdImage" accept="image/*">
+          <button onclick="saveSponsorAd()" class="btn-submit" style="background:#7c3aed; margin-bottom:12px;">Save Global Sponsor Ad</button>
+
+          <hr style="border:none; border-top:1px dashed var(--border); margin:10px 0;">
+
           <label style="font-size:11px; font-weight:bold; color:var(--text-muted);">SELECT FLIGHT LEVEL:</label>
           <select id="superSelectLevel" onchange="renderSuperAdminFlightPlayers(this.value)">
             <option value="Premier">Premier</option>
@@ -498,13 +585,11 @@
             <option value="Flight 4-B">Flight 4-B</option>
           </select>
 
-          <hr style="border:none; border-top:1px dashed var(--border); margin:10px 0;">
-
           <h4>Assign Primary / Delegate Admin</h4>
           <input type="text" id="superAdminID" placeholder="Admin ID (e.g. ADM-4A)">
           <input type="text" id="superAdminName" placeholder="Admin Name">
           <input type="password" id="superAdminPass" placeholder="Admin Password">
-          <button onclick="assignAdminBySuper()" class="btn-submit" style="background:#7c3aed;">Assign Level Admin</button>
+          <button onclick="assignAdminBySuper()" class="btn-submit" style="background:#059669;">Assign Level Admin</button>
 
           <h4 style="margin-top:14px;">Flight Members List</h4>
           <div id="superFlightPlayerList"></div>
@@ -515,36 +600,9 @@
 
   </div>
 
-  <!-- BOTTOM NAVIGATION TAB BAR -->
-  <div class="app-tabbar">
-    <button id="nav-timetable" class="tab-item active" onclick="showScreen('screen-timetable')">
-      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Schedule
-    </button>
-    <button id="nav-game" class="tab-item" onclick="showScreen('screen-game')">
-      <svg viewBox="0 0 24 24"><path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/></svg>
-      Game Log
-    </button>
-    <button id="nav-mylog" class="tab-item" onclick="showScreen('screen-mylog')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      My Log
-    </button>
-    <button id="nav-summary" class="tab-item" onclick="showScreen('screen-summary')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-      Summary
-    </button>
-    <button id="nav-updates" class="tab-item" onclick="showScreen('screen-updates')">
-      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      Updates
-    </button>
-    <button id="nav-unpaid" class="tab-item admin-only-tab" style="display:none;" onclick="showScreen('screen-unpaid')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      Unpaid
-    </button>
-    <button id="nav-settings" class="tab-item admin-only-tab" style="display:none;" onclick="showScreen('screen-settings')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings
-    </button>
+  <!-- FOOTER ATTRIBUTION -->
+  <div class="app-footer">
+    Powered by NuZan AI Studio
   </div>
 
 </div>
@@ -577,7 +635,7 @@
 
 <script>
   // BUILD CACHE BUSTER
-  const BUILD_VERSION = "v3.0.9";
+  const BUILD_VERSION = "v3.1.2";
   if (localStorage.getItem('icst_build_ver') !== BUILD_VERSION) {
     localStorage.clear();
     localStorage.setItem('icst_build_ver', BUILD_VERSION);
@@ -636,6 +694,16 @@
     ] }
   ];
 
+  function toggleSideDrawer(show) {
+    document.getElementById('drawerOverlay').classList.toggle('active', show);
+    document.getElementById('sideDrawer').classList.toggle('active', show);
+  }
+
+  function navigateToDrawer(screenId) {
+    toggleSideDrawer(false);
+    showScreen(screenId);
+  }
+
   function changeActiveFlightLevel(newLevel) {
     adminLevel = newLevel;
     document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = adminLevel);
@@ -645,25 +713,21 @@
     renderUnpaidStatements();
   }
 
-  function handleAccountMenu(action) {
-    if (action === 'logout') {
-      switchUserAccount();
-    } else if (action === 'update') {
-      if (currentUser) {
-        const newPhone = prompt("Update Mobile Phone Number:", currentUser.phone || "");
-        const newPass = prompt("Update Password:", currentUser.password || "");
-        if (newPhone) currentUser.phone = newPhone;
-        if (newPass) currentUser.password = newPass;
-        savePlayersData();
-        alert("Credentials updated successfully!");
-      } else if (isAdmin) {
-        showScreen('screen-settings');
-        switchSettingsTab('settings-config');
-      } else {
-        alert("Please log in first!");
-      }
+  function promptUpdateCredentials() {
+    toggleSideDrawer(false);
+    if (currentUser) {
+      const newPhone = prompt("Update Mobile Phone Number:", currentUser.phone || "");
+      const newPass = prompt("Update Password:", currentUser.password || "");
+      if (newPhone) currentUser.phone = newPhone;
+      if (newPass) currentUser.password = newPass;
+      savePlayersData();
+      alert("Credentials updated successfully!");
+    } else if (isAdmin) {
+      showScreen('screen-settings');
+      switchSettingsTab('settings-config');
+    } else {
+      alert("Please log in first!");
     }
-    document.getElementById('accountMenuDropdown').value = "";
   }
 
   function switchAuthTab(tab) {
@@ -789,6 +853,8 @@
     document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = adminLevel);
     
     document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('userDrawerBadge').innerText = isSuperAdmin ? 'Super Admin' : `Admin (${adminLevel})`;
+
     renderAttendees();
     renderAdminDashboard();
     renderCoAdmins();
@@ -802,7 +868,8 @@
       document.getElementById('auth-screen').style.display = 'none';
       if (currentUser) {
         document.getElementById('playerCurrentLevelDisplay').innerText = currentUser.level;
-        
+        document.getElementById('userDrawerBadge').innerText = `${currentUser.name} (${currentUser.memberId})`;
+
         const wallet = currentUser.wallet || 0;
         document.getElementById('userWalletDisplay').innerText = `BHD ${wallet.toFixed(3)}`;
         
@@ -824,6 +891,7 @@
   }
 
   function switchUserAccount() {
+    toggleSideDrawer(false);
     localStorage.removeItem('shuttle_user');
     currentUser = null;
     isAdmin = false;
@@ -839,24 +907,24 @@
 
   function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.drawer-item').forEach(b => b.classList.remove('active'));
     
     document.getElementById(screenId).classList.add('active');
     
-    if (screenId === 'screen-timetable') document.getElementById('nav-timetable').classList.add('active');
-    if (screenId === 'screen-game') document.getElementById('nav-game').classList.add('active');
+    if (screenId === 'screen-timetable') document.getElementById('dnav-timetable').classList.add('active');
+    if (screenId === 'screen-game') document.getElementById('dnav-game').classList.add('active');
     if (screenId === 'screen-mylog') {
-      document.getElementById('nav-mylog').classList.add('active');
+      document.getElementById('dnav-mylog').classList.add('active');
       renderPersonalLogs();
     }
-    if (screenId === 'screen-summary') document.getElementById('nav-summary').classList.add('active');
-    if (screenId === 'screen-updates') document.getElementById('nav-updates').classList.add('active');
+    if (screenId === 'screen-summary') document.getElementById('dnav-summary').classList.add('active');
+    if (screenId === 'screen-updates') document.getElementById('dnav-updates').classList.add('active');
     if (screenId === 'screen-unpaid') {
-      document.getElementById('nav-unpaid').classList.add('active');
+      document.getElementById('dnav-unpaid').classList.add('active');
       renderUnpaidStatements();
     }
     if (screenId === 'screen-settings') {
-      document.getElementById('nav-settings').classList.add('active');
+      document.getElementById('dnav-settings').classList.add('active');
       renderAdminSettings();
     }
   }
@@ -873,7 +941,6 @@
       document.getElementById('pill-coadmin').classList.add('active');
       renderCoAdmins();
     }
-    if (subtabId === 'settings-schedule') document.getElementById('pill-schedule').classList.add('active');
     if (subtabId === 'settings-super') {
       document.getElementById('pill-super').classList.add('active');
       renderSuperAdminFlightPlayers(document.getElementById('superSelectLevel').value);
@@ -989,7 +1056,6 @@
     const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(targetLevel));
     const activeCount = levelMembers.filter(p => p.coming !== false).length || 1;
 
-    // MATH FIX: 24 TOTAL - 2 USED = 22 REMAINING
     const totalShuttlesLoaded = tubePacks * 12;
     const availableShuttles = Math.max(0, totalShuttlesLoaded - currentCorkCount);
     const singleShuttlePrice = (tubePacks * tubePriceBHD) / totalShuttlesLoaded;
