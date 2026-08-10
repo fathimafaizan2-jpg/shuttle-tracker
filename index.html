@@ -84,7 +84,7 @@
       backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
       display: flex; justify-content: space-between; align-items: center; z-index: 100;
     }
-    .brand-title h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
+    .brand-title h3 { margin: 0; font-size: 14px; font-weight: 800; color: var(--text); }
 
     /* HAMBURGER SIDE DRAWER MENU */
     .menu-btn {
@@ -397,6 +397,7 @@
     <div id="screen-game" class="screen">
       <div class="card">
         <h4>Attendance Checklist (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
+        <p style="font-size:10px; color:var(--text-muted); margin-top:-6px; margin-bottom:10px;">Full Flight Roster. You can view everyone's status, but can only edit your own row.</p>
         <div id="attendeeChecklist"></div>
       </div>
 
@@ -563,15 +564,16 @@
         </div>
       </div>
 
+      <!-- CENTRALIZED SUPER ADMIN ADS & ANNOUNCEMENTS CONTROL -->
       <div id="settings-super" class="settings-subtab" style="display:none;">
         <div class="card">
-          <h4>👑 Super Admin Sponsor Ad & Delegation Portal</h4>
+          <h4>👑 Super Admin Sponsor Ad & Announcement Portal</h4>
           
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD TITLE:</label>
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD TITLE / ANNOUNCEMENT CAPTION:</label>
           <input type="text" id="superAdTitle" placeholder="e.g. Pro Sports Shop - 15% Off">
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD BANNER IMAGE:</label>
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">UPLOAD FLYER / BANNER IMAGE:</label>
           <input type="file" id="superAdImage" accept="image/*">
-          <button onclick="saveSponsorAd()" class="btn-submit" style="background:#7c3aed; margin-bottom:12px;">Save Global Sponsor Ad</button>
+          <button onclick="saveSponsorAd()" class="btn-submit" style="background:#7c3aed; margin-bottom:12px;">Publish Global Announcement & Ad</button>
 
           <hr style="border:none; border-top:1px dashed var(--border); margin:10px 0;">
 
@@ -635,7 +637,7 @@
 
 <script>
   // BUILD CACHE BUSTER
-  const BUILD_VERSION = "v3.1.2";
+  const BUILD_VERSION = "v3.2.0";
   if (localStorage.getItem('icst_build_ver') !== BUILD_VERSION) {
     localStorage.clear();
     localStorage.setItem('icst_build_ver', BUILD_VERSION);
@@ -967,6 +969,7 @@
     });
   }
 
+  /* ATTENDANCE CHECKLIST - VIEW ALL MEMBERS, EDIT YOUR OWN ONLY */
   function renderAttendees() {
     if (!currentUser && !isAdmin) return;
     const container = document.getElementById('attendeeChecklist');
@@ -1414,6 +1417,7 @@
     }
   }
 
+  /* SUPER ADMIN GLOBAL ADS & ANNOUNCEMENTS CREATION */
   function saveSponsorAd() {
     if (!isSuperAdmin) return;
     const title = document.getElementById('superAdTitle').value.trim();
@@ -1429,7 +1433,7 @@
       reader.readAsDataURL(fileInput.files[0]);
     }
 
-    alert("Global Sponsor Banner updated!");
+    alert("Global Sponsor Banner & Announcement updated across all levels!");
   }
 
   function removeCoAdmin(adminId) {
