@@ -1,239 +1,242 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Indian Club Badminton Section | NuZan AI Studio</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Indian Club Badminton Section | NuZan AI Studio</title>
 
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2563eb">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+    --primary: #1261ff;
+    --primary-gradient: linear-gradient(135deg, #1261ff 0%, #1d4ed8 100%);
+    --secondary: #6c5ce7;
+    --dark: #0f172a;
+    --light: #f8fafc;
+    --white: #ffffff;
+    --green: #059669;
+    --red: #dc2626;
+    --orange: #d97706;
+    --border: #e2e8f0;
+    --text-muted: #64748b;
+    --shadow: 0 6px 20px rgba(20,30,60,.06);
+}
 
-  <style>
-    :root {
-      --primary: #2563eb;
-      --primary-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      --bg-outer: #0f172a;
-      --bg-app: #f8fafc;
-      --card-bg: #ffffff;
-      --border: #e2e8f0;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --success: #059669;
-      --danger: #dc2626;
-      --warning: #d97706;
-      --accent-purple: #7c3aed;
-    }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg-outer);
-      margin: 0; padding: 0; color: var(--text);
-      display: flex; justify-content: center; align-items: center; min-height: 100vh;
-    }
+body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--dark);
+    color: var(--dark);
+    display: flex; justify-content: center; align-items: center; min-height: 100vh;
+}
 
-    .app-frame {
-      width: 100%; max-width: 430px; height: 100vh; max-height: 880px;
-      background: var(--bg-app); position: relative; overflow: hidden;
-      display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
+.app-frame {
+    width: 100%; max-width: 430px; height: 100vh; max-height: 880px;
+    background: var(--light); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
 
-    @media (min-width: 500px) {
-      .app-frame { border-radius: 36px; border: 8px solid #334155; height: 840px; }
-    }
+@media (min-width: 500px) {
+    .app-frame { border-radius: 36px; border: 8px solid #334155; height: 840px; }
+}
 
-    /* SPLASH / WELCOME SCREEN */
-    #splash-screen {
-      position: absolute; inset: 0;
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; text-align: center; padding: 20px;
-    }
+/* SPLASH SCREEN */
+#splash-screen {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; text-align: center; padding: 20px;
+}
 
-    .badge-crest-logo {
-      width: 84px; height: 84px; background: #ffffff; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
-      border: 3px solid #38bdf8; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
-    }
-    .badge-crest-logo svg { width: 48px; height: 48px; fill: #1e293b; }
+.indian-club-badge {
+    width: 84px; height: 84px; background: #ffffff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+    border: 3px solid #38bdf8; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+}
+.indian-club-badge svg { width: 48px; height: 48px; fill: #0f172a; }
 
-    .progress-bar-container { width: 140px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin: 16px 0; }
-    .progress-bar-fill { width: 0%; height: 100%; background: #38bdf8; animation: loadProgress 1.4s ease-in-out forwards; }
-    @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
+.progress-bar-container { width: 140px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin: 16px 0; }
+.progress-bar-fill { width: 0%; height: 100%; background: #38bdf8; animation: loadProgress 1.4s ease-in-out forwards; }
+@keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
 
-    /* AUTH OVERLAY */
-    #auth-screen {
-      position: absolute; inset: 0; background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(10px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
-    }
-    .login-card {
-      background: #ffffff; border: 1px solid var(--border);
-      padding: 24px; border-radius: 24px; width: 100%; text-align: center;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-height: 90vh; overflow-y: auto;
-    }
+/* LOGIN SCREEN */
+#auth-screen {
+    position: absolute; inset: 0; background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
 
-    /* HEADER BAR */
-    .app-header {
-      padding: 14px 18px; background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
-      display: flex; justify-space-between; align-items: center; z-index: 100;
-    }
-    .brand-title h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
+.login-box {
+    width: 100%; background: white; padding: 25px; border-radius: 22px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.2); text-align: center; max-height: 90vh; overflow-y: auto;
+}
 
-    .menu-btn {
-      background: #f1f5f9; border: 1px solid var(--border);
-      padding: 6px 12px; border-radius: 12px; font-size: 13px; font-weight: 800;
-      cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 6px;
-    }
+.pills-bar { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
+.pill-btn {
+    padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: #fff; color: var(--text-muted); font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.pill-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-    /* SIDE DRAWER MENU */
-    .side-drawer-overlay {
-      position: absolute; inset: 0; background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(4px); z-index: 9000; opacity: 0; pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-    .side-drawer-overlay.active { opacity: 1; pointer-events: auto; }
+input, select, textarea {
+    width: 100%; padding: 11px; border: 1px solid var(--border);
+    border-radius: 10px; margin: 4px 0 12px; font-size: 13px; background: #f8fafc;
+}
 
-    .side-drawer {
-      position: absolute; top: 0; right: -280px; width: 280px; height: 100%;
-      background: #ffffff; z-index: 9500; transition: right 0.3s ease;
-      display: flex; flex-direction: column; padding: 20px 16px; box-shadow: -10px 0 25px rgba(0,0,0,0.15);
-    }
-    .side-drawer.active { right: 0; }
+button {
+    border: 0; border-radius: 10px; padding: 12px; cursor: pointer; font-weight: bold; font-size: 13px;
+}
 
-    .drawer-header {
-      display: flex; justify-space-between; align-items: center;
-      border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
-    }
-    .drawer-item {
-      display: flex; align-items: center; gap: 12px; padding: 12px 14px;
-      border-radius: 14px; color: var(--text); font-size: 13px; font-weight: 700;
-      cursor: pointer; text-decoration: none; margin-bottom: 4px; transition: background 0.2s ease;
-    }
-    .drawer-item:hover, .drawer-item.active { background: #eff6ff; color: var(--primary); }
+.btn-primary { background: var(--primary); color: white; width: 100%; }
+.btn-green { background: var(--green); color: white; width: 100%; }
+.btn-orange { background: var(--orange); color: white; width: 100%; }
+.btn-purple { background: var(--secondary); color: white; width: 100%; }
 
-    .app-body { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 40px; }
-    .app-body::-webkit-scrollbar { display: none; }
+/* HEADER & HAMBURGER SIDE DRAWER */
+.app-header {
+    padding: 14px 18px; background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; z-index: 100;
+}
+.brand-title h3 { margin: 0; font-size: 15px; font-weight: 800; }
 
-    .card {
-      background: var(--card-bg); border: 1px solid var(--border);
-      padding: 16px; border-radius: 20px; margin-bottom: 14px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
-    }
-    .card h4 { margin: 0 0 10px 0; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+.menu-btn {
+    background: #f1f5f9; border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 800;
+    cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 6px;
+}
 
-    .ad-banner-card {
-      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-      color: white; border-radius: 18px; padding: 16px; text-align: center; margin-bottom: 14px; border: 1px solid #4338ca;
-    }
-    .ad-banner-card img { width: 100%; border-radius: 12px; margin-top: 8px; }
+.side-drawer-overlay {
+    position: absolute; inset: 0; background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px); z-index: 9000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+.side-drawer-overlay.active { opacity: 1; pointer-events: auto; }
 
-    .stock-alert-card {
-      background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
-      padding: 12px; border-radius: 14px; font-size: 11px; font-weight: bold; margin-bottom: 12px;
-    }
+.side-drawer {
+    position: absolute; top: 0; right: -280px; width: 280px; height: 100%;
+    background: #ffffff; z-index: 9500; transition: right 0.3s ease;
+    display: flex; flex-direction: column; padding: 20px 16px; box-shadow: -10px 0 25px rgba(0,0,0,0.15);
+}
+.side-drawer.active { right: 0; }
 
-    .timetable-carousel-wrapper { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
-    .timetable-carousel-wrapper::-webkit-scrollbar { display: none; }
-    .day-card {
-      flex: 0 0 120px; scroll-snap-align: start; background: #f8fafc;
-      border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center;
-    }
-    .day-card.active-slot { background: #eff6ff; border-color: #93c5fd; }
-    .day-card .day-name { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
-    .day-card.active-slot .day-name { color: var(--primary); }
-    .day-card .time-badge { font-size: 11px; font-weight: 700; margin-top: 4px; color: var(--text); }
+.drawer-header {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
+}
+.drawer-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    border-radius: 14px; color: var(--dark); font-size: 13px; font-weight: 700;
+    cursor: pointer; margin-bottom: 4px; transition: background 0.2s ease;
+}
+.drawer-item:hover, .drawer-item.active { background: #eff6ff; color: var(--primary); }
 
-    /* MASTER TIMETABLE MATRIX TABLE */
-    .master-timetable-table {
-      width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px;
-    }
-    .master-timetable-table th, .master-timetable-table td {
-      border: 1px solid var(--border); padding: 8px 6px; text-align: center;
-    }
-    .master-timetable-table th { background: #f1f5f9; font-weight: 800; color: var(--text-muted); }
-    
-    .lvl-tag-premier { background: #dbeafe; color: #1e40af; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
-    .lvl-tag-f1 { background: #d1fae5; color: #065f46; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
-    .lvl-tag-f2 { background: #ede9fe; color: #5b21b6; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
-    .lvl-tag-f3 { background: #fef3c7; color: #92400e; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
-    .lvl-tag-f4a { background: #fee2e2; color: #991b1b; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
-    .lvl-tag-f4b { background: #fce7f3; color: #9d174d; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+.app-body { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 40px; }
+.app-body::-webkit-scrollbar { display: none; }
 
-    .split-box {
-      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      border: 1px solid #bfdbfe; padding: 18px; border-radius: 20px; text-align: center; margin-bottom: 14px;
-    }
-    .split-box h3 { margin: 2px 0; color: var(--primary); font-size: 30px; font-weight: 900; }
+.section { display: none !important; }
+.section.active { display: block !important; }
 
-    .pills-bar { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 4px; }
-    .pills-bar::-webkit-scrollbar { display: none; }
-    .pill-btn {
-      flex: 0 0 auto; padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border);
-      background: #fff; color: var(--text-muted); font-size: 11px; font-weight: 700; cursor: pointer;
-    }
-    .pill-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.card-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;
+}
+.card {
+    background: white; padding: 14px; border-radius: 16px;
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.card h3 { margin: 4px 0 2px; font-size: 20px; font-weight: 800; color: var(--primary); }
+.card p { margin: 0; color: var(--text-muted); font-size: 11px; font-weight: bold; }
 
-    .screen { display: none !important; }
-    .screen.active { display: block !important; }
+.panel {
+    background: white; border-radius: 18px; padding: 16px;
+    margin-bottom: 14px; border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.panel h4 { margin: 0 0 10px 0; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
 
-    select, input[type="text"], input[type="number"], input[type="password"], input[type="file"] {
-      width: 100%; padding: 12px; margin: 4px 0 10px 0; border: 1px solid var(--border);
-      border-radius: 12px; font-size: 13px; background: #f8fafc; color: var(--text);
-    }
-    .btn-submit { width: 100%; padding: 12px; font-size: 13px; font-weight: 800; border: none; border-radius: 12px; background: var(--primary-gradient); color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+.ad-banner-card {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    color: white; border-radius: 18px; padding: 16px; text-align: center; margin-bottom: 14px;
+}
+.ad-banner-card img { width: 100%; border-radius: 12px; margin-top: 8px; }
 
-    .member-avatar {
-      width: 36px; height: 36px; border-radius: 50%; background: #3b82f6;
-      display: flex; align-items: center; justify-content: center; font-weight: bold;
-      color: #ffffff; font-size: 13px; flex-shrink: 0; overflow: hidden; border: 1px solid var(--border);
-    }
+.stock-alert-card {
+    background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
+    padding: 12px; border-radius: 14px; font-size: 11px; font-weight: bold; margin-bottom: 12px;
+}
 
-    .attendee-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 8px; gap: 10px; }
-    .att-btn-group { display: flex; gap: 4px; }
-    .att-btn { border: 1px solid var(--border); background: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
-    .att-btn.yes.active { background: var(--success); color: white; border-color: var(--success); }
-    .att-btn.no.active { background: var(--danger); color: white; border-color: var(--danger); }
-    .att-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.timetable-carousel-wrapper { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
+.day-card {
+    flex: 0 0 120px; scroll-snap-align: start; background: #f8fafc;
+    border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center;
+}
+.day-card.active-slot { background: #eff6ff; border-color: #93c5fd; }
+.day-card .day-name { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+.day-card.active-slot .day-name { color: var(--primary); }
 
-    .wa-sq-btn {
-      width: 34px; height: 34px; background: #25D366;
-      border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
-      text-decoration: none; border: none; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .wa-sq-btn svg { width: 20px; height: 20px; fill: white; }
+/* MASTER TIMETABLE MATRIX TABLE */
+.master-timetable-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
+.master-timetable-table th, .master-timetable-table td { border: 1px solid var(--border); padding: 8px 6px; text-align: center; }
+.master-timetable-table th { background: #f1f5f9; font-weight: 800; color: var(--text-muted); }
 
-    .password-container { position: relative; width: 100%; }
-    .password-toggle-btn { position: absolute; right: 10px; top: 12px; background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-muted); }
+.lvl-tag-premier { background: #dbeafe; color: #1e40af; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+.lvl-tag-f1 { background: #d1fae5; color: #065f46; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+.lvl-tag-f2 { background: #ede9fe; color: #5b21b6; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+.lvl-tag-f3 { background: #fef3c7; color: #92400e; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+.lvl-tag-f4a { background: #fee2e2; color: #991b1b; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+.lvl-tag-f4b { background: #fce7f3; color: #9d174d; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
 
-    .app-footer {
-      text-align: center; padding: 12px; font-size: 10px; font-weight: bold;
-      color: var(--text-muted); border-top: 1px solid var(--border); background: #ffffff;
-    }
+.split-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe; padding: 18px; border-radius: 20px; text-align: center; margin-bottom: 14px;
+}
+.split-box h3 { margin: 2px 0; color: var(--primary); font-size: 28px; font-weight: 900; }
 
-    .receipt-modal { display: none; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 9999; padding: 16px; backdrop-filter: blur(4px); }
-    .receipt-modal.active { display: flex; }
-    .receipt-content { background: #ffffff; border: 1px solid var(--border); color: var(--text); padding: 20px; border-radius: 20px; width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; }
-    .receipt-header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 12px; margin-bottom: 12px; }
-    .receipt-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+.attendee-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; }
+.att-btn-group { display: flex; gap: 4px; }
+.att-btn { border: 1px solid var(--border); background: #fff; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+.att-btn.yes.active { background: var(--green); color: white; border-color: var(--green); }
+.att-btn.no.active { background: var(--red); color: white; border-color: var(--red); }
+.att-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .audit-item { padding: 8px 10px; background: #f8fafc; border-radius: 8px; margin-bottom: 6px; font-size: 11px; border-left: 3px solid var(--primary); }
-  </style>
+.member-avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-weight: bold;
+    color: #ffffff; font-size: 12px; flex-shrink: 0;
+}
+
+.wa-sq-btn {
+    width: 32px; height: 32px; background: #25D366; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border: none; cursor: pointer;
+}
+.wa-sq-btn svg { width: 18px; height: 18px; fill: white; }
+
+.password-container { position: relative; width: 100%; }
+.password-toggle-btn { position: absolute; right: 10px; top: 11px; background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-muted); }
+
+.audit-item { padding: 8px 10px; background: #f8fafc; border-radius: 8px; margin-bottom: 6px; font-size: 11px; border-left: 3px solid var(--primary); }
+
+.app-footer {
+    text-align: center; padding: 12px; font-size: 10px; font-weight: bold;
+    color: var(--text-muted); border-top: 1px solid var(--border); background: #ffffff;
+}
+
+.receipt-modal { display: none; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 9999; padding: 16px; backdrop-filter: blur(4px); }
+.receipt-modal.active { display: flex; }
+.receipt-content { background: #ffffff; border: 1px solid var(--border); color: var(--text); padding: 20px; border-radius: 20px; width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; }
+.receipt-header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 12px; margin-bottom: 12px; }
+.receipt-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+</style>
 </head>
+
 <body>
 
 <div class="app-frame">
 
   <!-- SPLASH SCREEN WITH BADMINTON SHUTTLE EMBLEM -->
   <div id="splash-screen">
-    <div class="badge-crest-logo">
+    <div class="indian-club-badge">
       <svg viewBox="0 0 24 24">
         <path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/>
       </svg>
@@ -243,10 +246,10 @@
     <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
   </div>
 
-  <!-- AUTH OVERLAY -->
+  <!-- AUTH SCREEN -->
   <div id="auth-screen">
-    <div class="login-card">
-      <div style="display:flex; justify-content:center; gap:6px; margin-bottom:14px;">
+    <div class="login-box">
+      <div class="pills-bar">
         <button id="authTabPlayer" onclick="switchAuthTab('player')" class="pill-btn active">Player</button>
         <button id="authTabAdmin" onclick="switchAuthTab('admin')" class="pill-btn">Level Admin</button>
         <button id="authTabSuper" onclick="switchAuthTab('super')" class="pill-btn">Super Admin</button>
@@ -264,7 +267,7 @@
           <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
         </div>
 
-        <button onclick="loginPlayer()" class="btn-submit" style="margin-top:6px;">Sign In to App</button>
+        <button onclick="loginPlayer()" class="btn-primary">Sign In to App</button>
       </div>
 
       <!-- LEVEL ADMIN AUTH -->
@@ -279,10 +282,10 @@
           <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('adminAuthPass', this)">👁️</button>
         </div>
 
-        <button onclick="loginAdmin()" class="btn-submit" style="margin-top:6px; background:var(--success); color:white;">Sign In as Level Admin</button>
+        <button onclick="loginAdmin()" class="btn-green">Sign In as Level Admin</button>
       </div>
 
-      <!-- SUPER ADMIN AUTH WITH FLIGHT SELECTION -->
+      <!-- SUPER ADMIN AUTH WITH TARGET LEVEL SELECTOR -->
       <div id="authSuperForm" style="display:none;">
         <h3 style="margin:0 0 4px 0; font-size:18px;">Super Admin Portal</h3>
         <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Master control across all Indian Club levels.</p>
@@ -304,19 +307,19 @@
           <option value="Flight 4-B">Flight 4-B</option>
         </select>
 
-        <button onclick="loginSuperAdmin()" class="btn-submit" style="margin-top:6px; background:var(--accent-purple); color:white;">Sign In as Super Admin</button>
+        <button onclick="loginSuperAdmin()" class="btn-purple">Sign In as Super Admin</button>
       </div>
 
     </div>
   </div>
 
-  <!-- APP HEADER -->
+  <!-- HEADER BAR -->
   <div class="app-header">
     <div class="brand-title">
       <h3>🏸 Indian Club Badminton</h3>
     </div>
     <div style="display:flex; align-items:center; gap:6px;">
-      <select id="superFlightSwitcher" onchange="changeActiveFlightLevel(this.value)" style="display:none; padding:4px 6px; border-radius:10px; font-size:10px; font-weight:bold; background:var(--accent-purple); color:white; border:none; margin:0;">
+      <select id="superFlightSwitcher" onchange="changeActiveFlightLevel(this.value)" style="display:none; padding:4px 6px; border-radius:10px; font-size:10px; font-weight:bold; background:var(--secondary); color:white; border:none; margin:0;">
         <option value="Premier">Premier</option>
         <option value="Flight 1">Flight 1</option>
         <option value="Flight 2">Flight 2</option>
@@ -342,92 +345,86 @@
       <button onclick="toggleSideDrawer(false)" style="background:none; border:none; font-size:18px; color:var(--text); cursor:pointer;">✕</button>
     </div>
 
-    <div class="drawer-item active" id="dnav-timetable" onclick="navigateToDrawer('screen-timetable')">
-      📅 Schedule & Timetables
-    </div>
-
-    <div class="drawer-item" id="dnav-game" onclick="navigateToDrawer('screen-game')">
-      🏸 Game Log & Attendance
-    </div>
-
-    <div class="drawer-item" id="dnav-mylog" onclick="navigateToDrawer('screen-mylog')">
-      📜 My Attendance Log
-    </div>
-
-    <div class="drawer-item" id="dnav-summary" onclick="navigateToDrawer('screen-summary')">
-      📊 Summary Logs & Print
-    </div>
-
-    <div class="drawer-item" id="dnav-updates" onclick="navigateToDrawer('screen-updates')">
-      📢 Announcements & Ads
-    </div>
-
-    <div class="drawer-item admin-only-tab" id="dnav-unpaid" style="display:none;" onclick="navigateToDrawer('screen-unpaid')">
-      💳 Unpaid Statements
-    </div>
-
-    <div class="drawer-item admin-only-tab" id="dnav-settings" style="display:none;" onclick="navigateToDrawer('screen-settings')">
-      ⚙️ System Settings
-    </div>
+    <div class="drawer-item active" id="dnav-dashboard" onclick="navigateToDrawer('dashboard')">🏠 Dashboard</div>
+    <div class="drawer-item" id="dnav-timetable" onclick="navigateToDrawer('screen-timetable')">📅 Schedule & Timetables</div>
+    <div class="drawer-item" id="dnav-game" onclick="navigateToDrawer('screen-game')">🏸 Game Log & Attendance</div>
+    <div class="drawer-item" id="dnav-mylog" onclick="navigateToDrawer('screen-mylog')">📜 My Attendance Log</div>
+    <div class="drawer-item" id="dnav-summary" onclick="navigateToDrawer('screen-summary')">📊 Summary Logs & Print</div>
+    <div class="drawer-item" id="dnav-updates" onclick="navigateToDrawer('screen-updates')">📢 Announcements & Ads</div>
+    <div class="drawer-item admin-only-tab" id="dnav-unpaid" style="display:none;" onclick="navigateToDrawer('screen-unpaid')">💳 Unpaid Statements</div>
+    <div class="drawer-item admin-only-tab" id="dnav-settings" style="display:none;" onclick="navigateToDrawer('screen-settings')">⚙️ System Settings</div>
 
     <hr style="border:none; border-top:1px solid var(--border); margin:16px 0 8px 0;">
 
-    <div class="drawer-item" onclick="promptUpdateCredentials()" style="color:var(--primary);">
-      ⚙️ Update Credentials
-    </div>
-
-    <div class="drawer-item" onclick="switchUserAccount()" style="color:var(--danger);">
-      🚪 Log Out
-    </div>
+    <div class="drawer-item" onclick="promptUpdateCredentials()" style="color:var(--primary);">⚙️ Update Credentials</div>
+    <div class="drawer-item" onclick="switchUserAccount()" style="color:var(--red);">🚪 Log Out</div>
   </div>
 
-  <!-- SCROLLABLE BODY -->
+  <!-- APP BODY -->
   <div class="app-body">
-    
-    <!-- 1. SCHEDULE SCREEN -->
-    <div id="screen-timetable" class="screen active">
+
+    <!-- 0. DASHBOARD SCREEN -->
+    <div id="dashboard" class="section active">
+      <div class="card-grid">
+        <div class="card">
+          <p>Active Players</p>
+          <h3 id="dashActivePlayers">2</h3>
+        </div>
+        <div class="card">
+          <p>Tubes Stocked</p>
+          <h3 id="dashTubesStocked">2</h3>
+        </div>
+        <div class="card">
+          <p>Shuttles Used Today</p>
+          <h3 id="dashShuttlesUsed">2</h3>
+        </div>
+        <div class="card">
+          <p>Available Stock</p>
+          <h3 id="dashAvailableShuttles" style="color:var(--green);">22</h3>
+        </div>
+      </div>
+
       <div id="adBannerContainer" class="ad-banner-card">
         <small style="font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#a5b4fc;">Club Sponsor Announcement</small>
         <h4 style="margin:2px 0 0 0; font-size:13px; color:white;" id="adTitleDisplay">🎾 Pro Sports Shop - 15% Member Discount</h4>
         <div id="adImageWrapper"></div>
       </div>
 
-      <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="panel">
+        <h4>Your Assigned Flight Status (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
+        <p style="font-size:12px; color:var(--text-muted); margin:0;">Logged in session active. Use the side drawer menu to navigate through flight management sections.</p>
+      </div>
+    </div>
+
+    <!-- 1. SCHEDULE SCREEN -->
+    <div id="screen-timetable" class="section">
+      <div class="panel" style="display:flex; justify-content:space-between; align-items:center;">
         <div>
           <h4 style="margin:0;">Assigned Flight Level</h4>
           <span id="playerCurrentLevelDisplay" style="font-size:15px; font-weight:800; color:var(--primary);">Flight 4-A</span>
         </div>
       </div>
 
-      <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:white;">
+      <div class="panel" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:white;">
         <h4 style="color:#94a3b8;">Your Private Credit Balance</h4>
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <h2 id="userWalletDisplay" style="margin:0; font-size:26px; font-weight:800; color:#38bdf8;">BHD 0.000</h2>
-          <span id="userWalletBadge" class="badge-paid">ACTIVE</span>
+          <span id="userWalletBadge" style="background:var(--green); color:white; padding:2px 6px; border-radius:10px; font-size:10px; font-weight:bold;">ACTIVE</span>
         </div>
       </div>
 
-      <div class="card">
+      <div class="panel">
         <h4>Weekly Match Schedule (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
         <div id="timetableCarousel" class="timetable-carousel-wrapper"></div>
       </div>
 
-      <!-- MASTER TIMETABLE MATRIX (VISIBLE TO SUPER ADMIN ONLY) -->
-      <div id="superMasterTimetableCard" class="card is-super-only" style="display:none;">
+      <!-- MASTER TIMETABLE MATRIX (SUPER ADMIN ONLY) -->
+      <div id="superMasterTimetableCard" class="panel is-super-only" style="display:none;">
         <h4>👑 Master Flight Timetable Matrix (All Levels)</h4>
         <div style="overflow-x:auto;">
           <table class="master-timetable-table">
             <thead>
-              <tr>
-                <th>Flight</th>
-                <th>Sun</th>
-                <th>Mon</th>
-                <th>Tue</th>
-                <th>Wed</th>
-                <th>Thu</th>
-                <th>Fri</th>
-                <th>Sat</th>
-              </tr>
+              <tr><th>Flight</th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>
             </thead>
             <tbody>
               <tr><td><span class="lvl-tag-premier">Premier</span></td><td>8-10 PM</td><td>-</td><td>8-10 PM</td><td>-</td><td>-</td><td>6-9 PM</td><td>-</td></tr>
@@ -443,19 +440,19 @@
     </div>
 
     <!-- 2. GAME LOG SCREEN -->
-    <div id="screen-game" class="screen">
-      <div class="card">
+    <div id="screen-game" class="section">
+      <div class="panel">
         <h4>Attendance Checklist (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
         <p style="font-size:10px; color:var(--text-muted); margin-top:-6px; margin-bottom:10px;">Full Flight Roster. View everyone's status, but edit your own row only.</p>
         <div id="attendeeChecklist"></div>
       </div>
 
-      <div class="card">
+      <div class="panel">
         <h4 style="font-size:13px; color:var(--primary);">Shuttlecock Tube Inventory — <span class="adminLevelLabel">Flight 4-A</span></h4>
         
         <div id="stockAlertBox" class="stock-alert-card" style="display:none;">
           ⚠️ Low Shuttle Stock! Less than 1 tube available.
-          <button onclick="sendRefillAlertWhatsApp()" style="background:#dc2626; color:white; border:none; border-radius:6px; padding:4px 8px; font-size:10px; font-weight:bold; margin-top:4px; cursor:pointer;">📲 Send Refill Alert to Admin</button>
+          <button onclick="sendRefillAlertWhatsApp()" style="background:var(--red); color:white; border:none; border-radius:6px; padding:4px 8px; font-size:10px; font-weight:bold; margin-top:4px; cursor:pointer;">📲 Send Refill Alert to Admin</button>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -470,15 +467,15 @@
         <div style="background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:10px; font-size:11px; color:var(--text-muted);">
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
             <span>Tubes Stocked:</span>
-            <strong style="color:var(--text);"><span id="tubeCountDisplay">2</span> Tubes (<span id="totalShuttlesLoadedDisplay">24</span> Shuttles)</strong>
+            <strong style="color:var(--dark);"><span id="tubeCountDisplay">2</span> Tubes (<span id="totalShuttlesLoadedDisplay">24</span> Shuttles)</strong>
           </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
             <span>Price Per Tube:</span>
-            <strong style="color:var(--text);">BHD <span id="tubePriceDisplay">6.000</span></strong>
+            <strong style="color:var(--dark);">BHD <span id="tubePriceDisplay">6.000</span></strong>
           </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
             <span>Available Shuttles in Inventory:</span>
-            <strong style="color:var(--success);"><span id="availableShuttlesDisplay">22</span> Remaining</strong>
+            <strong style="color:var(--green);"><span id="availableShuttlesDisplay">22</span> Remaining</strong>
           </div>
           <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--border); padding-top:4px;">
             <span>Price Per Shuttle (BHD 6.000 ÷ 12):</span>
@@ -493,28 +490,28 @@
         <small style="color: #64748b; font-size:10px;">(Total Game Cost: BHD <span id="totalCostDisplay">1.000</span> ÷ <span id="playerCountDisplay">2</span> Attending)</small>
       </div>
 
-      <!-- STREAMLINED SETTLEMENT BUTTONS (EXACTLY 2 BUTTONS) -->
-      <div class="card">
+      <!-- STREAMLINED SETTLEMENT BUTTONS (2 BUTTONS) -->
+      <div class="panel">
         <h4>Select Settle Method</h4>
-        <button onclick="payViaWallet()" class="btn-submit" style="background:var(--success); color:white; margin-bottom:8px;">💳 Pay via Wallet Credit</button>
-        <button onclick="payViaMethod('BenefitPay / Cash')" class="btn-submit" style="background:#2563eb; color:white;">📱 BenefitPay / Cash</button>
+        <button onclick="payViaWallet()" class="btn-green" style="margin-bottom:8px;">💳 Pay via Wallet Credit</button>
+        <button onclick="payViaMethod('BenefitPay / Cash')" class="btn-primary">📱 BenefitPay / Cash</button>
       </div>
     </div>
 
     <!-- 3. MY LOG SCREEN -->
-    <div id="screen-mylog" class="screen">
-      <div class="card">
+    <div id="screen-mylog" class="section">
+      <div class="panel">
         <h4>My Attendance & Payment History</h4>
         <div id="myPersonalLogList"></div>
       </div>
     </div>
 
     <!-- 4. SUMMARY TAB & PRINT REPORT CENTER -->
-    <div id="screen-summary" class="screen">
-      <div class="card">
+    <div id="screen-summary" class="section">
+      <div class="panel">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <h4 style="margin:0;">Inventory & Session Summary (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
-          <button onclick="window.print()" class="btn-submit" style="width:auto; padding:6px 12px; font-size:11px; background:var(--primary-gradient);">🖨️ Print Report</button>
+          <button onclick="window.print()" class="btn-primary" style="width:auto; padding:6px 12px; font-size:11px;">🖨️ Print Report</button>
         </div>
 
         <div style="font-size:12px; line-height:1.8;">
@@ -528,17 +525,16 @@
           </div>
           <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:6px;">
             <span>Shuttles Consumed Today:</span>
-            <strong id="summaryShuttlesUsed" style="color:var(--danger);">2 Shuttles</strong>
+            <strong id="summaryShuttlesUsed" style="color:var(--red);">2 Shuttles</strong>
           </div>
           <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:6px;">
             <span>Remaining Tube Valuation:</span>
-            <strong id="summaryStockValue" style="color:var(--success);">BHD 11.000</strong>
+            <strong id="summaryStockValue" style="color:var(--green);">BHD 11.000</strong>
           </div>
         </div>
       </div>
 
-      <!-- SMART CONSUMPTION FORECASTING BOX -->
-      <div class="card" style="border-left: 4px solid var(--warning);">
+      <div class="panel" style="border-left: 4px solid var(--orange);">
         <h4>📈 Smart Consumption Forecast</h4>
         <div style="font-size:11px; color:var(--text-muted);" id="smartForecastDisplay">
           Analyzing stock velocity...
@@ -547,30 +543,30 @@
     </div>
 
     <!-- 5. UNPAID STATEMENT PAGE -->
-    <div id="screen-unpaid" class="screen">
+    <div id="screen-unpaid" class="section">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
         <h3 style="margin:0; font-size:14px;">Unpaid Statements</h3>
         <div style="display:flex; gap:4px;">
           <button onclick="sendAdminUnpaidSummaryWhatsApp()" class="wa-sq-btn" title="Send WhatsApp Summary to Admin">
             <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
           </button>
-          <button onclick="openReceiptModal()" style="background:var(--primary-gradient); color:white; font-weight:bold; padding:6px 10px; border-radius:8px; border:none; cursor:pointer; font-size:11px;">🖨️ Statement</button>
+          <button onclick="openReceiptModal()" class="btn-primary" style="width:auto; padding:6px 10px; font-size:11px;">🖨️ Statement</button>
         </div>
       </div>
       <div id="unpaidStatementList"></div>
     </div>
 
     <!-- 6. UPDATES & ANNOUNCEMENTS TAB -->
-    <div id="screen-updates" class="screen">
-      <div class="card">
+    <div id="screen-updates" class="section">
+      <div class="panel">
         <h4>Flight Announcements & Flyers</h4>
         <div id="updatesList"></div>
-        <button onclick="broadcastLevelAnnouncementWhatsApp()" class="btn-submit" style="background:#25D366; color:white; margin-top:10px;">📲 Broadcast Announcement to Level WhatsApp</button>
+        <button onclick="broadcastLevelAnnouncementWhatsApp()" class="btn-green" style="margin-top:10px;">📲 Broadcast Announcement to Level WhatsApp</button>
       </div>
     </div>
 
-    <!-- 7. ADMIN SETTINGS & SUPER ADMIN PORTAL (RE-ORGANIZED SUB-TABS) -->
-    <div id="screen-settings" class="screen">
+    <!-- 7. ADMIN SETTINGS & SUPER ADMIN PORTAL -->
+    <div id="screen-settings" class="section">
       <div class="pills-bar">
         <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ Admin Credentials</button>
         <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Players</button>
@@ -580,7 +576,7 @@
 
       <!-- SUB-TAB 1: ADMIN CREDENTIALS & TUBE PARAMETERS -->
       <div id="settings-config" class="settings-subtab">
-        <div class="card">
+        <div class="panel">
           <h4>Admin Credentials & Parameters (<span class="adminLevelLabel"></span>)</h4>
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">ADD NUMBER OF TUBES (12 SHUTTLES/PACK):</label>
           <input type="number" id="settingTubePacks" value="2">
@@ -600,22 +596,22 @@
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('editAdminPassword', this)">👁️</button>
           </div>
 
-          <button class="btn-submit" onclick="saveAdminSettings()">Save Inventory & Admin Credentials</button>
+          <button class="btn-primary" onclick="saveAdminSettings()">Save Inventory & Admin Credentials</button>
         </div>
       </div>
 
       <!-- SUB-TAB 2: PLAYERS TAB -->
       <div id="settings-members" class="settings-subtab" style="display:none;">
-        <div class="card">
+        <div class="panel">
           <h4>Register Player & Assign Temp Credentials (<span class="adminLevelLabel"></span>)</h4>
           <input type="text" id="newMemberID" placeholder="Assign Member ID (e.g. IC-103)">
           <input type="text" id="newPlayerName" placeholder="Full Member Name (e.g. Alex)">
           <input type="text" id="newPlayerPhone" placeholder="Mobile Phone (e.g. 97339123456)">
           <input type="password" id="newPlayerPassword" placeholder="Assign Temporary Password">
-          <button onclick="addPlayerByAdmin()" class="btn-submit">+ Register Player & Credentials</button>
+          <button onclick="addPlayerByAdmin()" class="btn-primary">+ Register Player & Credentials</button>
         </div>
 
-        <div class="card">
+        <div class="panel">
           <h4>Registered Flight Members & Top-Up</h4>
           <div id="adminFilteredPlayerList"></div>
         </div>
@@ -623,12 +619,12 @@
 
       <!-- SUB-TAB 3: DELEGATE ADMINS & SCHEDULE -->
       <div id="settings-coadmin" class="settings-subtab" style="display:none;">
-        <div class="card">
+        <div class="panel">
           <h4>Manage Level Delegate Admins (<span class="adminLevelLabel"></span>)</h4>
           <div id="coAdminList"></div>
         </div>
 
-        <div class="card">
+        <div class="panel">
           <h4>Weekly Schedule Manager (<span class="adminLevelLabel"></span>)</h4>
           <div style="display:flex; gap:6px;">
             <select id="scheduleDayInput">
@@ -642,20 +638,20 @@
             </select>
             <input type="text" id="scheduleTimeInput" placeholder="8:00 PM - 10:00 PM">
           </div>
-          <button onclick="saveWeeklyScheduleSlot()" class="btn-submit">Update Day Slot</button>
+          <button onclick="saveWeeklyScheduleSlot()" class="btn-primary">Update Day Slot</button>
         </div>
       </div>
 
-      <!-- CENTRALIZED SUPER ADMIN ADS, DELEGATION & AUDIT LOG PORTAL -->
+      <!-- CENTRALIZED SUPER ADMIN PORTAL -->
       <div id="settings-super" class="settings-subtab" style="display:none;">
-        <div class="card">
+        <div class="panel">
           <h4>👑 Super Admin Sponsor Ad & Announcement Portal</h4>
           
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">SPONSOR AD TITLE / ANNOUNCEMENT CAPTION:</label>
           <input type="text" id="superAdTitle" placeholder="e.g. Pro Sports Shop - 15% Off">
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">UPLOAD FLYER / BANNER IMAGE:</label>
           <input type="file" id="superAdImage" accept="image/*">
-          <button onclick="saveSponsorAd()" class="btn-submit" style="background:var(--accent-purple); color:white; margin-bottom:12px;">Publish Global Announcement & Ad</button>
+          <button onclick="saveSponsorAd()" class="btn-purple" style="margin-bottom:12px;">Publish Global Announcement & Ad</button>
 
           <hr style="border:none; border-top:1px dashed var(--border); margin:10px 0;">
 
@@ -673,13 +669,13 @@
           <input type="text" id="superAdminID" placeholder="Admin ID (e.g. ADM-4A)">
           <input type="text" id="superAdminName" placeholder="Admin Name">
           <input type="password" id="superAdminPass" placeholder="Admin Password">
-          <button onclick="assignAdminBySuper()" class="btn-submit" style="background:var(--success); color:white;">Assign Level Admin</button>
+          <button onclick="assignAdminBySuper()" class="btn-green">Assign Level Admin</button>
 
           <h4 style="margin-top:14px;">Flight Members List</h4>
           <div id="superFlightPlayerList"></div>
         </div>
 
-        <div class="card">
+        <div class="panel">
           <h4>📝 System Activity Audit Log (Read-Only)</h4>
           <div id="auditLogContainer" style="max-height: 200px; overflow-y: auto;"></div>
         </div>
@@ -700,7 +696,7 @@
 <div id="receiptModal" class="receipt-modal">
   <div class="receipt-content">
     <div class="receipt-header">
-      <h2 style="margin:0; font-size:15px; color:var(--text);">🏸 Indian Club Badminton Section</h2>
+      <h2 style="margin:0; font-size:15px; color:var(--dark);">🏸 Indian Club Badminton Section</h2>
       <small style="color:var(--text-muted); font-weight:bold;">Powered by NuZan AI Studio</small><br>
       <small id="receiptDate" style="color:var(--text-muted);"></small><br>
       <small id="receiptFlight" style="font-weight:bold; color:var(--primary);"></small>
@@ -710,21 +706,21 @@
 
     <hr style="border:none; border-top:1px dashed var(--border); margin:12px 0;">
     
-    <div class="receipt-row" style="font-weight:bold; font-size:12px; color:var(--danger);">
+    <div class="receipt-row" style="font-weight:bold; font-size:12px; color:var(--red);">
       <span>Total Outstanding Flight Dues:</span>
       <span id="receiptTotalPaid">BHD 0.000</span>
     </div>
 
     <div class="no-print" style="margin-top:16px; display:flex; gap:8px;">
-      <button onclick="window.print()" class="btn-submit" style="margin:0; background:var(--primary-gradient); color:white;">🖨️ Print / Save PDF</button>
-      <button onclick="closeReceiptModal()" class="btn-submit" style="margin:0; background:var(--danger); color:white;">Close</button>
+      <button onclick="window.print()" class="btn-primary">🖨️ Print / Save PDF</button>
+      <button onclick="closeReceiptModal()" class="btn-orange">Close</button>
     </div>
   </div>
 </div>
 
 <script>
   // BUILD CACHE BUSTER
-  const BUILD_VERSION = "v3.5.0";
+  const BUILD_VERSION = "v4.0.0";
   if (localStorage.getItem('icst_build_ver') !== BUILD_VERSION) {
     localStorage.clear();
     localStorage.setItem('icst_build_ver', BUILD_VERSION);
@@ -818,7 +814,7 @@
 
   function navigateToDrawer(screenId) {
     toggleSideDrawer(false);
-    showScreen(screenId);
+    showSection(screenId);
   }
 
   function changeActiveFlightLevel(newLevel) {
@@ -846,7 +842,7 @@
       addAuditLog(currentUser.name, "Updated personal credentials.");
       alert("Credentials updated successfully!");
     } else if (isAdmin) {
-      showScreen('screen-settings');
+      showSection('screen-settings');
       switchSettingsTab('settings-config');
     } else {
       alert("Please log in first!");
@@ -985,7 +981,7 @@
     renderAdminDashboard();
     renderCoAdmins();
     renderAuditLogs();
-    showScreen('screen-timetable');
+    showSection('dashboard');
   }
 
   function checkUserSession() {
@@ -999,15 +995,6 @@
 
         const wallet = currentUser.wallet || 0;
         document.getElementById('userWalletDisplay').innerText = `BHD ${wallet.toFixed(3)}`;
-        
-        const badge = document.getElementById('userWalletBadge');
-        if (wallet <= 0) {
-          badge.innerText = "OUT OF CREDIT"; badge.className = "badge-out";
-        } else if (wallet < 0.250) {
-          badge.innerText = "LOW BALANCE"; badge.className = "badge-low";
-        } else {
-          badge.innerText = "ACTIVE CREDIT"; badge.className = "badge-paid";
-        }
       }
 
       renderTimetableCarousel();
@@ -1032,12 +1019,14 @@
     checkUserSession();
   }
 
-  function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  function showSection(screenId) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.drawer-item').forEach(b => b.classList.remove('active'));
     
-    document.getElementById(screenId).classList.add('active');
+    const target = document.getElementById(screenId);
+    if (target) target.classList.add('active');
     
+    if (screenId === 'dashboard') document.getElementById('dnav-dashboard').classList.add('active');
     if (screenId === 'screen-timetable') document.getElementById('dnav-timetable').classList.add('active');
     if (screenId === 'screen-game') document.getElementById('dnav-game').classList.add('active');
     if (screenId === 'screen-mylog') {
@@ -1116,7 +1105,7 @@
 
       let walletText = '';
       if (isSelf || isAdmin) {
-        walletText = `<br><small style="color:${(p.wallet||0)<=0?'var(--danger)':'var(--text-muted)'};">
+        walletText = `<br><small style="color:${(p.wallet||0)<=0?'var(--red)':'var(--text-muted)'};">
           Credit: BHD ${(p.wallet||0).toFixed(3)} ${(p.wallet||0)<=0?'(OUT)':''}
         </small>`;
       }
@@ -1203,6 +1192,12 @@
     document.getElementById('totalCostDisplay').innerText = totalGameCost.toFixed(3);
     document.getElementById('splitDisplay').innerText = `BHD ${shareCost.toFixed(3)}`;
 
+    // DASHBOARD CARDS SYNCHRONIZATION
+    document.getElementById('dashActivePlayers').innerText = levelMembers.length;
+    document.getElementById('dashTubesStocked').innerText = tubePacks;
+    document.getElementById('dashShuttlesUsed').innerText = currentCorkCount;
+    document.getElementById('dashAvailableShuttles').innerText = availableShuttles;
+
     if (availableShuttles < 12) {
       document.getElementById('stockAlertBox').style.display = 'block';
     } else {
@@ -1244,7 +1239,7 @@
           </div>
           <div style="text-align:right;">
             <span style="font-weight:bold; color:var(--primary); font-size:12px;">BHD ${(log.amount||0).toFixed(3)}</span><br>
-            <small style="color:var(--success); font-weight:bold;">${log.method||'Settled'}</small>
+            <small style="color:var(--green); font-weight:bold;">${log.method||'Settled'}</small>
           </div>
         </div>
       `;
@@ -1286,7 +1281,7 @@
     window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(waMsg)}`, '_blank');
     
     alert(`✅ Paid BHD ${shareCost.toFixed(3)} from Wallet Credit!`);
-    showScreen('screen-timetable');
+    showSection('dashboard');
   }
 
   function payViaMethod(methodName) {
@@ -1335,10 +1330,10 @@
         <div class="attendee-item">
           <div>
             <strong>${m.name}</strong> <small style="color:#64748b;">(${m.memberId||'No ID'})</small><br>
-            <span style="color:var(--danger); font-size:11px; font-weight:bold;">Cumulative Dues: BHD ${totalOwed.toFixed(3)}</span>
+            <span style="color:var(--red); font-size:11px; font-weight:bold;">Cumulative Dues: BHD ${totalOwed.toFixed(3)}</span>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
-            <button onclick="clearMemberDues('${m.id}')" style="background:var(--success); color:white; border:none; border-radius:6px; padding:6px 8px; font-weight:bold; cursor:pointer; font-size:10px;">Mark Paid</button>
+            <button onclick="clearMemberDues('${m.id}')" style="background:var(--green); color:white; border:none; border-radius:6px; padding:6px 8px; font-weight:bold; cursor:pointer; font-size:10px;">Mark Paid</button>
             <a href="${waUrl}" target="_blank" class="wa-sq-btn" title="Send WhatsApp Reminder">
               <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
             </a>
@@ -1400,7 +1395,7 @@
       itemsContainer.innerHTML += `
         <div class="receipt-row">
           <span>${m.name} (${m.memberId||'ID N/A'})</span>
-          <span style="font-weight:bold; color:var(--danger);">BHD ${totalOwed.toFixed(3)}</span>
+          <span style="font-weight:bold; color:var(--red);">BHD ${totalOwed.toFixed(3)}</span>
         </div>
       `;
     });
@@ -1442,8 +1437,8 @@
             <a href="${waUrl}" target="_blank" class="wa-sq-btn" title="Notify Member">
               <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
             </a>
-            <button onclick="quickTopUpPrompt('${p.id}')" style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">+ Credit</button>
-            <button onclick="removePlayer('${p.id}')" style="background:var(--danger); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">Delete</button>
+            <button onclick="quickTopUpPrompt('${p.id}')" class="btn-primary" style="padding:6px 10px; font-size:11px;">+ Credit</button>
+            <button onclick="removePlayer('${p.id}')" style="background:var(--red); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">Delete</button>
           </div>
         </div>
       `;
@@ -1527,7 +1522,7 @@
             <strong>${a.name}</strong> <small style="color:#64748b;">(${a.adminId})</small><br>
             <small style="color:var(--primary);">Level: ${a.level}</small>
           </div>
-          <button onclick="removeCoAdmin('${a.adminId}')" style="background:var(--danger); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">Remove</button>
+          <button onclick="removeCoAdmin('${a.adminId}')" style="background:var(--red); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">Remove</button>
         </div>
       `;
     });
@@ -1636,7 +1631,7 @@
     addAuditLog(currentAdminObj ? currentAdminObj.name : "Admin", `Saved tube inventory parameters (${tubePacks} tubes @ BHD ${tubePriceBHD}).`);
     
     alert(`Tube stock and parameters saved for ${adminLevel}!`);
-    showScreen('screen-timetable');
+    showSection('dashboard');
   }
 
   if ('serviceWorker' in navigator) {
