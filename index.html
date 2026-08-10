@@ -409,7 +409,7 @@ button {
     <div id="screen-timetable" class="section">
       <div class="panel" style="display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <h4 style="margin:0;">Assigned Flight Level</h4>
+          <h4 style="margin:0;">Assigned Level Level</h4>
           <span id="playerCurrentLevelDisplay" style="font-size:15px; font-weight:800; color:var(--primary);">Level 4A</span>
         </div>
       </div>
@@ -499,7 +499,6 @@ button {
         <small style="color: #64748b; font-size:10px;">(Total Game Cost: BHD <span id="totalCostDisplay">1.000</span> ÷ <span id="playerCountDisplay">2</span> Attending)</small>
       </div>
 
-      <!-- STREAMLINED SETTLEMENT BUTTONS (2 BUTTONS) -->
       <div class="panel">
         <h4>Select Settle Method</h4>
         <button onclick="payViaWallet()" class="btn-green" style="margin-bottom:8px;">💳 Pay via Wallet Credit</button>
@@ -729,7 +728,7 @@ button {
 
 <script>
   // BUILD CACHE BUSTER
-  const BUILD_VERSION = "v5.0.0-logo";
+  const BUILD_VERSION = "v5.1.0-fulltabs";
   if (localStorage.getItem('icst_build_ver') !== BUILD_VERSION) {
     localStorage.clear();
     localStorage.setItem('icst_build_ver', BUILD_VERSION);
@@ -982,11 +981,6 @@ button {
     document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'flex');
     document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'inline-block');
     document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = adminLevel);
-    if (isSuperAdmin) {
-      ['dnav-game','dnav-mylog','dnav-unpaid','dnav-settings'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
-      const superItems = document.querySelectorAll('.is-super-only');
-      superItems.forEach(e => e.style.display='block');
-    }
     
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('userDrawerBadge').innerText = isSuperAdmin ? 'Super Admin' : `Admin (${adminLevel})`;
@@ -1029,7 +1023,6 @@ button {
     document.getElementById('superLevelSwitcher').style.display = 'none';
     document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'none');
-    ['dnav-game','dnav-mylog','dnav-unpaid','dnav-settings'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
     document.querySelectorAll('.is-super-only').forEach(e => e.style.display = 'none');
     checkUserSession();
   }
