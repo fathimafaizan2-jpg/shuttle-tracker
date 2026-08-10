@@ -6,7 +6,7 @@
   <title>Indian Club Badminton Section | NuZan AI Studio</title>
 
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0a0f1d">
+  <meta name="theme-color" content="#2563eb">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,17 +16,17 @@
 
   <style>
     :root {
-      --primary: #00f2fe;
-      --primary-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-      --bg-outer: #050811;
-      --bg-app: #0a0f1d;
-      --card-bg: #121829;
-      --border: rgba(255, 255, 255, 0.08);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
+      --primary: #2563eb;
+      --primary-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      --bg-outer: #0f172a;
+      --bg-app: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
       --success: #059669;
       --danger: #dc2626;
-      --warning: #f59e0b;
+      --warning: #d97706;
       --accent-purple: #7c3aed;
     }
 
@@ -42,70 +42,69 @@
     .app-frame {
       width: 100%; max-width: 430px; height: 100vh; max-height: 880px;
       background: var(--bg-app); position: relative; overflow: hidden;
-      display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     }
 
     @media (min-width: 500px) {
-      .app-frame { border-radius: 36px; border: 8px solid #1e293b; height: 840px; }
+      .app-frame { border-radius: 36px; border: 8px solid #334155; height: 840px; }
     }
 
-    /* SPLASH SCREEN WITH VIBRANT CREST LOGO */
+    /* SPLASH / WELCOME SCREEN */
     #splash-screen {
       position: absolute; inset: 0;
-      background: linear-gradient(135deg, #0a0f1d 0%, #1e1b4b 100%);
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
       color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
       z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; text-align: center; padding: 20px;
     }
 
-    .badge-crest-logo {
-      width: 90px; height: 90px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
-      border: 3px solid #00f2fe; box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
+    .indian-club-badge {
+      width: 90px; height: 90px; background: #ffffff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+      border: 4px solid #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
     }
-    .badge-crest-logo svg { width: 52px; height: 52px; fill: #00f2fe; }
+    .indian-club-badge svg { width: 50px; height: 50px; fill: #1e293b; }
 
-    .progress-bar-container { width: 140px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin: 16px 0; }
-    .progress-bar-fill { width: 0%; height: 100%; background: #00f2fe; animation: loadProgress 1.4s ease-in-out forwards; }
+    .progress-bar-container { width: 140px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin: 16px 0; }
+    .progress-bar-fill { width: 0%; height: 100%; background: #38bdf8; animation: loadProgress 1.4s ease-in-out forwards; }
     @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
 
     /* AUTH OVERLAY */
     #auth-screen {
-      position: absolute; inset: 0; background: rgba(10, 15, 29, 0.95);
-      backdrop-filter: blur(12px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
+      position: absolute; inset: 0; background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(10px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
     }
     .login-card {
-      background: var(--card-bg); border: 1px solid var(--border);
+      background: #ffffff; border: 1px solid var(--border);
       padding: 24px; border-radius: 24px; width: 100%; text-align: center;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-height: 90vh; overflow-y: auto;
     }
 
-    /* VIBRANT APP HEADER */
+    /* HEADER BAR */
     .app-header {
-      padding: 14px 18px; background: rgba(18, 24, 41, 0.85);
+      padding: 14px 18px; background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
       display: flex; justify-content: space-between; align-items: center; z-index: 100;
     }
-    .brand-title h3 { margin: 0; font-size: 15px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px; }
+    .brand-title h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
 
-    /* HAMBURGER SIDE DRAWER MENU */
     .menu-btn {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      border: 1px solid #334155; padding: 6px 12px; border-radius: 12px; font-size: 13px; font-weight: 800;
+      background: #f1f5f9; border: 1px solid var(--border);
+      padding: 6px 12px; border-radius: 12px; font-size: 13px; font-weight: 800;
       cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 6px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
+    /* SIDE DRAWER MENU */
     .side-drawer-overlay {
-      position: absolute; inset: 0; background: rgba(5, 8, 17, 0.8);
-      backdrop-filter: blur(6px); z-index: 9000; opacity: 0; pointer-events: none;
+      position: absolute; inset: 0; background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px); z-index: 9000; opacity: 0; pointer-events: none;
       transition: opacity 0.3s ease;
     }
     .side-drawer-overlay.active { opacity: 1; pointer-events: auto; }
 
     .side-drawer {
       position: absolute; top: 0; right: -280px; width: 280px; height: 100%;
-      background: #121829; border-left: 1px solid var(--border); z-index: 9500; transition: right 0.3s ease;
-      display: flex; flex-direction: column; padding: 20px 16px; box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+      background: #ffffff; z-index: 9500; transition: right 0.3s ease;
+      display: flex; flex-direction: column; padding: 20px 16px; box-shadow: -10px 0 25px rgba(0,0,0,0.15);
     }
     .side-drawer.active { right: 0; }
 
@@ -116,10 +115,9 @@
     .drawer-item {
       display: flex; align-items: center; gap: 12px; padding: 12px 14px;
       border-radius: 14px; color: var(--text); font-size: 13px; font-weight: 700;
-      cursor: pointer; text-decoration: none; margin-bottom: 4px; transition: all 0.2s ease;
+      cursor: pointer; text-decoration: none; margin-bottom: 4px; transition: background 0.2s ease;
     }
-    .drawer-item:hover, .drawer-item.active { background: rgba(0, 242, 254, 0.1); color: var(--primary); border: 1px solid rgba(0, 242, 254, 0.2); }
-    .drawer-item svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+    .drawer-item:hover, .drawer-item.active { background: #eff6ff; color: var(--primary); }
 
     .app-body { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 40px; }
     .app-body::-webkit-scrollbar { display: none; }
@@ -127,65 +125,80 @@
     .card {
       background: var(--card-bg); border: 1px solid var(--border);
       padding: 16px; border-radius: 20px; margin-bottom: 14px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
     }
     .card h4 { margin: 0 0 10px 0; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
 
     .ad-banner-card {
       background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
       color: white; border-radius: 18px; padding: 16px; text-align: center; margin-bottom: 14px; border: 1px solid #4338ca;
-      box-shadow: 0 8px 20px rgba(49, 46, 129, 0.4);
     }
     .ad-banner-card img { width: 100%; border-radius: 12px; margin-top: 8px; }
 
     .stock-alert-card {
-      background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.4); color: #fca5a5;
+      background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
       padding: 12px; border-radius: 14px; font-size: 11px; font-weight: bold; margin-bottom: 12px;
     }
 
     .timetable-carousel-wrapper { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
     .timetable-carousel-wrapper::-webkit-scrollbar { display: none; }
     .day-card {
-      flex: 0 0 120px; scroll-snap-align: start; background: #1a2238;
+      flex: 0 0 120px; scroll-snap-align: start; background: #f8fafc;
       border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center;
     }
-    .day-card.active-slot { background: rgba(0, 242, 254, 0.12); border-color: #00f2fe; }
+    .day-card.active-slot { background: #eff6ff; border-color: #93c5fd; }
     .day-card .day-name { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
     .day-card.active-slot .day-name { color: var(--primary); }
     .day-card .time-badge { font-size: 11px; font-weight: 700; margin-top: 4px; color: var(--text); }
 
-    .split-box {
-      background: linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(79, 172, 254, 0.15) 100%);
-      border: 1px solid rgba(0, 242, 254, 0.3); padding: 18px; border-radius: 20px; text-align: center; margin-bottom: 14px;
+    /* MASTER TIMETABLE MATRIX TABLE */
+    .master-timetable-table {
+      width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px;
     }
-    .split-box h3 { margin: 2px 0; color: var(--primary); font-size: 30px; font-weight: 900; text-shadow: 0 0 10px rgba(0, 242, 254, 0.3); }
+    .master-timetable-table th, .master-timetable-table td {
+      border: 1px solid var(--border); padding: 8px 6px; text-align: center;
+    }
+    .master-timetable-table th { background: #f1f5f9; font-weight: 800; color: var(--text-muted); }
+    
+    .lvl-tag-premier { background: #dbeafe; color: #1e40af; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+    .lvl-tag-f1 { background: #d1fae5; color: #065f46; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+    .lvl-tag-f2 { background: #ede9fe; color: #5b21b6; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+    .lvl-tag-f3 { background: #fef3c7; color: #92400e; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+    .lvl-tag-f4a { background: #fee2e2; color: #991b1b; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+    .lvl-tag-f4b { background: #fce7f3; color: #9d174d; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
+
+    .split-box {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1px solid #bfdbfe; padding: 18px; border-radius: 20px; text-align: center; margin-bottom: 14px;
+    }
+    .split-box h3 { margin: 2px 0; color: var(--primary); font-size: 30px; font-weight: 900; }
 
     .pills-bar { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 4px; }
     .pills-bar::-webkit-scrollbar { display: none; }
     .pill-btn {
       flex: 0 0 auto; padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border);
-      background: #1e293b; color: var(--text-muted); font-size: 11px; font-weight: 700; cursor: pointer;
+      background: #fff; color: var(--text-muted); font-size: 11px; font-weight: 700; cursor: pointer;
     }
-    .pill-btn.active { background: var(--primary-gradient); color: #050811; border-color: #00f2fe; font-weight: 800; }
+    .pill-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
     .screen { display: none !important; }
     .screen.active { display: block !important; }
 
     select, input[type="text"], input[type="number"], input[type="password"], input[type="file"] {
       width: 100%; padding: 12px; margin: 4px 0 10px 0; border: 1px solid var(--border);
-      border-radius: 12px; font-size: 13px; background: #1a2238; color: var(--text);
+      border-radius: 12px; font-size: 13px; background: #f8fafc; color: var(--text);
     }
-    .btn-submit { width: 100%; padding: 12px; font-size: 13px; font-weight: 800; border: none; border-radius: 12px; background: var(--primary-gradient); color: #050811; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 242, 254, 0.3); }
+    .btn-submit { width: 100%; padding: 12px; font-size: 13px; font-weight: 800; border: none; border-radius: 12px; background: var(--primary-gradient); color: white; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
 
     .member-avatar {
-      width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      width: 36px; height: 36px; border-radius: 50%; background: #3b82f6;
       display: flex; align-items: center; justify-content: center; font-weight: bold;
-      color: #ffffff; font-size: 13px; flex-shrink: 0; overflow: hidden; border: 1px solid rgba(255,255,255,0.2);
+      color: #ffffff; font-size: 13px; flex-shrink: 0; overflow: hidden; border: 1px solid var(--border);
     }
 
-    .attendee-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #1a2238; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 8px; gap: 10px; }
+    .attendee-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 8px; gap: 10px; }
     .att-btn-group { display: flex; gap: 4px; }
-    .att-btn { border: 1px solid var(--border); background: #121829; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+    .att-btn { border: 1px solid var(--border); background: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
     .att-btn.yes.active { background: var(--success); color: white; border-color: var(--success); }
     .att-btn.no.active { background: var(--danger); color: white; border-color: var(--danger); }
     .att-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -193,7 +206,7 @@
     .wa-sq-btn {
       width: 34px; height: 34px; background: #25D366;
       border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
-      text-decoration: none; border: none; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      text-decoration: none; border: none; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     .wa-sq-btn svg { width: 20px; height: 20px; fill: white; }
 
@@ -202,36 +215,35 @@
 
     .app-footer {
       text-align: center; padding: 12px; font-size: 10px; font-weight: bold;
-      color: var(--text-muted); border-top: 1px solid var(--border); background: #0d1322;
+      color: var(--text-muted); border-top: 1px solid var(--border); background: #ffffff;
     }
 
-    .receipt-modal { display: none; position: absolute; inset: 0; background: rgba(5, 8, 17, 0.85); align-items: center; justify-content: center; z-index: 9999; padding: 16px; backdrop-filter: blur(8px); }
+    .receipt-modal { display: none; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.7); align-items: center; justify-content: center; z-index: 9999; padding: 16px; backdrop-filter: blur(4px); }
     .receipt-modal.active { display: flex; }
-    .receipt-content { background: #121829; border: 1px solid var(--border); color: var(--text); padding: 20px; border-radius: 20px; width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; }
+    .receipt-content { background: #ffffff; border: 1px solid var(--border); color: var(--text); padding: 20px; border-radius: 20px; width: 100%; max-width: 360px; max-height: 80vh; overflow-y: auto; }
     .receipt-header { text-align: center; border-bottom: 2px dashed var(--border); padding-bottom: 12px; margin-bottom: 12px; }
     .receipt-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
 
-    /* AUDIT LOG ITEM STYLING */
-    .audit-item { padding: 8px 10px; background: #1a2238; border-radius: 8px; margin-bottom: 6px; font-size: 11px; border-left: 3px solid var(--primary); }
+    .audit-item { padding: 8px 10px; background: #f8fafc; border-radius: 8px; margin-bottom: 6px; font-size: 11px; border-left: 3px solid var(--primary); }
   </style>
 </head>
 <body>
 
 <div class="app-frame">
 
-  <!-- SPLASH SCREEN WITH BADMINTON EMBLEM -->
+  <!-- SPLASH SCREEN -->
   <div id="splash-screen">
-    <div class="badge-crest-logo">
+    <div class="indian-club-badge">
       <svg viewBox="0 0 24 24">
         <path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/>
       </svg>
     </div>
     <h3 style="margin:0; font-size:18px; color:#ffffff;">Welcome to Indian Club Badminton Section</h3>
-    <small style="color:#00f2fe; margin-top:6px; font-size:11px; font-weight:bold; letter-spacing:0.5px;">Powered by NuZan AI Studio</small>
+    <small style="color:#38bdf8; margin-top:6px; font-size:11px; font-weight:bold; letter-spacing:0.5px;">Powered by NuZan AI Studio</small>
     <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
   </div>
 
-  <!-- AUTH SCREEN -->
+  <!-- AUTH OVERLAY -->
   <div id="auth-screen">
     <div class="login-card">
       <div style="display:flex; justify-content:center; gap:6px; margin-bottom:14px;">
@@ -288,7 +300,7 @@
     </div>
   </div>
 
-  <!-- APP HEADER -->
+  <!-- HEADER BAR WITH HAMBURGER BUTTON -->
   <div class="app-header">
     <div class="brand-title">
       <h3>🏸 Indian Club Badminton</h3>
@@ -321,38 +333,31 @@
     </div>
 
     <div class="drawer-item active" id="dnav-timetable" onclick="navigateToDrawer('screen-timetable')">
-      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
-      Schedule & Matches
+      📅 Schedule & Timetables
     </div>
 
     <div class="drawer-item" id="dnav-game" onclick="navigateToDrawer('screen-game')">
-      <svg viewBox="0 0 24 24"><path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/></svg>
-      Game Log & Attendance
+      🏸 Game Log & Attendance
     </div>
 
     <div class="drawer-item" id="dnav-mylog" onclick="navigateToDrawer('screen-mylog')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      My Attendance Log
+      📜 My Attendance Log
     </div>
 
     <div class="drawer-item" id="dnav-summary" onclick="navigateToDrawer('screen-summary')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
-      Summary Logs & Print
+      📊 Summary Logs & Print
     </div>
 
     <div class="drawer-item" id="dnav-updates" onclick="navigateToDrawer('screen-updates')">
-      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
-      Announcements & Ads
+      📢 Announcements & Ads
     </div>
 
     <div class="drawer-item admin-only-tab" id="dnav-unpaid" style="display:none;" onclick="navigateToDrawer('screen-unpaid')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
-      Unpaid Statements
+      💳 Unpaid Statements
     </div>
 
     <div class="drawer-item admin-only-tab" id="dnav-settings" style="display:none;" onclick="navigateToDrawer('screen-settings')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33"/></svg>
-      System Settings
+      ⚙️ System Settings
     </div>
 
     <hr style="border:none; border-top:1px solid var(--border); margin:16px 0 8px 0;">
@@ -366,7 +371,7 @@
     </div>
   </div>
 
-  <!-- SCROLLABLE APP BODY -->
+  <!-- SCROLLABLE BODY -->
   <div class="app-body">
     
     <!-- 1. SCHEDULE SCREEN -->
@@ -387,14 +392,43 @@
       <div class="card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:white;">
         <h4 style="color:#94a3b8;">Your Private Credit Balance</h4>
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h2 id="userWalletDisplay" style="margin:0; font-size:26px; font-weight:800; color:#00f2fe;">BHD 0.000</h2>
+          <h2 id="userWalletDisplay" style="margin:0; font-size:26px; font-weight:800; color:#38bdf8;">BHD 0.000</h2>
           <span id="userWalletBadge" class="badge-paid">ACTIVE</span>
         </div>
       </div>
 
       <div class="card">
-        <h4>Weekly Match Schedule</h4>
+        <h4>Weekly Match Schedule (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
         <div id="timetableCarousel" class="timetable-carousel-wrapper"></div>
+      </div>
+
+      <!-- MASTER TIMETABLE MATRIX (VISIBLE TO SUPER ADMIN ONLY) -->
+      <div id="superMasterTimetableCard" class="card is-super-only" style="display:none;">
+        <h4>👑 Master Flight Timetable Matrix (All Levels)</h4>
+        <div style="overflow-x:auto;">
+          <table class="master-timetable-table">
+            <thead>
+              <tr>
+                <th>Flight</th>
+                <th>Sun</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Sat</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="lvl-tag-premier">Premier</span></td><td>8-10 PM</td><td>-</td><td>8-10 PM</td><td>-</td><td>-</td><td>6-9 PM</td><td>-</td></tr>
+              <tr><td><span class="lvl-tag-f1">Flight 1</span></td><td>-</td><td>8-10 PM</td><td>-</td><td>8-10 PM</td><td>-</td><td>6-9 PM</td><td>-</td></tr>
+              <tr><td><span class="lvl-tag-f2">Flight 2</span></td><td>8-10 PM</td><td>-</td><td>-</td><td>8-10 PM</td><td>-</td><td>-</td><td>6-9 PM</td></tr>
+              <tr><td><span class="lvl-tag-f3">Flight 3</span></td><td>-</td><td>8-10 PM</td><td>-</td><td>-</td><td>8-10 PM</td><td>6-9 PM</td><td>-</td></tr>
+              <tr><td><span class="lvl-tag-f4a">Flight 4A</span></td><td>8-10 PM</td><td>-</td><td>8-10 PM</td><td>-</td><td>-</td><td>6-9 PM</td><td>-</td></tr>
+              <tr><td><span class="lvl-tag-f4b">Flight 4B</span></td><td>-</td><td>8-10 PM</td><td>-</td><td>8-10 PM</td><td>-</td><td>-</td><td>6-9 PM</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -417,13 +451,13 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Shuttles Used Today:</span>
           <div style="display:flex; align-items:center; gap:10px;">
-            <button id="btnCorkMinus" class="admin-only-inline" onclick="updateCorkCount(-1)" style="display:none; width:30px; height:30px; border-radius:50%; background:var(--primary); border:none; color:#050811; font-weight:bold; cursor:pointer;">-</button>
+            <button id="btnCorkMinus" class="admin-only-inline" onclick="updateCorkCount(-1)" style="display:none; width:30px; height:30px; border-radius:50%; background:var(--primary); border:none; color:white; font-weight:bold; cursor:pointer;">-</button>
             <span id="corkDisplay" style="font-size: 20px; font-weight: bold; color:var(--primary);">2</span>
-            <button id="btnCorkPlus" class="admin-only-inline" onclick="updateCorkCount(1)" style="display:none; width:30px; height:30px; border-radius:50%; background:var(--primary); border:none; color:#050811; font-weight:bold; cursor:pointer;">+</button>
+            <button id="btnCorkPlus" class="admin-only-inline" onclick="updateCorkCount(1)" style="display:none; width:30px; height:30px; border-radius:50%; background:var(--primary); border:none; color:white; font-weight:bold; cursor:pointer;">+</button>
           </div>
         </div>
 
-        <div style="background:#1a2238; border:1px solid var(--border); border-radius:12px; padding:10px; font-size:11px; color:var(--text-muted);">
+        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:10px; font-size:11px; color:var(--text-muted);">
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
             <span>Tubes Stocked:</span>
             <strong style="color:var(--text);"><span id="tubeCountDisplay">2</span> Tubes (<span id="totalShuttlesLoadedDisplay">24</span> Shuttles)</strong>
@@ -444,7 +478,7 @@
       </div>
 
       <div class="split-box">
-        <small style="color: #94a3b8; font-weight: 700; font-size:10px;">YOUR REQUIRED PAYMENT SHARE</small>
+        <small style="color: #64748b; font-weight: 700; font-size:10px;">YOUR REQUIRED PAYMENT SHARE</small>
         <h3 id="splitDisplay">BHD 0.500</h3>
         <small style="color: #64748b; font-size:10px;">(Total Game Cost: BHD <span id="totalCostDisplay">1.000</span> ÷ <span id="playerCountDisplay">2</span> Attending)</small>
       </div>
@@ -470,7 +504,7 @@
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <h4 style="margin:0;">Inventory & Session Summary (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
-          <button onclick="window.print()" class="btn-submit" style="width:auto; padding:6px 12px; font-size:11px; background:var(--primary-gradient);">🖨️ Print Summary</button>
+          <button onclick="window.print()" class="btn-submit" style="width:auto; padding:6px 12px; font-size:11px; background:var(--primary-gradient);">🖨️ Print Report</button>
         </div>
 
         <div style="font-size:12px; line-height:1.8;">
@@ -510,32 +544,33 @@
           <button onclick="sendAdminUnpaidSummaryWhatsApp()" class="wa-sq-btn" title="Send WhatsApp Summary to Admin">
             <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
           </button>
-          <button onclick="openReceiptModal()" style="background:var(--primary-gradient); color:#050811; font-weight:bold; padding:6px 10px; border-radius:8px; border:none; cursor:pointer; font-size:11px;">🖨️ Statement</button>
+          <button onclick="openReceiptModal()" style="background:var(--primary-gradient); color:white; font-weight:bold; padding:6px 10px; border-radius:8px; border:none; cursor:pointer; font-size:11px;">🖨️ Statement</button>
         </div>
       </div>
       <div id="unpaidStatementList"></div>
     </div>
 
-    <!-- 6. UPDATES TAB -->
+    <!-- 6. UPDATES & ANNOUNCEMENTS TAB -->
     <div id="screen-updates" class="screen">
       <div class="card">
         <h4>Flight Announcements & Flyers</h4>
         <div id="updatesList"></div>
+        <button onclick="broadcastLevelAnnouncementWhatsApp()" class="btn-submit" style="background:#25D366; color:white; margin-top:10px;">📲 Broadcast Announcement to Level WhatsApp</button>
       </div>
     </div>
 
     <!-- 7. ADMIN SETTINGS & SUPER ADMIN PORTAL -->
     <div id="screen-settings" class="screen">
       <div class="pills-bar">
-        <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ Tubes & System</button>
-        <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Members</button>
+        <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ Admin Credentials</button>
+        <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Register Players</button>
         <button id="pill-coadmin" class="pill-btn" onclick="switchSettingsTab('settings-coadmin')">🔐 Delegate Admins</button>
         <button id="pill-super" class="pill-btn is-super-only" style="display:none;" onclick="switchSettingsTab('settings-super')">👑 Super Admin</button>
       </div>
 
       <div id="settings-config" class="settings-subtab">
         <div class="card">
-          <h4>Tube Stocking & Parameters (<span class="adminLevelLabel"></span>)</h4>
+          <h4>Admin Credentials & Parameters (<span class="adminLevelLabel"></span>)</h4>
           <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">ADD NUMBER OF TUBES (12 SHUTTLES/PACK):</label>
           <input type="number" id="settingTubePacks" value="2">
 
@@ -554,7 +589,7 @@
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('editAdminPassword', this)">👁️</button>
           </div>
 
-          <button class="btn-submit" onclick="saveAdminSettings()">Save Tube Inventory & Parameters</button>
+          <button class="btn-submit" onclick="saveAdminSettings()">Save Inventory & Admin Credentials</button>
         </div>
       </div>
 
@@ -576,12 +611,12 @@
 
       <div id="settings-coadmin" class="settings-subtab" style="display:none;">
         <div class="card">
-          <h4>Manage Level Admins (<span class="adminLevelLabel"></span>)</h4>
+          <h4>Manage Level Delegate Admins (<span class="adminLevelLabel"></span>)</h4>
           <div id="coAdminList"></div>
         </div>
       </div>
 
-      <!-- SUPER ADMIN ADS, DELEGATION & AUDIT LOG PORTAL -->
+      <!-- CENTRALIZED SUPER ADMIN ADS, DELEGATION & AUDIT LOG PORTAL -->
       <div id="settings-super" class="settings-subtab" style="display:none;">
         <div class="card">
           <h4>👑 Super Admin Sponsor Ad & Announcement Portal</h4>
@@ -614,7 +649,6 @@
           <div id="superFlightPlayerList"></div>
         </div>
 
-        <!-- READ-ONLY SYSTEM AUDIT LOG -->
         <div class="card">
           <h4>📝 System Activity Audit Log (Read-Only)</h4>
           <div id="auditLogContainer" style="max-height: 200px; overflow-y: auto;"></div>
@@ -636,7 +670,7 @@
 <div id="receiptModal" class="receipt-modal">
   <div class="receipt-content">
     <div class="receipt-header">
-      <h2 style="margin:0; font-size:15px; color:#ffffff;">🏸 Indian Club Badminton Section</h2>
+      <h2 style="margin:0; font-size:15px; color:var(--text);">🏸 Indian Club Badminton Section</h2>
       <small style="color:var(--text-muted); font-weight:bold;">Powered by NuZan AI Studio</small><br>
       <small id="receiptDate" style="color:var(--text-muted);"></small><br>
       <small id="receiptFlight" style="font-weight:bold; color:var(--primary);"></small>
@@ -652,7 +686,7 @@
     </div>
 
     <div class="no-print" style="margin-top:16px; display:flex; gap:8px;">
-      <button onclick="window.print()" class="btn-submit" style="margin:0; background:var(--primary-gradient); color:#050811;">🖨️ Print / Save PDF</button>
+      <button onclick="window.print()" class="btn-submit" style="margin:0; background:var(--primary-gradient); color:white;">🖨️ Print / Save PDF</button>
       <button onclick="closeReceiptModal()" class="btn-submit" style="margin:0; background:var(--danger); color:white;">Close</button>
     </div>
   </div>
@@ -660,7 +694,7 @@
 
 <script>
   // BUILD CACHE BUSTER
-  const BUILD_VERSION = "v3.3.0";
+  const BUILD_VERSION = "v3.4.0";
   if (localStorage.getItem('icst_build_ver') !== BUILD_VERSION) {
     localStorage.clear();
     localStorage.setItem('icst_build_ver', BUILD_VERSION);
@@ -764,6 +798,11 @@
     recalculateSplit();
     renderAdminDashboard();
     renderUnpaidStatements();
+  }
+
+  function broadcastLevelAnnouncementWhatsApp() {
+    const waMsg = `📢 *Indian Club Badminton Announcement (${adminLevel})*\n\nFriday session match schedules and flyer updates have been published in the Shuttle Tracker App. Please check your dashboard and confirm attendance.`;
+    window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(waMsg)}`, '_blank');
   }
 
   function promptUpdateCredentials() {
@@ -1145,7 +1184,6 @@
     document.getElementById('summaryShuttlesUsed').innerText = `${currentCorkCount} Shuttles`;
     document.getElementById('summaryStockValue').innerText = `BHD ${(availableShuttles * singleShuttlePrice).toFixed(3)}`;
 
-    // SMART FORECASTING ENGINE
     const sessionsRemaining = (availableShuttles / (currentCorkCount || 1)).toFixed(1);
     const weeksRemaining = (sessionsRemaining / 3).toFixed(1);
     document.getElementById('smartForecastDisplay').innerText = `Current usage rate (${currentCorkCount} shuttles/session) leaves ~${sessionsRemaining} sessions (${weeksRemaining} weeks) of stock. ${availableShuttles < 12 ? '⚠️ Reorder threshold reached!' : '🟢 Stock levels healthy.'}`;
@@ -1374,7 +1412,7 @@
             <a href="${waUrl}" target="_blank" class="wa-sq-btn" title="Notify Member">
               <svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.84 9.84 0 0 0 12.04 2z"/></svg>
             </a>
-            <button onclick="quickTopUpPrompt('${p.id}')" style="background:var(--primary); color:#050811; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">+ Credit</button>
+            <button onclick="quickTopUpPrompt('${p.id}')" style="background:var(--primary); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">+ Credit</button>
             <button onclick="removePlayer('${p.id}')" style="background:var(--danger); color:white; border:none; padding:6px 10px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:11px;">Delete</button>
           </div>
         </div>
