@@ -57,12 +57,12 @@
       z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; text-align: center; padding: 20px;
     }
 
-    .indian-club-badge {
-      width: 90px; height: 90px; background: #ffffff; border-radius: 50%;
+    .badge-crest-logo {
+      width: 84px; height: 84px; background: #ffffff; border-radius: 50%;
       display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
-      border: 4px solid #38bdf8; box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+      border: 3px solid #38bdf8; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
     }
-    .indian-club-badge svg { width: 50px; height: 50px; fill: #1e293b; }
+    .badge-crest-logo svg { width: 48px; height: 48px; fill: #1e293b; }
 
     .progress-bar-container { width: 140px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin: 16px 0; }
     .progress-bar-fill { width: 0%; height: 100%; background: #38bdf8; animation: loadProgress 1.4s ease-in-out forwards; }
@@ -83,7 +83,7 @@
     .app-header {
       padding: 14px 18px; background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
-      display: flex; justify-content: space-between; align-items: center; z-index: 100;
+      display: flex; justify-space-between; align-items: center; z-index: 100;
     }
     .brand-title h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
 
@@ -109,7 +109,7 @@
     .side-drawer.active { right: 0; }
 
     .drawer-header {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-space-between; align-items: center;
       border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
     }
     .drawer-item {
@@ -231,9 +231,9 @@
 
 <div class="app-frame">
 
-  <!-- SPLASH SCREEN -->
+  <!-- SPLASH SCREEN WITH BADMINTON SHUTTLE EMBLEM -->
   <div id="splash-screen">
-    <div class="indian-club-badge">
+    <div class="badge-crest-logo">
       <svg viewBox="0 0 24 24">
         <path d="M12 2L15 8L18 4L16 12L21 15L13 17L12 22L11 17L3 15L8 12L6 4L9 8L12 2Z"/>
       </svg>
@@ -282,7 +282,7 @@
         <button onclick="loginAdmin()" class="btn-submit" style="margin-top:6px; background:var(--success); color:white;">Sign In as Level Admin</button>
       </div>
 
-      <!-- SUPER ADMIN AUTH -->
+      <!-- SUPER ADMIN AUTH WITH FLIGHT SELECTION -->
       <div id="authSuperForm" style="display:none;">
         <h3 style="margin:0 0 4px 0; font-size:18px;">Super Admin Portal</h3>
         <p style="font-size:11px; color:var(--text-muted); margin:0 0 14px 0;">Master control across all Indian Club levels.</p>
@@ -294,13 +294,23 @@
           <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('superAuthPass', this)">👁️</button>
         </div>
 
+        <label style="font-size:11px; font-weight:bold; color:var(--text-muted); text-align:left; display:block; margin-top:6px;">INITIAL TARGET FLIGHT:</label>
+        <select id="superLoginInitialLevel">
+          <option value="Flight 4-A" selected>Flight 4-A</option>
+          <option value="Premier">Premier</option>
+          <option value="Flight 1">Flight 1</option>
+          <option value="Flight 2">Flight 2</option>
+          <option value="Flight 3">Flight 3</option>
+          <option value="Flight 4-B">Flight 4-B</option>
+        </select>
+
         <button onclick="loginSuperAdmin()" class="btn-submit" style="margin-top:6px; background:var(--accent-purple); color:white;">Sign In as Super Admin</button>
       </div>
 
     </div>
   </div>
 
-  <!-- HEADER BAR WITH HAMBURGER BUTTON -->
+  <!-- APP HEADER -->
   <div class="app-header">
     <div class="brand-title">
       <h3>🏸 Indian Club Badminton</h3>
@@ -441,7 +451,7 @@
       </div>
 
       <div class="card">
-        <h4>Shuttlecock Tube Inventory & Usage</h4>
+        <h4 style="font-size:13px; color:var(--primary);">Shuttlecock Tube Inventory — <span class="adminLevelLabel">Flight 4-A</span></h4>
         
         <div id="stockAlertBox" class="stock-alert-card" style="display:none;">
           ⚠️ Low Shuttle Stock! Less than 1 tube available.
@@ -483,11 +493,11 @@
         <small style="color: #64748b; font-size:10px;">(Total Game Cost: BHD <span id="totalCostDisplay">1.000</span> ÷ <span id="playerCountDisplay">2</span> Attending)</small>
       </div>
 
+      <!-- STREAMLINED SETTLEMENT BUTTONS (EXACTLY 2 BUTTONS) -->
       <div class="card">
         <h4>Select Settle Method</h4>
         <button onclick="payViaWallet()" class="btn-submit" style="background:var(--success); color:white; margin-bottom:8px;">💳 Pay via Wallet Credit</button>
-        <button onclick="payViaMethod('BenefitPay')" class="btn-submit" style="background:#2563eb; color:white; margin-bottom:8px;">📱 BenefitPay</button>
-        <button onclick="payViaMethod('Cash')" class="btn-submit" style="background:var(--warning); color:white;">💵 Cash</button>
+        <button onclick="payViaMethod('BenefitPay / Cash')" class="btn-submit" style="background:#2563eb; color:white;">📱 BenefitPay / Cash</button>
       </div>
     </div>
 
@@ -559,15 +569,16 @@
       </div>
     </div>
 
-    <!-- 7. ADMIN SETTINGS & SUPER ADMIN PORTAL -->
+    <!-- 7. ADMIN SETTINGS & SUPER ADMIN PORTAL (RE-ORGANIZED SUB-TABS) -->
     <div id="screen-settings" class="screen">
       <div class="pills-bar">
         <button id="pill-config" class="pill-btn active" onclick="switchSettingsTab('settings-config')">⚙️ Admin Credentials</button>
-        <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Register Players</button>
-        <button id="pill-coadmin" class="pill-btn" onclick="switchSettingsTab('settings-coadmin')">🔐 Delegate Admins</button>
+        <button id="pill-members" class="pill-btn" onclick="switchSettingsTab('settings-members')">👥 Players</button>
+        <button id="pill-coadmin" class="pill-btn" onclick="switchSettingsTab('settings-coadmin')">🔐 Delegate Admins & Schedule</button>
         <button id="pill-super" class="pill-btn is-super-only" style="display:none;" onclick="switchSettingsTab('settings-super')">👑 Super Admin</button>
       </div>
 
+      <!-- SUB-TAB 1: ADMIN CREDENTIALS & TUBE PARAMETERS -->
       <div id="settings-config" class="settings-subtab">
         <div class="card">
           <h4>Admin Credentials & Parameters (<span class="adminLevelLabel"></span>)</h4>
@@ -593,6 +604,7 @@
         </div>
       </div>
 
+      <!-- SUB-TAB 2: PLAYERS TAB -->
       <div id="settings-members" class="settings-subtab" style="display:none;">
         <div class="card">
           <h4>Register Player & Assign Temp Credentials (<span class="adminLevelLabel"></span>)</h4>
@@ -609,10 +621,28 @@
         </div>
       </div>
 
+      <!-- SUB-TAB 3: DELEGATE ADMINS & SCHEDULE -->
       <div id="settings-coadmin" class="settings-subtab" style="display:none;">
         <div class="card">
           <h4>Manage Level Delegate Admins (<span class="adminLevelLabel"></span>)</h4>
           <div id="coAdminList"></div>
+        </div>
+
+        <div class="card">
+          <h4>Weekly Schedule Manager (<span class="adminLevelLabel"></span>)</h4>
+          <div style="display:flex; gap:6px;">
+            <select id="scheduleDayInput">
+              <option value="Sunday">Sunday</option>
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
+            </select>
+            <input type="text" id="scheduleTimeInput" placeholder="8:00 PM - 10:00 PM">
+          </div>
+          <button onclick="saveWeeklyScheduleSlot()" class="btn-submit">Update Day Slot</button>
         </div>
       </div>
 
@@ -694,7 +724,7 @@
 
 <script>
   // BUILD CACHE BUSTER
-  const BUILD_VERSION = "v3.4.0";
+  const BUILD_VERSION = "v3.5.0";
   if (localStorage.getItem('icst_build_ver') !== BUILD_VERSION) {
     localStorage.clear();
     localStorage.setItem('icst_build_ver', BUILD_VERSION);
@@ -933,8 +963,8 @@
     if (superId === "SUPER-ADMIN" && superPass === "123456") {
       isAdmin = true;
       isSuperAdmin = true;
-      adminLevel = "Flight 4-A";
-      addAuditLog("Super Admin", "Master Super Admin logged in.");
+      adminLevel = document.getElementById('superLoginInitialLevel').value;
+      addAuditLog("Super Admin", `Master Super Admin logged in (Initial Level: ${adminLevel}).`);
       activateAdminMode();
       document.getElementById('superFlightSwitcher').style.display = 'inline-block';
       document.querySelectorAll('.is-super-only').forEach(e => e.style.display = 'block');
@@ -1568,6 +1598,22 @@
         window.open(waUrl, '_blank');
       }
     }
+  }
+
+  function saveWeeklyScheduleSlot() {
+    if (!isAdmin) return;
+    const day = document.getElementById('scheduleDayInput').value;
+    const timeStr = document.getElementById('scheduleTimeInput').value.trim();
+
+    if (!weeklyTimetables[adminLevel]) weeklyTimetables[adminLevel] = {};
+    if (timeStr === "") delete weeklyTimetables[adminLevel][day];
+    else weeklyTimetables[adminLevel][day] = timeStr;
+
+    localStorage.setItem('shuttle_timetables', JSON.stringify(weeklyTimetables));
+    db.collection("system").doc("timetable").set(weeklyTimetables);
+    renderTimetableCarousel();
+    addAuditLog(currentAdminObj ? currentAdminObj.name : "Admin", `Updated weekly timetable for ${adminLevel} on ${day}.`);
+    alert(`Updated ${day} schedule slot for ${adminLevel}!`);
   }
 
   function saveAdminSettings() {
