@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Shuttle Tracker | Module A & B Build</title>
+<title>Shuttle Tracker | Full Modular Build</title>
 <link rel="stylesheet" href="css/main.css">
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -23,7 +23,7 @@
     <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
   </div>
 
-  <!-- AUTH SCREEN (MODULE A) -->
+  <!-- AUTH SCREEN -->
   <div id="auth-screen">
     <div class="login-box">
       <div class="logo-lockup" style="margin-bottom:16px;">
@@ -36,7 +36,6 @@
         <button id="authTabSuper" onclick="switchAuthTab('super')" class="pill-btn">Super Admin</button>
       </div>
 
-      <!-- PLAYER AUTH -->
       <div id="authPlayerForm">
         <h3>Player Login</h3>
         <input type="text" id="loginMemberID" placeholder="Member ID (e.g. IC-101)">
@@ -44,7 +43,6 @@
         <button onclick="loginPlayer()" class="btn-primary">Sign In to App</button>
       </div>
 
-      <!-- LEVEL ADMIN AUTH -->
       <div id="authAdminForm" style="display:none;">
         <h3>Level Admin Login</h3>
         <input type="text" id="adminAuthID" placeholder="Admin ID (ADM-4A)">
@@ -52,7 +50,6 @@
         <button onclick="loginAdmin()" class="btn-green">Sign In as Level Admin</button>
       </div>
 
-      <!-- SUPER ADMIN AUTH -->
       <div id="authSuperForm" style="display:none;">
         <h3>Super Admin Portal</h3>
         <input type="text" id="superAuthID" placeholder="Super Admin ID (SUPER-ADMIN)">
@@ -79,7 +76,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:6px;">
-      <select id="superLevelSwitcher" onchange="changeActiveFlightLevel(this.value)" style="display:none; padding:4px 6px; font-size:10px; font-weight:bold; background:var(--secondary); color:white; border:none; margin:0;">
+      <select id="superLevelSwitcher" onchange="changeActiveFlightLevel(this.value)" style="display:none; padding:4px 6px; border-radius:10px; font-size:10px; font-weight:bold; background:var(--secondary); color:white; border:none; margin:0;">
         <option value="Premier">Premier</option>
         <option value="Level 1">Level 1</option>
         <option value="Level 2">Level 2</option>
@@ -91,7 +88,7 @@
     </div>
   </div>
 
-  <!-- SIDE DRAWER OVERLAY & MENU -->
+  <!-- SIDE DRAWER MENU (ALL TABS RESTORED) -->
   <div id="drawerOverlay" class="side-drawer-overlay" onclick="toggleSideDrawer(false)"></div>
   <div id="sideDrawer" class="side-drawer">
     <div class="drawer-header">
@@ -103,22 +100,71 @@
     </div>
 
     <div class="drawer-item active" onclick="showSection('dashboard')">🏠 Dashboard</div>
-    <div class="drawer-item admin-only-tab" style="display:none;" onclick="showSection('settings-members')">👥 Register Players (Module B)</div>
+    <div class="drawer-item" onclick="showSection('screen-timetable')">📅 Schedule & Timetables</div>
+    <div class="drawer-item" onclick="showSection('screen-game')">🏸 Game Log & Attendance</div>
+    <div class="drawer-item" onclick="showSection('screen-summary')">📊 Summary Logs</div>
+    <div class="drawer-item admin-only-tab" style="display:none;" onclick="showSection('settings-members')">👥 Register Players</div>
     <hr style="border:none; border-top:1px solid var(--border); margin:16px 0 8px 0;">
     <div class="drawer-item" onclick="logout()" style="color:var(--red);">🚪 Log Out</div>
   </div>
 
   <!-- APP BODY -->
   <div class="app-body">
-    <!-- DASHBOARD -->
+    <!-- 0. DASHBOARD -->
     <div id="dashboard" class="section active">
       <div class="panel">
         <h4>Assigned Level Status (<span class="adminLevelLabel">Level 4A</span>)</h4>
-        <p style="font-size:12px; color:var(--text-muted); margin:0;">Module A & B operational: Authentication and Roster management active.</p>
+        <p style="font-size:12px; color:var(--text-muted); margin:0;">System modularized cleanly. All screens enabled.</p>
       </div>
     </div>
 
-    <!-- MODULE B: REGISTER PLAYERS -->
+    <!-- 1. SCHEDULE SCREEN -->
+    <div id="screen-timetable" class="section">
+      <div class="panel">
+        <h4>Weekly Match Schedule (<span class="adminLevelLabel">Level 4A</span>)</h4>
+        <div id="timetableCarousel" class="timetable-carousel-wrapper"></div>
+      </div>
+    </div>
+
+    <!-- 2. GAME LOG & ATTENDANCE -->
+    <div id="screen-game" class="section">
+      <div class="panel">
+        <h4>Attendance Checklist (<span class="adminLevelLabel">Level 4A</span>)</h4>
+        <div id="attendeeChecklist"></div>
+      </div>
+
+      <div class="panel">
+        <h4>Shuttlecock Tube Inventory (<span class="adminLevelLabel">Level 4A</span>)</h4>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span>Shuttles Used Today:</span>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="admin-only-inline" onclick="updateCorkCount(-1)" style="display:none; width:28px; height:28px; border-radius:50%; background:var(--primary); border:none; color:white; font-weight:bold;">-</button>
+            <span id="corkDisplay" style="font-size:18px; font-weight:bold; color:var(--primary);">2</span>
+            <button class="admin-only-inline" onclick="updateCorkCount(1)" style="display:none; width:28px; height:28px; border-radius:50%; background:var(--primary); border:none; color:white; font-weight:bold;">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="text-align:center; background:#eff6ff;">
+        <small style="color:#64748b; font-weight:bold;">REQUIRED PAYMENT SHARE</small>
+        <h3 id="splitDisplay" style="color:var(--primary); font-size:26px; margin:4px 0;">BHD 0.500</h3>
+      </div>
+    </div>
+
+    <!-- 3. SUMMARY -->
+    <div id="screen-summary" class="section">
+      <div class="panel">
+        <h4>Inventory & Session Summary (<span class="adminLevelLabel">Level 4A</span>)</h4>
+        <button onclick="window.print()" class="btn-primary" style="padding:6px 12px; font-size:11px; margin-bottom:10px;">🖨️ Print Summary</button>
+        <div style="font-size:12px; line-height:1.8;">
+          <div>Tubes Stocked: <strong id="tubeCountDisplay">2</strong></div>
+          <div>Shuttles Loaded: <strong id="totalShuttlesLoadedDisplay">24</strong></div>
+          <div>Available Remaining: <strong id="availableShuttlesDisplay" style="color:var(--green);">22</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. REGISTER PLAYERS -->
     <div id="settings-members" class="section">
       <div class="panel">
         <h4>Register Player & Credentials (<span class="adminLevelLabel">Level 4A</span>)</h4>
@@ -146,6 +192,8 @@
 <script src="js/firebase-config.js"></script>
 <script src="js/modules/auth.js"></script>
 <script src="js/modules/levels.js"></script>
+<script src="js/modules/schedule.js"></script>
+<script src="js/modules/attendance.js"></script>
 
 <script>
   window.addEventListener('load', () => {
@@ -164,10 +212,14 @@
   function showSection(id) {
     toggleSideDrawer(false);
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+    const target = document.getElementById(id);
+    if (target) target.classList.add('active');
   }
 
   checkUserSession();
+  renderTimetableCarousel();
+  renderAttendees();
+  recalculateSplit();
 </script>
 
 </body>
