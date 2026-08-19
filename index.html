@@ -3,10 +3,176 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Shuttle Tracker | Full Modular Build</title>
-<link rel="stylesheet" href="css/main.css">
+<title>Shuttle Tracker | Indian Club Badminton Section</title>
+
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<style>
+:root {
+    --primary: #1261ff;
+    --primary-gradient: linear-gradient(135deg, #1261ff 0%, #1d4ed8 100%);
+    --secondary: #6c5ce7;
+    --dark: #0f172a;
+    --light: #f8fafc;
+    --white: #ffffff;
+    --green: #059669;
+    --red: #dc2626;
+    --orange: #d97706;
+    --border: #e2e8f0;
+    --text-muted: #64748b;
+    --shadow: 0 6px 20px rgba(20,30,60,.06);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--dark);
+    color: var(--dark);
+    display: flex; justify-content: center; align-items: center; min-height: 100vh;
+}
+
+.app-frame {
+    width: 100%; max-width: 430px; height: 100vh; max-height: 880px;
+    background: var(--light); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 500px) {
+    .app-frame { border-radius: 36px; border: 8px solid #334155; height: 840px; }
+}
+
+.logo-lockup { display:flex; align-items:center; gap:9px; justify-content:center; }
+.logo-mark { width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,#1261ff,#6c5ce7); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(18,97,255,.25); }
+.logo-mark svg { width:28px; height:28px; stroke:#fff; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.brand-lockup-text { font-weight:900; letter-spacing:.5px; color:#0f172a; text-align:left; }
+.brand-lockup-text small { display:block; font-size:8px; letter-spacing:1.1px; color:#64748b; margin-top:2px; }
+.splash-logo-mark { width:92px; height:92px; border-radius:28px; background:linear-gradient(135deg,#1261ff,#6c5ce7); display:flex; align-items:center; justify-content:center; box-shadow:0 0 30px rgba(56,189,248,.35); border:2px solid rgba(255,255,255,.25); }
+.splash-logo-mark svg { width:60px; height:60px; stroke:#fff; fill:none; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+
+/* SPLASH SCREEN */
+#splash-screen {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; text-align: center; padding: 20px;
+}
+
+.progress-bar-container { width: 140px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; margin: 16px 0; }
+.progress-bar-fill { width: 0%; height: 100%; background: #38bdf8; animation: loadProgress 1.4s ease-in-out forwards; }
+@keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
+
+/* LOGIN SCREEN */
+#auth-screen {
+    position: absolute; inset: 0; background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+
+.login-box {
+    width: 100%; background: white; padding: 25px; border-radius: 22px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.2); text-align: center; max-height: 90vh; overflow-y: auto;
+}
+
+.pills-bar { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; }
+.pill-btn {
+    padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: #fff; color: var(--text-muted); font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.pill-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+input, select {
+    width: 100%; padding: 11px; border: 1px solid var(--border);
+    border-radius: 10px; margin: 4px 0 12px; font-size: 13px; background: #f8fafc;
+}
+
+button {
+    border: 0; border-radius: 10px; padding: 12px; cursor: pointer; font-weight: bold; font-size: 13px;
+}
+
+.btn-primary { background: var(--primary); color: white; width: 100%; }
+.btn-green { background: var(--green); color: white; width: 100%; }
+.btn-purple { background: var(--secondary); color: white; width: 100%; }
+
+/* HEADER & SIDE DRAWER */
+.app-header {
+    padding: 14px 18px; background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; z-index: 100;
+}
+
+.menu-btn {
+    background: #f1f5f9; border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 800;
+    cursor: pointer; color: var(--primary); display: flex; align-items: center; gap: 6px;
+}
+
+.side-drawer-overlay {
+    position: absolute; inset: 0; background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px); z-index: 9000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+.side-drawer-overlay.active { opacity: 1; pointer-events: auto; }
+
+.side-drawer {
+    position: absolute; top: 0; right: -280px; width: 280px; height: 100%;
+    background: #ffffff; z-index: 9500; transition: right 0.3s ease;
+    display: flex; flex-direction: column; padding: 20px 16px; box-shadow: -10px 0 25px rgba(0,0,0,0.15);
+}
+.side-drawer.active { right: 0; }
+
+.drawer-header {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
+}
+.drawer-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    border-radius: 14px; color: var(--dark); font-size: 13px; font-weight: 700;
+    cursor: pointer; margin-bottom: 4px; transition: background 0.2s ease;
+}
+.drawer-item:hover, .drawer-item.active { background: #eff6ff; color: var(--primary); }
+
+.app-body { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 40px; }
+.app-body::-webkit-scrollbar { display: none; }
+
+.section { display: none !important; }
+.section.active { display: block !important; }
+
+.card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+.card { background: white; padding: 14px; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+.card h3 { margin: 4px 0 2px; font-size: 20px; font-weight: 800; color: var(--primary); }
+.card p { margin: 0; color: var(--text-muted); font-size: 11px; font-weight: bold; }
+
+.panel {
+    background: white; border-radius: 18px; padding: 16px;
+    margin-bottom: 14px; border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.panel h4 { margin: 0 0 10px 0; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+
+.timetable-carousel-wrapper { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.day-card {
+    flex: 0 0 120px; background: #f8fafc; border: 1px solid var(--border);
+    border-radius: 14px; padding: 12px 8px; text-align: center;
+}
+.day-card.active-slot { background: #eff6ff; border-color: #93c5fd; }
+.day-card .day-name { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+.day-card.active-slot .day-name { color: var(--primary); }
+
+.attendee-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; }
+.att-btn { border: 1px solid var(--border); background: #fff; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+.att-btn.yes.active { background: var(--green); color: white; border-color: var(--green); }
+.att-btn.no.active { background: var(--red); color: white; border-color: var(--red); }
+
+.member-avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-weight: bold; color: #ffffff; font-size: 12px;
+}
+
+.app-footer {
+    text-align: center; padding: 12px; font-size: 10px; font-weight: bold;
+    color: var(--text-muted); border-top: 1px solid var(--border); background: #ffffff;
+}
+</style>
 </head>
 
 <body>
@@ -16,9 +182,17 @@
   <!-- SPLASH SCREEN -->
   <div id="splash-screen">
     <div class="splash-logo-mark">
-      <svg viewBox="0 0 64 64"><path d="M32 8v24M20 16l12 16 12-16M17 14l15 18M47 14L32 32M23 18h18M25 44c4 5 10 7 14 0M27 50c3 3 7 4 10 0"/></svg>
+      <svg viewBox="0 0 64 64">
+        <path d="M32 8v24"/>
+        <path d="M20 16l12 16 12-16"/>
+        <path d="M17 14l15 18"/>
+        <path d="M47 14L32 32"/>
+        <path d="M23 18h18"/>
+        <path d="M25 44c4 5 10 7 14 0"/>
+        <path d="M27 50c3 3 7 4 10 0"/>
+      </svg>
     </div>
-    <h3 style="margin:14px 0 0; font-size:22px; color:#ffffff;">SHUTTLE TRACKER</h3>
+    <h3 style="margin:14px 0 0; font-size:22px; color:#ffffff; letter-spacing:1px;">SHUTTLE TRACKER</h3>
     <small style="color:#38bdf8; margin-top:6px; font-size:10px; font-weight:bold;">INDIAN CLUB BADMINTON SECTION</small>
     <div class="progress-bar-container"><div class="progress-bar-fill"></div></div>
   </div>
@@ -36,6 +210,7 @@
         <button id="authTabSuper" onclick="switchAuthTab('super')" class="pill-btn">Super Admin</button>
       </div>
 
+      <!-- PLAYER LOGIN -->
       <div id="authPlayerForm">
         <h3>Player Login</h3>
         <input type="text" id="loginMemberID" placeholder="Member ID (e.g. IC-101)">
@@ -43,6 +218,7 @@
         <button onclick="loginPlayer()" class="btn-primary">Sign In to App</button>
       </div>
 
+      <!-- ADMIN LOGIN -->
       <div id="authAdminForm" style="display:none;">
         <h3>Level Admin Login</h3>
         <input type="text" id="adminAuthID" placeholder="Admin ID (ADM-4A)">
@@ -50,6 +226,7 @@
         <button onclick="loginAdmin()" class="btn-green">Sign In as Level Admin</button>
       </div>
 
+      <!-- SUPER ADMIN LOGIN -->
       <div id="authSuperForm" style="display:none;">
         <h3>Super Admin Portal</h3>
         <input type="text" id="superAuthID" placeholder="Super Admin ID (SUPER-ADMIN)">
@@ -67,7 +244,7 @@
     </div>
   </div>
 
-  <!-- HEADER BAR -->
+  <!-- APP HEADER -->
   <div class="app-header">
     <div class="brand-title">
       <div class="logo-lockup" style="justify-content:flex-start;">
@@ -88,7 +265,7 @@
     </div>
   </div>
 
-  <!-- SIDE DRAWER MENU (ALL TABS RESTORED) -->
+  <!-- SIDE DRAWER OVERLAY & MENU -->
   <div id="drawerOverlay" class="side-drawer-overlay" onclick="toggleSideDrawer(false)"></div>
   <div id="sideDrawer" class="side-drawer">
     <div class="drawer-header">
@@ -110,15 +287,23 @@
 
   <!-- APP BODY -->
   <div class="app-body">
-    <!-- 0. DASHBOARD -->
+
+    <!-- DASHBOARD -->
     <div id="dashboard" class="section active">
+      <div class="card-grid">
+        <div class="card"><p>Active Players</p><h3 id="dashActivePlayers">2</h3></div>
+        <div class="card"><p>Tubes Stocked</p><h3 id="dashTubesStocked">2</h3></div>
+        <div class="card"><p>Shuttles Used</p><h3 id="dashShuttlesUsed">2</h3></div>
+        <div class="card"><p>Available Stock</p><h3 id="dashAvailableShuttles" style="color:var(--green);">22</h3></div>
+      </div>
+
       <div class="panel">
-        <h4>Assigned Level Status (<span class="adminLevelLabel">Level 4A</span>)</h4>
-        <p style="font-size:12px; color:var(--text-muted); margin:0;">System modularized cleanly. All screens enabled.</p>
+        <h4>Assigned Level (<span class="adminLevelLabel">Level 4A</span>)</h4>
+        <p style="font-size:12px; color:var(--text-muted); margin:0;">Logged in session active. Use the side menu to navigate.</p>
       </div>
     </div>
 
-    <!-- 1. SCHEDULE SCREEN -->
+    <!-- SCHEDULE SCREEN -->
     <div id="screen-timetable" class="section">
       <div class="panel">
         <h4>Weekly Match Schedule (<span class="adminLevelLabel">Level 4A</span>)</h4>
@@ -126,7 +311,7 @@
       </div>
     </div>
 
-    <!-- 2. GAME LOG & ATTENDANCE -->
+    <!-- GAME LOG & ATTENDANCE -->
     <div id="screen-game" class="section">
       <div class="panel">
         <h4>Attendance Checklist (<span class="adminLevelLabel">Level 4A</span>)</h4>
@@ -151,7 +336,7 @@
       </div>
     </div>
 
-    <!-- 3. SUMMARY -->
+    <!-- SUMMARY -->
     <div id="screen-summary" class="section">
       <div class="panel">
         <h4>Inventory & Session Summary (<span class="adminLevelLabel">Level 4A</span>)</h4>
@@ -164,7 +349,7 @@
       </div>
     </div>
 
-    <!-- 4. REGISTER PLAYERS -->
+    <!-- REGISTER PLAYERS -->
     <div id="settings-members" class="section">
       <div class="panel">
         <h4>Register Player & Credentials (<span class="adminLevelLabel">Level 4A</span>)</h4>
@@ -180,6 +365,7 @@
         <div id="adminFilteredPlayerList"></div>
       </div>
     </div>
+
   </div>
 
   <div class="app-footer">
@@ -188,39 +374,236 @@
 
 </div>
 
-<!-- SCRIPT INITIALIZATION -->
-<script src="js/firebase-config.js"></script>
-<script src="js/modules/auth.js"></script>
-<script src="js/modules/levels.js"></script>
-<script src="js/modules/schedule.js"></script>
-<script src="js/modules/attendance.js"></script>
-
 <script>
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      const splash = document.getElementById('splash-screen');
-      splash.style.opacity = '0';
-      setTimeout(() => splash.style.display = 'none', 500);
-    }, 1400);
+// VERSION CACHE BUSTER
+const BUILD_VERSION = "v6.0.0-fixed";
+if (localStorage.getItem('icst_build_ver') !== BUILD_VERSION) {
+  localStorage.clear();
+  localStorage.setItem('icst_build_ver', BUILD_VERSION);
+}
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const splash = document.getElementById('splash-screen');
+    splash.style.opacity = '0';
+    setTimeout(() => splash.style.display = 'none', 500);
+  }, 1400);
+});
+
+// SYSTEM STATE
+let currentUser = JSON.parse(localStorage.getItem('shuttle_user')) || null;
+let isAdmin = false;
+let isSuperAdmin = false;
+let activeFlightLevel = "Level 4A";
+let tubePacks = 2;
+let tubePriceBHD = 6.000;
+let currentCorkCount = 2;
+
+let adminAccounts = JSON.parse(localStorage.getItem('shuttle_admin_accounts')) || [
+  { adminId: "ADM-4A", name: "Admin Level 4A", password: "123", level: "Level 4A" }
+];
+
+let playersList = JSON.parse(localStorage.getItem('shuttle_players')) || [
+  { id: "p1", name: "Alex", memberId: "IC-101", phone: "97339123456", password: "123", level: "Level 4A", wallet: 1.000, coming: true },
+  { id: "p2", name: "Syed", memberId: "IC-102", phone: "97339000000", password: "123", level: "Level 4A", wallet: 0.000, coming: true }
+];
+
+let weeklyTimetables = {
+  "Level 4A": { "Sunday": "8:00 PM - 10:00 PM", "Tuesday": "8:00 PM - 10:00 PM", "Friday": "6:00 PM - 9:00 PM" }
+};
+
+function switchAuthTab(tab) {
+  document.getElementById('authPlayerForm').style.display = tab === 'player' ? 'block' : 'none';
+  document.getElementById('authAdminForm').style.display = tab === 'admin' ? 'block' : 'none';
+  document.getElementById('authSuperForm').style.display = tab === 'super' ? 'block' : 'none';
+
+  document.getElementById('authTabPlayer').classList.toggle('active', tab === 'player');
+  document.getElementById('authTabAdmin').classList.toggle('active', tab === 'admin');
+  document.getElementById('authTabSuper').classList.toggle('active', tab === 'super');
+}
+
+function loginPlayer() {
+  const memberId = document.getElementById('loginMemberID').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+
+  let existing = playersList.find(p => p.memberId === memberId && p.password === password);
+  if (existing) {
+    currentUser = existing;
+    localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
+    checkUserSession();
+  } else {
+    alert("Invalid Credentials or Member ID not found!");
+  }
+}
+
+function loginAdmin() {
+  const adminId = document.getElementById('adminAuthID').value.trim();
+  const password = document.getElementById('adminAuthPass').value.trim();
+
+  let found = adminAccounts.find(a => a.adminId === adminId && a.password === password);
+  if (found) {
+    isAdmin = true;
+    isSuperAdmin = false;
+    activeFlightLevel = found.level;
+    activateAdminMode();
+  } else {
+    alert("Invalid Admin Credentials!");
+  }
+}
+
+function loginSuperAdmin() {
+  const superId = document.getElementById('superAuthID').value.trim();
+  const superPass = document.getElementById('superAuthPass').value.trim();
+
+  if (superId === "SUPER-ADMIN" && superPass === "123456") {
+    isAdmin = true;
+    isSuperAdmin = true;
+    activeFlightLevel = document.getElementById('superLoginInitialLevel').value;
+    activateAdminMode();
+    document.getElementById('superLevelSwitcher').style.display = 'inline-block';
+  } else {
+    alert("Incorrect Super Admin Credentials!");
+  }
+}
+
+function activateAdminMode() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('userDrawerBadge').innerText = isSuperAdmin ? 'Super Admin' : `Admin (${activeFlightLevel})`;
+  document.querySelectorAll('.admin-only-tab').forEach(e => e.style.display = 'flex');
+  document.querySelectorAll('.admin-only-inline').forEach(e => e.style.display = 'inline-block');
+  showSection('dashboard');
+  renderAttendees();
+  renderLevelRoster();
+}
+
+function checkUserSession() {
+  if (!currentUser && !isAdmin) {
+    document.getElementById('auth-screen').style.display = 'flex';
+  } else {
+    document.getElementById('auth-screen').style.display = 'none';
+    if (currentUser) {
+      document.getElementById('userDrawerBadge').innerText = `${currentUser.name} (${currentUser.memberId})`;
+    }
+    renderAttendees();
+    renderTimetableCarousel();
+  }
+}
+
+function logout() {
+  localStorage.clear();
+  location.reload();
+}
+
+function toggleSideDrawer(show) {
+  document.getElementById('drawerOverlay').classList.toggle('active', show);
+  document.getElementById('sideDrawer').classList.toggle('active', show);
+}
+
+function showSection(id) {
+  toggleSideDrawer(false);
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  if (target) target.classList.add('active');
+}
+
+function changeActiveFlightLevel(lvl) {
+  activeFlightLevel = lvl;
+  document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = activeFlightLevel);
+  renderAttendees();
+  renderLevelRoster();
+}
+
+function renderTimetableCarousel() {
+  const container = document.getElementById('timetableCarousel');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const sched = weeklyTimetables[activeFlightLevel] || {};
+
+  days.forEach(day => {
+    const hasSlot = sched[day];
+    container.innerHTML += `
+      <div class="day-card ${hasSlot ? 'active-slot' : ''}">
+        <div class="day-name">${day}</div>
+        <div class="time-badge" style="font-size:10px; font-weight:bold;">${hasSlot || 'No Match'}</div>
+      </div>
+    `;
+  });
+}
+
+function renderAttendees() {
+  const container = document.getElementById('attendeeChecklist');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const filtered = playersList.filter(p => p.level === activeFlightLevel);
+  filtered.forEach(p => {
+    const isSelf = currentUser && p.id === currentUser.id;
+    const initial = p.name ? p.name.charAt(0).toUpperCase() : 'M';
+    container.innerHTML += `
+      <div class="attendee-item">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="member-avatar">${initial}</div>
+          <div><strong>${p.name}</strong> ${isSelf ? '(You)' : ''}</div>
+        </div>
+        <div>
+          <button class="att-btn yes ${p.coming !== false ? 'active' : ''}" onclick="setAttendance('${p.id}', true)">Yes</button>
+          <button class="att-btn no ${p.coming === false ? 'active' : ''}" onclick="setAttendance('${p.id}', false)">No</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function setAttendance(id, status) {
+  const p = playersList.find(item => item.id === id);
+  if (p) {
+    p.coming = status;
+    localStorage.setItem('shuttle_players', JSON.stringify(playersList));
+    renderAttendees();
+  }
+}
+
+function updateCorkCount(val) {
+  currentCorkCount = Math.max(1, currentCorkCount + val);
+  document.getElementById('corkDisplay').innerText = currentCorkCount;
+}
+
+function renderLevelRoster() {
+  const container = document.getElementById('adminFilteredPlayerList');
+  if (!container) return;
+  container.innerHTML = '';
+  const filtered = playersList.filter(p => p.level === activeFlightLevel);
+  filtered.forEach(p => {
+    container.innerHTML += `<div class="attendee-item"><div><strong>${p.name}</strong> (${p.memberId})</div></div>`;
+  });
+}
+
+function registerPlayerByAdmin() {
+  const memberId = document.getElementById('newMemberID').value.trim();
+  const name = document.getElementById('newPlayerName').value.trim();
+  const phone = document.getElementById('newPlayerPhone').value.trim();
+  const password = document.getElementById('newPlayerPassword').value.trim();
+
+  if (!memberId || !name || !password) {
+    alert("Please fill in Member ID, Name, and Password!");
+    return;
+  }
+
+  playersList.push({
+    id: `p_${Date.now()}`,
+    name, memberId, phone, password,
+    level: activeFlightLevel, wallet: 0.000, coming: true
   });
 
-  function toggleSideDrawer(show) {
-    document.getElementById('drawerOverlay').classList.toggle('active', show);
-    document.getElementById('sideDrawer').classList.toggle('active', show);
-  }
-
-  function showSection(id) {
-    toggleSideDrawer(false);
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    const target = document.getElementById(id);
-    if (target) target.classList.add('active');
-  }
-
-  checkUserSession();
-  renderTimetableCarousel();
+  localStorage.setItem('shuttle_players', JSON.stringify(playersList));
+  renderLevelRoster();
   renderAttendees();
-  recalculateSplit();
-</script>
+  alert(`Registered ${name} under ${activeFlightLevel}!`);
+}
 
+checkUserSession();
+</script>
 </body>
 </html>
