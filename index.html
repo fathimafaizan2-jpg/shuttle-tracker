@@ -44,7 +44,6 @@ body {
     .app-frame { border-radius: 36px; border: 8px solid #334155; height: 840px; }
 }
 
-/* BRANDING & HEADER */
 .logo-lockup { display:flex; align-items:center; gap:9px; justify-content:center; }
 .logo-mark { width:38px; height:38px; border-radius:12px; background:linear-gradient(135deg,#1261ff,#6c5ce7); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(18,97,255,.25); }
 .logo-mark svg { width:24px; height:24px; stroke:#fff; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
@@ -62,7 +61,6 @@ body {
 .progress-bar-fill { width: 0%; height: 100%; background: #38bdf8; animation: loadProgress 1.4s ease-in-out forwards; }
 @keyframes loadProgress { 0% { width: 0%; } 100% { width: 100%; } }
 
-/* LOGIN SCREEN */
 #auth-screen {
     position: absolute; inset: 0; background: rgba(15, 23, 42, 0.85);
     backdrop-filter: blur(10px); z-index: 8000; display: flex; align-items: center; justify-content: center; padding: 20px;
@@ -85,9 +83,7 @@ input, select {
     border-radius: 10px; margin: 4px 0 12px; font-size: 13px; background: #f8fafc;
 }
 
-button {
-    border: 0; border-radius: 10px; padding: 12px; cursor: pointer; font-weight: bold; font-size: 13px;
-}
+button { border: 0; border-radius: 10px; padding: 12px; cursor: pointer; font-weight: bold; font-size: 13px; }
 
 .btn-primary { background: var(--primary); color: white; width: 100%; }
 .btn-green { background: var(--green); color: white; width: 100%; }
@@ -135,7 +131,6 @@ button {
 .section { display: none !important; }
 .section.active { display: block !important; }
 
-/* SPORTS METRIC CARDS */
 .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
 .card { background: white; padding: 14px; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); }
 .card h3 { margin: 4px 0 2px; font-size: 22px; font-weight: 900; color: var(--primary); }
@@ -147,10 +142,7 @@ button {
 }
 .panel h4 { margin: 0 0 10px 0; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing:0.5px; }
 
-/* DYNAMIC STAT VISUALIZERS */
-.sports-progress {
-    height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin: 8px 0;
-}
+.sports-progress { height: 8px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin: 8px 0; }
 .sports-progress-bar { height: 100%; background: var(--primary-gradient); width: 0%; transition: width 0.4s ease; }
 
 .timetable-carousel-wrapper { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
@@ -172,9 +164,7 @@ button {
     display: flex; align-items: center; justify-content: center; font-weight: bold; color: #ffffff; font-size: 12px;
 }
 
-.bazaar-card {
-    background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 10px;
-}
+.bazaar-card { background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
 .bazaar-badge { background: #ede9fe; color: #6c5ce7; font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 6px; }
 
 .app-footer {
@@ -281,6 +271,7 @@ button {
     <div class="drawer-item" onclick="showSection('screen-bazaar')">🛍️ Indi Mart Directory</div>
     <div class="drawer-item" onclick="showSection('screen-news')">📰 Badminton News RSS</div>
     <div class="drawer-item admin-only-tab" style="display:none;" onclick="showSection('settings-members')">👥 Register Players</div>
+    <div class="drawer-item admin-only-tab" style="display:none;" onclick="showSection('settings-config')">⚙️ System Settings</div>
     <hr style="border:none; border-top:1px solid var(--border); margin:16px 0 8px 0;">
     <div class="drawer-item" onclick="logout()" style="color:var(--red);">🚪 Log Out</div>
   </div>
@@ -288,7 +279,7 @@ button {
   <!-- APP BODY -->
   <div class="app-body">
 
-    <!-- DASHBOARD WITH FLIGHT-SPECIFIC METRICS -->
+    <!-- DASHBOARD WITH FLIGHT METRICS -->
     <div id="dashboard" class="section active">
       <div class="panel" style="background:linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:white;">
         <small style="color:#38bdf8; font-weight:800; font-size:9px; letter-spacing:1px;">ACTIVE FLIGHT VIEW</small>
@@ -332,12 +323,21 @@ button {
 
       <div class="panel">
         <h4>Shuttlecock Tube Counter (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:13px; font-weight:bold;">Shuttles Opened Today:</span>
           <div style="display:flex; align-items:center; gap:10px;">
             <button class="admin-only-inline" onclick="updateCorkCount(-1)" style="display:none; width:32px; height:32px; border-radius:8px; background:var(--primary); border:none; color:white; font-weight:bold; font-size:16px;">-</button>
             <span id="corkDisplay" style="font-size:22px; font-weight:900; color:var(--primary);">2</span>
             <button class="admin-only-inline" onclick="updateCorkCount(1)" style="display:none; width:32px; height:32px; border-radius:8px; background:var(--primary); border:none; color:white; font-weight:bold; font-size:16px;">+</button>
+          </div>
+        </div>
+
+        <!-- ADMIN QUICK PRICE UPDATE FIELD -->
+        <div class="admin-only-inline" style="display:none; width:100%; border-top:1px dashed var(--border); padding-top:10px; margin-top:8px;">
+          <label style="font-size:10px; font-weight:bold; color:var(--text-muted);">⚙️ ADMIN: UPDATE PRICE PER TUBE (BHD):</label>
+          <div style="display:flex; gap:6px; margin-top:4px;">
+            <input type="number" id="quickTubePriceInput" step="0.100" style="margin:0; padding:6px; font-weight:bold;">
+            <button onclick="updateFlightTubePrice()" class="btn-green" style="width:auto; padding:6px 12px; font-size:11px;">Update Price</button>
           </div>
         </div>
       </div>
@@ -356,6 +356,7 @@ button {
           <button onclick="window.print()" class="btn-primary" style="padding:6px 12px; font-size:11px; width:auto;">🖨️ Print Summary</button>
         </div>
         <div style="font-size:12px; line-height:2.0;">
+          <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border);"><span>Price Per Tube:</span> <strong id="summaryTubePrice">BHD 6.000</strong></div>
           <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border);"><span>Tubes Stocked:</span> <strong id="summaryTotalTubes">0 Tubes</strong></div>
           <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border);"><span>Shuttles Loaded:</span> <strong id="summaryTotalShuttles">0 Shuttles</strong></div>
           <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border);"><span>Consumed Today:</span> <strong id="summaryShuttlesUsed" style="color:var(--red);">0 Shuttles</strong></div>
@@ -364,7 +365,7 @@ button {
       </div>
     </div>
 
-    <!-- INDI MART / BAZAAR DIRECTORY (MODULE J & K) -->
+    <!-- INDI MART / BAZAAR DIRECTORY -->
     <div id="screen-bazaar" class="section">
       <div class="panel">
         <h4>🛍️ Indi Mart & Community Bazaar</h4>
@@ -422,6 +423,20 @@ button {
       </div>
     </div>
 
+    <!-- SYSTEM SETTINGS (ADMIN SHUTTLE PRICE UPDATE) -->
+    <div id="settings-config" class="section">
+      <div class="panel">
+        <h4>Flight Inventory Parameters (<span class="adminLevelLabel">Flight 4-A</span>)</h4>
+        <label style="font-size:11px; font-weight:bold; color:var(--text-muted);">PRICE PER TUBE (BHD):</label>
+        <input type="number" id="settingTubePrice" step="0.100" value="6.000">
+
+        <label style="font-size:11px; font-weight:bold; color:var(--text-muted);">ADD NUMBER OF TUBES (12 SHUTTLES/PACK):</label>
+        <input type="number" id="settingTubePacks" value="2">
+
+        <button onclick="saveAdminSettings()" class="btn-green">Save Inventory Parameters</button>
+      </div>
+    </div>
+
   </div>
 
   <div class="app-footer">
@@ -431,7 +446,7 @@ button {
 </div>
 
 <script>
-const BUILD_VERSION = "v7.0.0-flight-isolated";
+const BUILD_VERSION = "v8.0.0-price-update-fixed";
 if (localStorage.getItem('icst_build_ver') !== BUILD_VERSION) {
   localStorage.clear();
   localStorage.setItem('icst_build_ver', BUILD_VERSION);
@@ -445,7 +460,6 @@ window.addEventListener('load', () => {
   }, 1400);
 });
 
-// FLIGHT-ISOLATED DATA MODEL
 let currentUser = JSON.parse(localStorage.getItem('shuttle_user')) || null;
 let isAdmin = false;
 let isSuperAdmin = false;
@@ -572,6 +586,30 @@ function changeActiveFlightLevel(lvl) {
   refreshFlightData();
 }
 
+function updateFlightTubePrice() {
+  if (!isAdmin) return;
+  const newPrice = parseFloat(document.getElementById('quickTubePriceInput').value);
+  if (!isNaN(newPrice) && newPrice > 0) {
+    flightInventories[activeFlightLevel].tubePrice = newPrice;
+    localStorage.setItem('shuttle_flight_inventories', JSON.stringify(flightInventories));
+    refreshFlightData();
+    alert(`Updated shuttle tube price to BHD ${newPrice.toFixed(3)} for ${activeFlightLevel}!`);
+  }
+}
+
+function saveAdminSettings() {
+  if (!isAdmin) return;
+  const packs = parseInt(document.getElementById('settingTubePacks').value) || 2;
+  const price = parseFloat(document.getElementById('settingTubePrice').value) || 6.000;
+
+  flightInventories[activeFlightLevel].tubePacks = packs;
+  flightInventories[activeFlightLevel].tubePrice = price;
+
+  localStorage.setItem('shuttle_flight_inventories', JSON.stringify(flightInventories));
+  refreshFlightData();
+  alert(`Saved inventory parameters for ${activeFlightLevel}!`);
+}
+
 function refreshFlightData() {
   document.querySelectorAll('.adminLevelLabel').forEach(e => e.innerText = activeFlightLevel);
   
@@ -589,7 +627,6 @@ function refreshFlightData() {
   const share = (inv.corksUsed * singlePrice) / activeCount;
   const pct = Math.min(100, Math.round((inv.corksUsed / totalLoaded) * 100));
 
-  // UPDATE DASHBOARD SPONSOR CARDS & PROGRESS
   document.getElementById('dashActivePlayers').innerText = flightMembers.length;
   document.getElementById('dashTubesStocked').innerText = inv.tubePacks;
   document.getElementById('dashShuttlesUsed').innerText = inv.corksUsed;
@@ -598,11 +635,13 @@ function refreshFlightData() {
   document.getElementById('dashTotalShuttlesText').innerText = totalLoaded;
   document.getElementById('dashShuttlesProgressBar').style.width = `${pct}%`;
 
-  // UPDATE CHECKLIST & CORK DISPLAY
   document.getElementById('corkDisplay').innerText = inv.corksUsed;
+  document.getElementById('quickTubePriceInput').value = inv.tubePrice.toFixed(3);
+  document.getElementById('settingTubePrice').value = inv.tubePrice.toFixed(3);
+  document.getElementById('settingTubePacks').value = inv.tubePacks;
   document.getElementById('splitDisplay').innerText = `BHD ${share.toFixed(3)}`;
 
-  // UPDATE SUMMARY VALUATION
+  document.getElementById('summaryTubePrice').innerText = `BHD ${inv.tubePrice.toFixed(3)}`;
   document.getElementById('summaryTotalTubes').innerText = `${inv.tubePacks} Tubes`;
   document.getElementById('summaryTotalShuttles').innerText = `${totalLoaded} Shuttles`;
   document.getElementById('summaryShuttlesUsed').innerText = `${inv.corksUsed} Shuttles`;
