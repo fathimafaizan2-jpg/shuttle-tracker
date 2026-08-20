@@ -1,6 +1,7 @@
-// NAVIGATION ENGINE & UTILITIES
+// NAVIGATION ENGINE & API FETCH WRAPPERS
 function toast(message) {
   const box = document.getElementById("toast");
+  if (!box) return;
   box.textContent = message;
   box.classList.remove("hidden");
   setTimeout(() => box.classList.add("hidden"), 2500);
@@ -11,26 +12,12 @@ function go(page) {
   render();
 }
 
-function setAttendance(value) {
-  state.attendance = value;
-  toast("Attendance updated to " + value);
-  render();
-}
-
 function pageHead(title, text, extra = "") {
   return `
     <div class="page-head">
       <div><h2>${title}</h2><p>${text}</p></div>
       ${extra}
     </div>`;
-}
-
-function flightClass(name) {
-  if (name === "Premier") return "premier";
-  if (name === "Flight 1") return "flight1";
-  if (name === "Flight 2") return "flight2";
-  if (name === "Flight 3") return "flight3";
-  return "flight4";
 }
 
 function simple(title, text) {
@@ -57,7 +44,10 @@ function render() {
     profile: () => simple("My Profile", "Profile, contact preferences, language and secure password change.")
   };
 
-  document.getElementById("view").innerHTML = (pageMap[state.page] || window.views.home)();
+  const viewContainer = document.getElementById("view");
+  if (viewContainer) {
+    viewContainer.innerHTML = (pageMap[state.page] || window.views.home)();
+  }
 
   const isAdmin = state.role === "LEVEL_ADMIN" || state.role === "SUPER_ADMIN";
   const isSuper = state.role === "SUPER_ADMIN";
@@ -66,6 +56,6 @@ function render() {
   document.querySelectorAll(".super-nav").forEach(el => el.classList.toggle("hidden", !isSuper));
   document.querySelectorAll(".nav").forEach(el => el.classList.toggle("active", el.dataset.page === state.page));
 
-  document.getElementById("roleLabel").textContent = state.role.replace("_", " ");
-  document.getElementById("sideRole").textContent = isSuper ? "Super Admin · All flights" : isAdmin ? "Level Admin · Flight 1" : "Player · Flight 1";
+  const roleLabel = document.getElementById("roleLabel");
+  if (roleLabel) roleLabel.textContent = state.role.replace("_", " ");
 }
