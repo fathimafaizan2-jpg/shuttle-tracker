@@ -9,6 +9,7 @@ import { timetableRouter } from "./routes/timetable.js";
 import { inventoryRouter } from "./routes/inventory.js";
 import { reportsRouter } from "./routes/reports.js";
 import { arrearsRouter } from "./routes/arrears.js";
+import { activitiesRouter } from "./routes/activities.js";
 import { requireAuth } from "./auth.js";
 
 const app = express();
@@ -26,6 +27,7 @@ app.use("/api/timetable", timetableRouter);
 app.use("/api/inventory", inventoryRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/arrears", arrearsRouter);
+app.use("/api/activities", activitiesRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const message = err instanceof Error ? err.message : "Unexpected error";
