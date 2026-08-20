@@ -6,6 +6,91 @@
   <meta name="theme-color" content="#172554" />
   <title>Shuttle Tracker | Indian Club Badminton Section</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* PUBLIC LANDING PAGE STYLES */
+    .public-container {
+      max-width: 520px;
+      margin: 20px auto;
+      padding: 16px;
+    }
+    .club-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      margin-bottom: 16px;
+    }
+    .club-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1261ff, #6c5ce7);
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 26px;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+    .official-notice-card {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      color: white;
+      padding: 16px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 20px rgba(30, 27, 75, 0.25);
+    }
+    .notice-badge {
+      background: #dc2626;
+      color: white;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 3px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .sponsor-carousel {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .public-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .public-btn {
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--ink);
+      cursor: pointer;
+      text-align: center;
+    }
+    .public-btn.primary {
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      color: white;
+      border: none;
+    }
+    .public-footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+  </style>
 </head>
 <body>
 
@@ -18,12 +103,51 @@
     </div>
   </section>
 
-  <!-- LOGIN SCREEN -->
-  <section id="login" class="login hidden">
-    <div class="login-card">
+  <!-- PUBLIC COMMUNITY LANDING PAGE & LOGIN -->
+  <div id="publicLanding" class="public-container hidden">
+    
+    <!-- 1. OFFICIAL CLUB BRANDING HEADER -->
+    <div class="club-header">
+      <div class="club-logo">🏸</div>
+      <div>
+        <h2 style="margin:0; font-size:18px; color:var(--ink);">THE INDIAN CLUB</h2>
+        <small style="color:var(--muted); font-weight:700;">BAHRAIN · BADMINTON SECTION</small>
+      </div>
+    </div>
+
+    <!-- 2. OFFICIAL CLUB NOTICE TICKER -->
+    <div class="official-notice-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span class="notice-badge">Official Announcement</span>
+        <small style="opacity:0.8; font-weight:bold;">Indian Club Executive</small>
+      </div>
+      <h3 style="margin:4px 0; font-size:15px; color:white;" id="publicNoticeTitle">🇮🇳 Indian Club Tournament Announcement</h3>
+      <p style="margin:0; font-size:11px; opacity:0.85;" id="publicNoticeBody">Registration open for all flight levels. Contact section committee for entries.</p>
+    </div>
+
+    <!-- 3. PUBLIC SPONSOR FLYER CAROUSEL -->
+    <div class="sponsor-carousel">
+      <small style="color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">Featured Sponsor & Offer</small>
+      <h4 style="margin:4px 0 0 0; font-size:14px; color:var(--blue);" id="publicSponsorTitle">Pro Sports Shop Bahrain — 15% Member Discount</h4>
+      <div id="publicSponsorImageWrapper">
+        <div style="background:#f1f5f9; height:120px; border-radius:12px; display:grid; place-items:center; margin:8px 0; color:var(--muted); font-weight:bold;">
+          🎾 Special Yonex AS-30 Shuttlecock Offer Available
+        </div>
+      </div>
+      <small style="color:var(--muted); font-size:11px;">Show your Shuttle Tracker ID card in store.</small>
+    </div>
+
+    <!-- 4. QUICK ACTION BUTTONS -->
+    <div class="public-actions">
+      <button class="public-btn primary" onclick="toggleLoginCard(true)">🔐 Member / Admin Login</button>
+      <button class="public-btn" onclick="openPublicDirectory()">🛍️ Community Directory</button>
+    </div>
+
+    <!-- 5. LOGIN CARD (TOGGLED VIA BUTTON) -->
+    <section id="login" class="login-card hidden" style="margin-bottom:16px;">
       <div class="brand">
         <div class="brand-mark">ST</div>
-        <div><h1>Shuttle Tracker</h1><small>Club operations and community directory</small></div>
+        <div><h1>Shuttle Tracker</h1><small>Flight operations & member portal</small></div>
       </div>
       <div id="rolePills" class="role-pills">
         <button class="pill active" data-role="PLAYER">Player</button>
@@ -42,10 +166,18 @@
       <div class="field"><label>Email or Username</label><input id="loginId" placeholder="Enter your login" /></div>
       <div class="field"><label>Password</label><input id="loginPassword" type="password" placeholder="Enter password" /></div>
       <button id="signIn" class="primary">Open Shuttle Tracker</button>
-    </div>
-  </section>
+      <button onclick="toggleLoginCard(false)" style="background:none; width:100%; margin-top:8px; color:var(--muted); font-size:12px; font-weight:bold;">Close Login</button>
+    </section>
 
-  <!-- MAIN APP -->
+    <!-- 6. PUBLIC FOOTER: SUBMIT AD -->
+    <div class="public-footer">
+      <p style="margin-bottom:8px;">Own a business in Bahrain? Promote to Indian Club members.</p>
+      <button class="public-btn" onclick="openBusinessSubmitModal()">💼 List Your Business / Submit Ad</button>
+    </div>
+
+  </div>
+
+  <!-- MAIN APP (AUTHENTICATED DASHBOARD) -->
   <main id="app" class="hidden">
     <header class="topbar">
       <div class="brand">
@@ -85,14 +217,14 @@
 
   <div id="toast" class="toast hidden"></div>
 
-  <!-- FIREBASE & CORE MODULE SCRIPTS -->
+  <!-- CORE MODULE SCRIPTS -->
   <script src="js/config.js"></script>
   <script src="js/router.js"></script>
   <script src="js/modules/views.js"></script>
   <script src="js/modules/adminViews.js"></script>
   <script src="js/modules/auth.js"></script>
 
-  <!-- FIREBASE WEB SDK INTEGRATION -->
+  <!-- FIREBASE WEB SDK INITIALIZATION SCRIPT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import {
@@ -103,6 +235,7 @@
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
+    // PASTE YOUR REAL FIREBASE KEYS HERE FROM THE FIREBASE CONSOLE
     const firebaseConfig = {
       apiKey: "PASTE_YOUR_FIREBASE_WEB_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -141,7 +274,7 @@
         state.role = member.role;
         state.memberName = member.fullName;
         state.activeFlightLevel = member.flightId || "ALL FLIGHTS";
-        document.getElementById("login").classList.add("hidden");
+        document.getElementById("publicLanding").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
         render();
       } catch (error) {
@@ -165,6 +298,25 @@
 
     window.realAttendance = realAttendance;
     document.getElementById("signIn").onclick = realSignIn;
+  </script>
+
+  <script>
+    function toggleLoginCard(show) {
+      document.getElementById("login").classList.toggle("hidden", !show);
+    }
+
+    function openPublicDirectory() {
+      toast("Loading public community directory...");
+    }
+
+    function openBusinessSubmitModal() {
+      toast("Business submission form opened.");
+    }
+
+    setTimeout(() => {
+      document.getElementById("splash").classList.add("hidden");
+      document.getElementById("publicLanding").classList.remove("hidden");
+    }, 850);
   </script>
 </body>
 </html>
