@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#172554" />
-  <title>Shuttle Tracker</title>
+  <title>Shuttle Tracker | Indian Club Badminton Section</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -31,13 +31,21 @@
         <button class="pill" data-role="SUPER_ADMIN">Super Admin</button>
         <button class="pill" data-role="BUSINESS_ADVERTISER">Business</button>
       </div>
-      <div class="field"><label>Email or temporary username</label><input placeholder="Enter your login" /></div>
-      <div class="field"><label>Password</label><input type="password" placeholder="Enter your password" /></div>
-      <button id="openApp" class="primary">Open Shuttle Tracker</button>
+      <div class="field"><label>Language</label>
+        <select id="languageSelector">
+          <option value="en">English</option>
+          <option value="ml">മലയാളം</option>
+          <option value="hi">हिंदी</option>
+          <option value="ta">தமிழ்</option>
+        </select>
+      </div>
+      <div class="field"><label>Email or Username</label><input id="loginId" placeholder="Enter your login" /></div>
+      <div class="field"><label>Password</label><input id="loginPassword" type="password" placeholder="Enter password" /></div>
+      <button id="signIn" class="primary">Open Shuttle Tracker</button>
     </div>
   </section>
 
-  <!-- MAIN APPLICATION -->
+  <!-- MAIN APP -->
   <main id="app" class="hidden">
     <header class="topbar">
       <div class="brand">
@@ -45,35 +53,30 @@
         <div class="brand-mark">ST</div>
         <div><h1>Shuttle Tracker</h1><small>Indian Club Badminton Section</small></div>
       </div>
-      <div class="user-dot"><span id="roleLabel">Player</span><div class="avatar">NF</div></div>
+      <div class="user-dot"><span id="roleLabel">Player</span><div class="avatar">ST</div></div>
     </header>
 
     <div class="layout">
       <aside id="side" class="side">
-        <div class="brand"><div class="brand-mark">ST</div><div><b>Nuzhath Fathima</b><small id="sideRole">Player · Flight 1</small></div></div>
+        <div class="brand"><div class="brand-mark">ST</div><div><b>Indian Club</b><small id="sideRole">Player</small></div></div>
         <div class="nav-group">MAIN</div>
         <button class="nav active" data-page="home">Home</button>
         <button class="nav" data-page="timetable">My Timetable</button>
         <button class="nav" data-page="attendance">Attendance</button>
         <button class="nav" data-page="wallet">Wallet & Payments</button>
-        <button class="nav" data-page="history">My History</button>
 
         <div class="nav-group">OPERATIONS</div>
         <button class="nav admin-nav" data-page="sessions">Session Control</button>
         <button class="nav admin-nav" data-page="stock">Shuttle Stock</button>
-        <button class="nav admin-nav" data-page="reports">Reports & Print</button>
 
         <div class="nav-group">SUPER ADMIN</div>
         <button class="nav super-nav" data-page="master">Master Timetable</button>
         <button class="nav super-nav" data-page="flights">Flights & Members</button>
         <button class="nav super-nav" data-page="finance">Finance & Arrears</button>
         <button class="nav super-nav" data-page="ads">Advertising</button>
-        <button class="nav super-nav" data-page="audit">Audit History</button>
 
         <div class="nav-group">COMMUNITY</div>
-        <button class="nav" data-page="announcements">Announcements</button>
         <button class="nav" data-page="bazaar">Indi Mart</button>
-        <button class="nav" data-page="profile">My Profile</button>
       </aside>
 
       <section id="view" class="main"></section>
@@ -82,12 +85,86 @@
 
   <div id="toast" class="toast hidden"></div>
 
-  <!-- SCRIPT LOADING IN DEPENDENCY ORDER -->
+  <!-- FIREBASE & CORE MODULE SCRIPTS -->
   <script src="js/config.js"></script>
   <script src="js/router.js"></script>
   <script src="js/modules/views.js"></script>
   <script src="js/modules/adminViews.js"></script>
   <script src="js/modules/auth.js"></script>
 
+  <!-- FIREBASE WEB SDK INTEGRATION -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      signOut,
+      updatePassword,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "PASTE_YOUR_FIREBASE_WEB_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      appId: "PASTE_YOUR_WEB_APP_ID"
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const firebaseAuth = getAuth(firebaseApp);
+    const API_BASE = "http://localhost:3000/api";
+
+    async function api(path, options = {}) {
+      const user = firebaseAuth.currentUser;
+      if (!user) throw new Error("Sign in required");
+      const token = await user.getIdToken();
+      const response = await fetch(API_BASE + path, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token,
+          ...(options.headers || {})
+        }
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Request failed");
+      return body;
+    }
+
+    async function realSignIn() {
+      try {
+        const email = document.getElementById("loginId").value.trim();
+        const password = document.getElementById("loginPassword").value;
+        await signInWithEmailAndPassword(firebaseAuth, email, password);
+        const member = await api("/me");
+
+        state.role = member.role;
+        state.memberName = member.fullName;
+        state.activeFlightLevel = member.flightId || "ALL FLIGHTS";
+        document.getElementById("login").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+        render();
+      } catch (error) {
+        toast(error.message);
+      }
+    }
+
+    async function realAttendance(status, sessionId) {
+      try {
+        await api("/attendance/" + sessionId + "/me", {
+          method: "PUT",
+          body: JSON.stringify({ status })
+        });
+        state.attendance = status;
+        toast("Attendance saved");
+        render();
+      } catch (error) {
+        toast(error.message);
+      }
+    }
+
+    window.realAttendance = realAttendance;
+    document.getElementById("signIn").onclick = realSignIn;
+  </script>
 </body>
 </html>
