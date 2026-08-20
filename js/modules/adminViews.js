@@ -1,43 +1,89 @@
-// LEVEL ADMIN & SUPER ADMIN VIEWS
+// FLIGHT ADMIN & SUPER ADMIN OPERATIONAL PANELS
 window.adminViews = {
+  sessions: () => {
+    const inv = flightInventories[state.activeFlightLevel] || { tubePacks: 2, tubePrice: 6.000, corksUsed: 2 };
+    const totalShuttles = inv.tubePacks * 12;
+    const singlePrice = (inv.tubePacks * inv.tubePrice) / totalShuttles;
+
+    return `
+      ${pageHead("Session & Inventory Control", "Flight Admin inventory counter and cork usage.", `<span class="badge">${state.activeFlightLevel}</span>`)}
+      <div class="grid two">
+        <div class="card">
+          <h3>Shuttle Inventory (${state.activeFlightLevel})</h3>
+          <div class="field"><label>Tubes Stocked (12 Shuttles/Tube)</label><input type="number" id="admTubePacks" value="${inv.tubePacks}"></div>
+          <div class="field"><label>Tube Price (BHD)</label><input type="number" step="0.100" id="admTubePrice" value="${inv.tubePrice.toFixed(3)}"></div>
+          <div class="field"><label>Shuttles Used Today</label><input type="number" id="admCorksUsed" value="${inv.corksUsed}"></div>
+          <button class="primary" onclick="saveFlightInventoryParameters()">Save Inventory Parameters</button>
+        </div>
+        <div class="card">
+          <h3>Cost Breakdown</h3>
+          <p>Single Shuttle Cost: <b>BHD ${singlePrice.toFixed(3)}</b></p>
+          <p>Total Game Cost: <b>BHD ${(inv.corksUsed * singlePrice).toFixed(3)}</b></p>
+          <button class="tag" onclick="exportDuesToCSV()">📥 Export Dues (CSV)</button>
+        </div>
+      </div>`;
+  },
+
   master: () => {
     return `
-      ${pageHead("Master Timetable", "Super Admin controls date range, day, time, courts, activity and flight. There is no venue field.", '<button class="tag" onclick="toast(\'Timetable saved\')">Save timetable</button>')}
-      <div class="card"><p><b>Quarter: 04 July – 03 September 2026</b></p>${window.views.timetable(true)}</div>`;
+      ${pageHead("Master Timetable & Rotational Hours", "Super Admin controls timetable matrix and dynamic session hours.", '<button class="tag" onclick="toast(\'Saved\')">Save Timetable</button>')}
+      <div class="card">
+        <div class="field"><label>Rotational Session Timing Box</label><input type="text" placeholder="e.g. 8:00 PM - 10:00 PM / 6:00 PM - 9:00 PM" value="8:00 PM - 10:00 PM"></div>
+        ${window.views.timetable ? window.views.timetable(true) : ''}
+      </div>`;
   },
 
   flightsPage: () => {
     return `
-      ${pageHead("Flights & Members", "Create, activate, assign and manage future flights without code changes.", '<button class="tag" onclick="toast(\'Flight 5 created\')">+ Create Flight</button>')}
-      <div class="card"><div class="table-wrap"><table><thead><tr><th>Flight</th><th>Status</th><th>Players</th><th>Admin</th><th>Action</th></tr></thead>
-      <tbody>${flights.map((flight, i) => `<tr><td><b>${flight}</b></td><td><span class="tag">Active</span></td><td>${16 + i}</td><td>${i === 1 ? "Ayesha Rahman" : "Assigned admin"}</td><td><button class="tag blue" onclick="toast('Flight management opened')">Manage</button></td></tr>`).join("")}</tbody>
-      </table></div></div>`;
-  },
-
-  sessions: () => {
-    return `
-      ${pageHead("Session Control", "Assigned Level Admin controls only.", '<span class="badge">Flight 1</span>')}
-      <div class="grid two"><div class="card"><h3>Monday session calculation</h3>
-        <div class="field"><label>Tubes used</label><input value="1" type="number"></div>
-        <div class="field"><label>Tube price (BHD)</label><input value="5.000"></div>
-        <div class="field"><label>Actual eligible attendees</label><input value="10" readonly></div>
-        <p class="notice"><b>Cost per attendee: BHD 0.500</b> Total cost is divided only among actual attendees.</p>
-        <button class="primary" onclick="toast('Session calculation saved')">Save session figures</button>
-      </div><div class="card"><h3>Shuttle stock</h3><p><b>14 sealed tubes</b></p><p>12 shuttlecocks per tube · Low-stock threshold: 8 tubes</p><button class="tag" onclick="toast('Stock report opened')">View stock report</button></div></div>`;
-  },
-
-  finance: () => {
-    return `
-      ${pageHead("Finance & Arrears", "Super Admin payment confirmation and arrears review.")}
-      <div class="card"><div class="table-wrap"><table><thead><tr><th>Player</th><th>Flight</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
-      <tbody><tr><td>Nabeel P</td><td>Flight 2</td><td>BHD 0.500</td><td><span class="tag amber">Submitted</span></td><td><button class="tag" onclick="toast('Payment verified with audit record')">Verify</button></td></tr>
-      <tr><td>Sameer K</td><td>Premier</td><td>BHD 1.000</td><td><span class="tag red">Arrears</span></td><td><button class="tag blue" onclick="toast('Reminder prepared')">Remind</button></td></tr></tbody></table></div></div>`;
+      ${pageHead("Super Admin: Member Registration & Flight Assignment", "Register players and assign them to specific flight levels.")}
+      <div class="card">
+        <h3>Register New Member</h3>
+        <div class="field"><label>Member Name</label><input type="text" id="regName" placeholder="Full Name"></div>
+        <div class="field"><label>Member ID</label><input type="text" id="regId" placeholder="IC-105"></div>
+        <div class="field"><label>Assign Flight Level</label>
+          <select id="regFlight">
+            ${flights.map(f=>`<option value="${f}">${f}</option>`).join("")}
+          </select>
+        </div>
+        <button class="primary" onclick="toast('Member Registered & Assigned!')">+ Register Member</button>
+      </div>`;
   },
 
   ads: () => {
     return `
-      ${pageHead("Advertising Management", "Packages, approval and expiry for community advertisers.", '<button class="tag" onclick="toast(\'Package form opened\')">Create package</button>')}
-      <div class="grid two"><div class="card"><h3>Community Standard</h3><p>BHD 15.000 · 30 days · Directory and banner placement</p><span class="tag">Active</span></div>
-      <div class="card"><h3>Review queue</h3><p><b>Spice Route offer</b> <span class="note">Awaiting Super Admin approval</span></p><button class="tag" onclick="toast('Advertisement approved')">Approve</button> <button class="tag red" onclick="toast('Advertisement rejected')">Reject</button></div></div>`;
+      ${pageHead("Sponsor Ad & Flyer Publisher", "Super Admin upload portal for sponsor banners.")}
+      <div class="card">
+        <div class="field"><label>Ad Title / Caption</label><input type="text" placeholder="e.g. Pro Sports Shop Discount"></div>
+        <div class="field"><label>Upload Flyer Image</label><input type="file" accept="image/*"></div>
+        <button class="primary" onclick="toast('Flyer & Announcement Published Globally!')">Publish Banner</button>
+      </div>`;
   }
 };
+
+function saveFlightInventoryParameters() {
+  const packs = parseInt(document.getElementById('admTubePacks').value) || 2;
+  const price = parseFloat(document.getElementById('admTubePrice').value) || 6.000;
+  const corks = parseInt(document.getElementById('admCorksUsed').value) || 2;
+
+  flightInventories[state.activeFlightLevel] = { tubePacks: packs, tubePrice: price, corksUsed: corks };
+  localStorage.setItem('shuttle_flight_inventories', JSON.stringify(flightInventories));
+  toast("Saved inventory parameters for " + state.activeFlightLevel);
+}
+
+// DIRECT EXPORT TO CSV FOR CLUB COMMITTEES
+function exportDuesToCSV() {
+  const rows = [
+    ["Member Name", "Member ID", "Flight", "Outstanding Dues (BHD)"],
+    ["Alex", "IC-101", state.activeFlightLevel, "0.000"],
+    ["Syed", "IC-102", state.activeFlightLevel, "0.500"]
+  ];
+
+  let csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+  let encodedUri = encodeURI(csvContent);
+  let link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `ShuttleTracker_Dues_${state.activeFlightLevel}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
