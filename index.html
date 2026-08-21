@@ -24,16 +24,14 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       margin-bottom: 16px;
     }
-    .club-logo-svg {
+    .club-logo-img {
       width: 58px;
       height: 58px;
       border-radius: 14px;
-      background: linear-gradient(135deg, #0f172a, #1e1b4b);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      object-fit: cover;
       flex-shrink: 0;
       box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      border: 1px solid rgba(0,0,0,0.1);
     }
     .official-notice-card {
       background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
@@ -133,7 +131,9 @@
   <!-- SPLASH SCREEN -->
   <section id="splash" class="splash">
     <div>
-      <div class="splash-mark">🏸</div>
+      <div style="margin-bottom:12px;">
+        <img src="https://i.ibb.co/68vM3Dq/image-4e05db.png" alt="India Unity in Diversity Logo" style="width:110px; height:110px; border-radius:24px; object-fit:cover; box-shadow:0 8px 24px rgba(0,0,0,0.3); border:2px solid #ffffff;" />
+      </div>
       <h1>ICB Shuttle Tracker</h1>
       <p>Powered by NuZan AI Studio</p>
     </div>
@@ -142,19 +142,9 @@
   <!-- PUBLIC COMMUNITY LANDING PAGE & LOGIN -->
   <div id="publicLanding" class="public-container hidden">
     
-    <!-- 1. OFFICIAL CLUB BRANDING HEADER WITH INDIAN MAP SVG -->
+    <!-- 1. OFFICIAL CLUB BRANDING HEADER WITH INDIA UNITY LOGO -->
     <div class="club-header">
-      <div class="club-logo-svg">
-        <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Outline Map of India -->
-          <path d="M45,10 C48,12 52,12 55,15 C58,18 58,22 62,25 C65,28 72,28 75,32 C78,36 72,42 75,48 C78,54 82,58 78,64 C74,70 65,75 58,85 C54,91 50,95 48,95 C46,95 42,88 38,80 C34,72 25,62 25,55 C25,48 30,42 32,38 C34,34 32,28 35,22 C38,16 42,8 45,10 Z" fill="#FF9933" opacity="0.85"/>
-          <!-- Diverse Places Landmark Icons (Taj Mahal, Gateway, Temple, Flag) -->
-          <path d="M42,42 L58,42 L58,55 L42,55 Z M46,38 L54,38 L50,30 Z" fill="#FFFFFF"/>
-          <path d="M48,55 L52,55 L52,50 L48,50 Z" fill="#1261FF"/>
-          <!-- Ashoka Chakra Symbol -->
-          <circle cx="50" cy="65" r="5" stroke="#000080" stroke-width="1.5"/>
-        </svg>
-      </div>
+      <img src="https://i.ibb.co/68vM3Dq/image-4e05db.png" alt="India Unity Logo" class="club-logo-img" />
       <div>
         <h2 style="margin:0; font-size:18px; color:var(--ink);">ICB (INDIAN CLUB BAHRAIN)</h2>
         <small style="color:var(--muted); font-weight:700;">POWERED BY NUZAN AI STUDIO</small>
@@ -192,7 +182,7 @@
     <!-- 5. LOGIN CARD (TOGGLED VIA BUTTON) -->
     <section id="login" class="login-card hidden" style="margin-bottom:16px;">
       <div class="brand">
-        <div class="brand-mark">ICB</div>
+        <img src="https://i.ibb.co/68vM3Dq/image-4e05db.png" alt="Logo" style="width:36px; height:36px; border-radius:8px; object-fit:cover;" />
         <div><h1>ICB Tracker</h1><small>Powered by NuZan AI Studio</small></div>
       </div>
       <div id="rolePills" class="role-pills">
@@ -228,7 +218,7 @@
     <header class="topbar">
       <div class="brand">
         <button id="menu" class="menu-btn">☰</button>
-        <div class="brand-mark">ICB</div>
+        <img src="https://i.ibb.co/68vM3Dq/image-4e05db.png" alt="Logo" style="width:32px; height:32px; border-radius:8px; object-fit:cover;" />
         <div><h1>ICB Tracker</h1><small>Powered by NuZan AI Studio</small></div>
       </div>
       <div class="topbar-actions">
@@ -239,7 +229,10 @@
 
     <div class="layout">
       <aside id="side" class="side">
-        <div class="brand"><div class="brand-mark">ICB</div><div><b>ICB Bahrain</b><small id="sideRole">Player</small></div></div>
+        <div class="brand">
+          <img src="https://i.ibb.co/68vM3Dq/image-4e05db.png" alt="Logo" style="width:28px; height:28px; border-radius:6px; object-fit:cover;" />
+          <div><b>ICB Bahrain</b><small id="sideRole">Player</small></div>
+        </div>
         <div class="nav-group">MAIN</div>
         <button class="nav active" data-page="home">Home</button>
         <button class="nav" data-page="timetable">My Timetable</button>
@@ -348,7 +341,7 @@
   <script src="js/modules/adminViews.js"></script>
   <script src="js/modules/auth.js"></script>
 
-  <!-- FIREBASE WEB SDK INITIALIZATION SCRIPT -->
+  <!-- FIREBASE WEB SDK INITIALIZATION & SESSION MANAGER SCRIPT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import {
@@ -369,27 +362,75 @@
     const firebaseApp = initializeApp(firebaseConfig);
     const firebaseAuth = getAuth(firebaseApp);
 
+    function unlockAdminTabs() {
+      // Reveal Operations / Level Admin Tabs
+      if (isAdmin || isSuperAdmin) {
+        document.querySelectorAll('.admin-nav, .admin-only-tab, .admin-only-inline').forEach(e => {
+          e.style.display = 'block';
+        });
+      }
+      // Reveal Super Admin Tabs
+      if (isSuperAdmin) {
+        document.querySelectorAll('.super-nav, .is-super-only').forEach(e => {
+          e.style.display = 'block';
+        });
+      }
+    }
+
     async function realSignIn() {
       try {
         let email = document.getElementById("loginId").value.trim();
         const password = document.getElementById("loginPassword").value;
+
+        // Determine selected role pill
+        const activePill = document.querySelector("#rolePills .pill.active");
+        const selectedRole = activePill ? activePill.dataset.role : "PLAYER";
 
         if (!email.includes("@")) {
           email = `${email.replace(/\s+/g, "").toLowerCase()}@indianclub.com`;
         }
 
         const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
-        
-        state.currentUser = {
-          uid: userCredential.user.uid,
+
+        // Update application global state variables (aligning with config.js)
+        currentUser = {
+          id: userCredential.user.uid,
+          memberId: email.split("@")[0].toUpperCase(),
           email: userCredential.user.email,
-          name: userCredential.user.displayName || email.split("@")[0]
+          name: userCredential.user.displayName || email.split("@")[0],
+          level: adminLevel || "Level 4A",
+          wallet: 0.000,
+          pendingDues: 0.000
         };
+
+        if (selectedRole === "SUPER_ADMIN") {
+          isAdmin = true;
+          isSuperAdmin = true;
+          adminLevel = "Level 4A";
+        } else if (selectedRole === "LEVEL_ADMIN") {
+          isAdmin = true;
+          isSuperAdmin = false;
+        } else {
+          isAdmin = false;
+          isSuperAdmin = false;
+        }
+
+        // Save session locally
+        localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
+        if (typeof addAuditLog === "function") {
+          addAuditLog(currentUser.name, `Logged in as ${selectedRole}`);
+        }
+
+        // Unlock administrative tabs in navigation bar
+        unlockAdminTabs();
 
         toast("Welcome! Logged in successfully.");
         document.getElementById("publicLanding").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
-        render();
+
+        if (typeof checkUserSession === "function") {
+          checkUserSession();
+        }
       } catch (error) {
         toast(error.message);
       }
@@ -398,7 +439,16 @@
     async function triggerLogout() {
       try {
         await signOut(firebaseAuth);
-        state.currentUser = null;
+        localStorage.removeItem('shuttle_user');
+        currentUser = null;
+        isAdmin = false;
+        isSuperAdmin = false;
+
+        // Re-hide admin navigation tabs
+        document.querySelectorAll('.admin-nav, .super-nav, .admin-only-tab, .is-super-only').forEach(e => {
+          e.style.display = 'none';
+        });
+
         toast("Signed out successfully.");
         document.getElementById("app").classList.add("hidden");
         document.getElementById("publicLanding").classList.remove("hidden");
@@ -414,17 +464,29 @@
         document.getElementById("publicLanding").classList.remove("hidden");
         return;
       }
-      state.currentUser = {
-        uid: user.uid,
-        email: user.email,
-        name: user.displayName || user.email.split("@")[0]
-      };
+
+      if (!currentUser) {
+        currentUser = {
+          id: user.uid,
+          memberId: user.email.split("@")[0].toUpperCase(),
+          email: user.email,
+          name: user.displayName || user.email.split("@")[0],
+          level: adminLevel || "Level 4A",
+          wallet: 0.000
+        };
+      }
+
+      unlockAdminTabs();
       document.getElementById("publicLanding").classList.add("hidden");
       document.getElementById("app").classList.remove("hidden");
-      render();
+      
+      if (typeof checkUserSession === "function") {
+        checkUserSession();
+      }
     });
 
     window.triggerLogout = triggerLogout;
+    window.unlockAdminTabs = unlockAdminTabs;
     document.getElementById("signIn").onclick = realSignIn;
   </script>
 
@@ -434,7 +496,7 @@
     }
 
     function openPublicDirectory() {
-      go('bazaar');
+      if (typeof go === "function") go('bazaar');
       document.getElementById("publicLanding").classList.add("hidden");
       document.getElementById("app").classList.remove("hidden");
     }
