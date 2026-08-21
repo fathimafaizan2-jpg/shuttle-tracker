@@ -189,7 +189,7 @@
     </header>
 
     <div class="layout">
-      aside id="side" class="side">
+      <aside id="side" class="side">
         <div class="brand"><div class="brand-mark">ST</div><div><b>Indian Club</b><small id="sideRole">Player</small></div></div>
         <div class="nav-group">MAIN</div>
         <button class="nav active" data-page="home">Home</button>
@@ -230,6 +230,7 @@
     import {
       getAuth,
       signInWithEmailAndPassword,
+      signOut,
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
@@ -249,6 +250,7 @@
         let email = document.getElementById("loginId").value.trim();
         const password = document.getElementById("loginPassword").value;
 
+        // Auto-fix format if username or member ID is typed without domain
         if (!email.includes("@")) {
           email = `${email.replace(/\s+/g, "").toLowerCase()}@indianclub.com`;
         }
@@ -270,6 +272,12 @@
       }
     }
 
+    async function realAttendance(status, sessionId) {
+      state.attendance = status;
+      toast("Attendance saved locally");
+      render();
+    }
+
     onAuthStateChanged(firebaseAuth, (user) => {
       if (!user) return;
       state.currentUser = {
@@ -282,6 +290,7 @@
       render();
     });
 
+    window.realAttendance = realAttendance;
     document.getElementById("signIn").onclick = realSignIn;
   </script>
 
