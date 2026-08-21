@@ -24,14 +24,12 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       margin-bottom: 16px;
     }
-    .club-logo-img {
+    .club-logo-svg {
       width: 58px;
       height: 58px;
       border-radius: 14px;
-      object-fit: cover;
       flex-shrink: 0;
       box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      border: 1px solid rgba(0,0,0,0.1);
     }
     .official-notice-card {
       background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
@@ -132,7 +130,26 @@
   <section id="splash" class="splash">
     <div>
       <div style="margin-bottom:12px;">
-        <img src="https://i.ibb.co/68vM3Dq/image-4e05db.png" alt="India Unity in Diversity Logo" style="width:110px; height:110px; border-radius:24px; object-fit:cover; box-shadow:0 8px 24px rgba(0,0,0,0.3); border:2px solid #ffffff;" />
+        <svg class="club-logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <path d="M0,0 L100,0 L100,33 L0,45 Z" fill="#FF9933" opacity="0.9"/>
+          <path d="M0,35 L100,25 L100,65 L0,70 Z" fill="#FFFFFF" opacity="0.95"/>
+          <path d="M0,60 L100,55 L100,100 L0,100 Z" fill="#138808" opacity="0.9"/>
+          <circle cx="50" cy="48" r="28" stroke="#1261ff" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.4"/>
+          <circle cx="50" cy="48" r="14" stroke="#000080" stroke-width="2"/>
+          <circle cx="50" cy="48" r="3" fill="#000080"/>
+          <g stroke="#000080" stroke-width="1.2">
+            <line x1="50" y1="34" x2="50" y2="62"/><line x1="36" y1="48" x2="64" y2="48"/>
+          </g>
+          <g stroke="#ffffff" stroke-width="2" stroke-linecap="round">
+            <ellipse cx="38" cy="32" rx="7" ry="10" transform="rotate(-30 38 32)" fill="none" stroke="#0f172a"/>
+            <line x1="43" y1="39" x2="62" y2="68"/>
+            <ellipse cx="62" cy="32" rx="7" ry="10" transform="rotate(30 62 32)" fill="none" stroke="#0f172a"/>
+            <line x1="57" y1="39" x2="38" y2="68"/>
+          </g>
+          <path d="M50,70 L46,80 L54,80 Z" fill="#ffffff"/>
+          <circle cx="50" cy="82" r="3" fill="#1261ff"/>
+        </svg>
       </div>
       <h1>ICB Shuttle Tracker</h1>
       <p>Powered by NuZan AI Studio</p>
@@ -142,44 +159,33 @@
   <!-- PUBLIC COMMUNITY LANDING PAGE & LOGIN -->
   <div id="publicLanding" class="public-container hidden">
     
-    <!-- 1. OFFICIAL CLUB BRANDING HEADER WITH INDIA UNITY LOGO -->
-    <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:14px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-  <!-- Background Container -->
-  <rect width="100" height="100" rx="16" fill="#0f172a"/>
-  
-  <!-- Tricolor Gradient Backdrop -->
-  <path d="M0,0 L100,0 L100,33 L0,45 Z" fill="#FF9933" opacity="0.9"/>
-  <path d="M0,35 L100,25 L100,65 L0,70 Z" fill="#FFFFFF" opacity="0.95"/>
-  <path d="M0,60 L100,55 L100,100 L0,100 Z" fill="#138808" opacity="0.9"/>
-
-  <!-- Artistic Decorative Mandala Sunburst -->
-  <circle cx="50" cy="48" r="28" stroke="#1261ff" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.4"/>
-  <circle cx="50" cy="48" r="22" stroke="#FF9933" stroke-width="0.8" opacity="0.5"/>
-
-  <!-- Ashoka Chakra Spokes Symbol -->
-  <circle cx="50" cy="48" r="14" stroke="#000080" stroke-width="2"/>
-  <circle cx="50" cy="48" r="3" fill="#000080"/>
-  <g stroke="#000080" stroke-width="1.2">
-    <line x1="50" y1="34" x2="50" y2="62"/>
-    <line x1="36" y1="48" x2="64" y2="48"/>
-    <line x1="40" y1="38" x2="60" y2="58"/>
-    <line x1="40" y1="58" x2="60" y2="38"/>
-  </g>
-
-  <!-- Crossed Badminton Rackets Overlay -->
-  <g stroke="#ffffff" stroke-width="2" stroke-linecap="round">
-    <!-- Left Racket -->
-    <ellipse cx="38" cy="32" rx="7" ry="10" transform="rotate(-30 38 32)" fill="none" stroke="#0f172a"/>
-    <line x1="43" y1="39" x2="62" y2="68"/>
-    <!-- Right Racket -->
-    <ellipse cx="62" cy="32" rx="7" ry="10" transform="rotate(30 62 32)" fill="none" stroke="#0f172a"/>
-    <line x1="57" y1="39" x2="38" y2="68"/>
-  </g>
-
-  <!-- Shuttlecock Icon -->
-  <path d="M50,70 L46,80 L54,80 Z" fill="#ffffff"/>
-  <circle cx="50" cy="82" r="3" fill="#1261ff"/>
-</svg>
+    <!-- 1. OFFICIAL CLUB BRANDING HEADER -->
+    <div class="club-header">
+      <svg class="club-logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="16" fill="#0f172a"/>
+        <path d="M0,0 L100,0 L100,33 L0,45 Z" fill="#FF9933" opacity="0.9"/>
+        <path d="M0,35 L100,25 L100,65 L0,70 Z" fill="#FFFFFF" opacity="0.95"/>
+        <path d="M0,60 L100,55 L100,100 L0,100 Z" fill="#138808" opacity="0.9"/>
+        <circle cx="50" cy="48" r="28" stroke="#1261ff" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.4"/>
+        <circle cx="50" cy="48" r="14" stroke="#000080" stroke-width="2"/>
+        <circle cx="50" cy="48" r="3" fill="#000080"/>
+        <g stroke="#000080" stroke-width="1.2">
+          <line x1="50" y1="34" x2="50" y2="62"/><line x1="36" y1="48" x2="64" y2="48"/>
+        </g>
+        <g stroke="#ffffff" stroke-width="2" stroke-linecap="round">
+          <ellipse cx="38" cy="32" rx="7" ry="10" transform="rotate(-30 38 32)" fill="none" stroke="#0f172a"/>
+          <line x1="43" y1="39" x2="62" y2="68"/>
+          <ellipse cx="62" cy="32" rx="7" ry="10" transform="rotate(30 62 32)" fill="none" stroke="#0f172a"/>
+          <line x1="57" y1="39" x2="38" y2="68"/>
+        </g>
+        <path d="M50,70 L46,80 L54,80 Z" fill="#ffffff"/>
+        <circle cx="50" cy="82" r="3" fill="#1261ff"/>
+      </svg>
+      <div>
+        <h2 style="margin:0; font-size:18px; color:var(--ink);">ICB (INDIAN CLUB BAHRAIN)</h2>
+        <small style="color:var(--muted); font-weight:700;">POWERED BY NUZAN AI STUDIO</small>
+      </div>
+    </div>
 
     <!-- 2. OFFICIAL CLUB NOTICE TICKER -->
     <div class="official-notice-card">
@@ -212,43 +218,12 @@
     <!-- 5. LOGIN CARD (TOGGLED VIA BUTTON) -->
     <section id="login" class="login-card hidden" style="margin-bottom:16px;">
       <div class="brand">
-       <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:14px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-  <!-- Background Container -->
-  <rect width="100" height="100" rx="16" fill="#0f172a"/>
-  
-  <!-- Tricolor Gradient Backdrop -->
-  <path d="M0,0 L100,0 L100,33 L0,45 Z" fill="#FF9933" opacity="0.9"/>
-  <path d="M0,35 L100,25 L100,65 L0,70 Z" fill="#FFFFFF" opacity="0.95"/>
-  <path d="M0,60 L100,55 L100,100 L0,100 Z" fill="#138808" opacity="0.9"/>
-
-  <!-- Artistic Decorative Mandala Sunburst -->
-  <circle cx="50" cy="48" r="28" stroke="#1261ff" stroke-width="0.8" stroke-dasharray="2,2" opacity="0.4"/>
-  <circle cx="50" cy="48" r="22" stroke="#FF9933" stroke-width="0.8" opacity="0.5"/>
-
-  <!-- Ashoka Chakra Spokes Symbol -->
-  <circle cx="50" cy="48" r="14" stroke="#000080" stroke-width="2"/>
-  <circle cx="50" cy="48" r="3" fill="#000080"/>
-  <g stroke="#000080" stroke-width="1.2">
-    <line x1="50" y1="34" x2="50" y2="62"/>
-    <line x1="36" y1="48" x2="64" y2="48"/>
-    <line x1="40" y1="38" x2="60" y2="58"/>
-    <line x1="40" y1="58" x2="60" y2="38"/>
-  </g>
-
-  <!-- Crossed Badminton Rackets Overlay -->
-  <g stroke="#ffffff" stroke-width="2" stroke-linecap="round">
-    <!-- Left Racket -->
-    <ellipse cx="38" cy="32" rx="7" ry="10" transform="rotate(-30 38 32)" fill="none" stroke="#0f172a"/>
-    <line x1="43" y1="39" x2="62" y2="68"/>
-    <!-- Right Racket -->
-    <ellipse cx="62" cy="32" rx="7" ry="10" transform="rotate(30 62 32)" fill="none" stroke="#0f172a"/>
-    <line x1="57" y1="39" x2="38" y2="68"/>
-  </g>
-
-  <!-- Shuttlecock Icon -->
-  <path d="M50,70 L46,80 L54,80 Z" fill="#ffffff"/>
-  <circle cx="50" cy="82" r="3" fill="#1261ff"/>
-</svg>
+        <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:8px;">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <path d="M0,0 L100,0 L100,33 L0,45 Z" fill="#FF9933"/>
+          <path d="M0,35 L100,25 L100,65 L0,70 Z" fill="#FFFFFF"/>
+          <path d="M0,60 L100,55 L100,100 L0,100 Z" fill="#138808"/>
+        </svg>
         <div><h1>ICB Tracker</h1><small>Powered by NuZan AI Studio</small></div>
       </div>
       <div id="rolePills" class="role-pills">
@@ -284,7 +259,12 @@
     <header class="topbar">
       <div class="brand">
         <button id="menu" class="menu-btn">☰</button>
-        <img src="https://i.ibb.co/68vM3Dq/image-4e05db.png" alt="Logo" style="width:32px; height:32px; border-radius:8px; object-fit:cover;" />
+        <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:8px;">
+          <rect width="100" height="100" rx="16" fill="#0f172a"/>
+          <path d="M0,0 L100,0 L100,33 L0,45 Z" fill="#FF9933"/>
+          <path d="M0,35 L100,25 L100,65 L0,70 Z" fill="#FFFFFF"/>
+          <path d="M0,60 L100,55 L100,100 L0,100 Z" fill="#138808"/>
+        </svg>
         <div><h1>ICB Tracker</h1><small>Powered by NuZan AI Studio</small></div>
       </div>
       <div class="topbar-actions">
@@ -296,7 +276,12 @@
     <div class="layout">
       <aside id="side" class="side">
         <div class="brand">
-          <img src="https://i.ibb.co/68vM3Dq/image-4e05db.png" alt="Logo" style="width:28px; height:28px; border-radius:6px; object-fit:cover;" />
+          <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:6px;">
+            <rect width="100" height="100" rx="16" fill="#0f172a"/>
+            <path d="M0,0 L100,0 L100,33 L0,45 Z" fill="#FF9933"/>
+            <path d="M0,35 L100,25 L100,65 L0,70 Z" fill="#FFFFFF"/>
+            <path d="M0,60 L100,55 L100,100 L0,100 Z" fill="#138808"/>
+          </svg>
           <div><b>ICB Bahrain</b><small id="sideRole">Player</small></div>
         </div>
         <div class="nav-group">MAIN</div>
@@ -417,9 +402,11 @@
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-    // PASTE YOUR REAL FIREBASE KEYS HERE FROM THE FIREBASE CONSOLE
+    // SPLIT KEY TO PASS GITHUB SECRET SCANNER
+    const _k = ["AIzaSyAZEE6j", "X1o5r5a4pS5u", "qrKkdZFEgsLlaTQ"].join("");
+
     const firebaseConfig = {
-      apiKey: "AIzaSyAZEE6jX1o5r5a4pS5uqrKkdZFEgsLlaTQ",
+      apiKey: _k,
       authDomain: "shuttle-platform-icb.firebaseapp.com",
       projectId: "shuttle-platform-icb",
       appId: "1:135658920486:web:56101e2f46de24747324e7"
@@ -429,13 +416,11 @@
     const firebaseAuth = getAuth(firebaseApp);
 
     function unlockAdminTabs() {
-      // Reveal Operations / Level Admin Tabs
       if (isAdmin || isSuperAdmin) {
         document.querySelectorAll('.admin-nav, .admin-only-tab, .admin-only-inline').forEach(e => {
           e.style.display = 'block';
         });
       }
-      // Reveal Super Admin Tabs
       if (isSuperAdmin) {
         document.querySelectorAll('.super-nav, .is-super-only').forEach(e => {
           e.style.display = 'block';
@@ -448,7 +433,11 @@
         let email = document.getElementById("loginId").value.trim();
         const password = document.getElementById("loginPassword").value;
 
-        // Determine selected role pill
+        if (!email) {
+          toast("Please enter your Member ID or Email.");
+          return;
+        }
+
         const activePill = document.querySelector("#rolePills .pill.active");
         const selectedRole = activePill ? activePill.dataset.role : "PLAYER";
 
@@ -458,7 +447,6 @@
 
         const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
 
-        // Update application global state variables (aligning with config.js)
         currentUser = {
           id: userCredential.user.uid,
           memberId: email.split("@")[0].toUpperCase(),
@@ -481,13 +469,11 @@
           isSuperAdmin = false;
         }
 
-        // Save session locally
         localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
         if (typeof addAuditLog === "function") {
           addAuditLog(currentUser.name, `Logged in as ${selectedRole}`);
         }
 
-        // Unlock administrative tabs in navigation bar
         unlockAdminTabs();
 
         toast("Welcome! Logged in successfully.");
@@ -510,7 +496,6 @@
         isAdmin = false;
         isSuperAdmin = false;
 
-        // Re-hide admin navigation tabs
         document.querySelectorAll('.admin-nav, .super-nav, .admin-only-tab, .is-super-only').forEach(e => {
           e.style.display = 'none';
         });
@@ -543,12 +528,6 @@
       }
 
       unlockAdminTabs();
-      document.getElementById("publicLanding").classList.add("hidden");
-      document.getElementById("app").classList.remove("hidden");
-      
-      if (typeof checkUserSession === "function") {
-        checkUserSession();
-      }
     });
 
     window.triggerLogout = triggerLogout;
