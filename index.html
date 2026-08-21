@@ -225,17 +225,16 @@
   <script src="js/modules/auth.js"></script>
 
   <!-- FIREBASE WEB SDK INITIALIZATION SCRIPT -->
+  <!-- FIREBASE WEB SDK INITIALIZATION SCRIPT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import {
       getAuth,
       signInWithEmailAndPassword,
-      signOut,
-      updatePassword,
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-    // PASTE YOUR REAL FIREBASE KEYS HERE FROM THE FIREBASE CONSOLE
+    // YOUR FIREBASE CONFIG
     const firebaseConfig = {
       apiKey: "AIzaSyAZEE6jX1o5r5a4pS5uqrKkdZFEgsLlaTQ",
       authDomain: "shuttle-platform-icb.firebaseapp.com",
@@ -245,35 +244,27 @@
 
     const firebaseApp = initializeApp(firebaseConfig);
     const firebaseAuth = getAuth(firebaseApp);
-    const API_BASE = "http://localhost:3000/api";
-
-    async function api(path, options = {}) {
-      const user = firebaseAuth.currentUser;
-      if (!user) throw new Error("Sign in required");
-      const token = await user.getIdToken();
-      const response = await fetch(API_BASE + path, {
-        ...options,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token,
-          ...(options.headers || {})
-        }
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Request failed");
-      return body;
-    }
 
     async function realSignIn() {
       try {
-        const email = document.getElementById("loginId").value.trim();
+        let email = document.getElementById("loginId").value.trim();
         const password = document.getElementById("loginPassword").value;
-        await signInWithEmailAndPassword(firebaseAuth, email, password);
-        const member = await api("/me");
 
-        state.role = member.role;
-        state.memberName = member.fullName;
-        state.activeFlightLevel = member.flightId || "ALL FLIGHTS";
+        // Auto-fix format if no '@' is typed
+        if (!email.includes("@")) {
+          email = `${email.replace(/\s+/g, "").toLowerCase()}@indianclub.com`;
+        }
+
+        // Sign in directly with Firebase
+        const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+        
+        state.currentUser = {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          name: userCredential.user.displayName || email.split("@")[0]
+        };
+
+        toast("Welcome! Logged in successfully.");
         document.getElementById("publicLanding").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
         render();
@@ -282,24 +273,22 @@
       }
     }
 
-    async function realAttendance(status, sessionId) {
-      try {
-        await api("/attendance/" + sessionId + "/me", {
-          method: "PUT",
-          body: JSON.stringify({ status })
-        });
-        state.attendance = status;
-        toast("Attendance saved");
-        render();
-      } catch (error) {
-        toast(error.message);
-      }
-    }
+    // Keep user logged in on page refresh
+    onAuthStateChanged(firebaseAuth, (user) => {
+      if (!user) return;
+      state.currentUser = {
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName || user.email.split("@")[0]
+      };
+      document.getElementById("publicLanding").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+      render();
+    });
 
-    window.realAttendance = realAttendance;
     document.getElementById("signIn").onclick = realSignIn;
   </script>
-
+  
   <script>
     function toggleLoginCard(show) {
       document.getElementById("login").classList.toggle("hidden", !show);
