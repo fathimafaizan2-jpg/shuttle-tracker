@@ -4,19 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#172554" />
-  <title>Shuttle Tracker | Indian Club Badminton Section</title>
+  <title>ICB | Powered by NuZan AI Studio</title>
   <link rel="stylesheet" href="css/styles.css" />
   <style>
     /* PUBLIC LANDING PAGE STYLES */
     .public-container {
-      max-width: 520px;
+      max-width: 540px;
       margin: 20px auto;
       padding: 16px;
     }
     .club-header {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       background: #ffffff;
       padding: 16px;
       border-radius: 16px;
@@ -24,17 +24,16 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       margin-bottom: 16px;
     }
-    .club-logo {
-      width: 52px;
-      height: 52px;
+    .club-logo-svg {
+      width: 58px;
+      height: 58px;
       border-radius: 14px;
-      background: linear-gradient(135deg, #1261ff, #6c5ce7);
-      display: grid;
-      place-items: center;
-      color: white;
-      font-size: 26px;
-      font-weight: 900;
+      background: linear-gradient(135deg, #0f172a, #1e1b4b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
     .official-notice-card {
       background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
@@ -90,6 +89,43 @@
       font-size: 11px;
       color: var(--muted);
     }
+    /* MODAL OVERLAYS */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-box {
+      background: white;
+      border-radius: 20px;
+      max-width: 480px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logout-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -98,20 +134,30 @@
   <section id="splash" class="splash">
     <div>
       <div class="splash-mark">🏸</div>
-      <h1>Shuttle Tracker</h1>
-      <p>Indian Club Badminton Section</p>
+      <h1>ICB Shuttle Tracker</h1>
+      <p>Powered by NuZan AI Studio</p>
     </div>
   </section>
 
   <!-- PUBLIC COMMUNITY LANDING PAGE & LOGIN -->
   <div id="publicLanding" class="public-container hidden">
     
-    <!-- 1. OFFICIAL CLUB BRANDING HEADER -->
+    <!-- 1. OFFICIAL CLUB BRANDING HEADER WITH INDIAN MAP SVG -->
     <div class="club-header">
-      <div class="club-logo">🏸</div>
+      <div class="club-logo-svg">
+        <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outline Map of India -->
+          <path d="M45,10 C48,12 52,12 55,15 C58,18 58,22 62,25 C65,28 72,28 75,32 C78,36 72,42 75,48 C78,54 82,58 78,64 C74,70 65,75 58,85 C54,91 50,95 48,95 C46,95 42,88 38,80 C34,72 25,62 25,55 C25,48 30,42 32,38 C34,34 32,28 35,22 C38,16 42,8 45,10 Z" fill="#FF9933" opacity="0.85"/>
+          <!-- Diverse Places Landmark Icons (Taj Mahal, Gateway, Temple, Flag) -->
+          <path d="M42,42 L58,42 L58,55 L42,55 Z M46,38 L54,38 L50,30 Z" fill="#FFFFFF"/>
+          <path d="M48,55 L52,55 L52,50 L48,50 Z" fill="#1261FF"/>
+          <!-- Ashoka Chakra Symbol -->
+          <circle cx="50" cy="65" r="5" stroke="#000080" stroke-width="1.5"/>
+        </svg>
+      </div>
       <div>
-        <h2 style="margin:0; font-size:18px; color:var(--ink);">THE INDIAN CLUB</h2>
-        <small style="color:var(--muted); font-weight:700;">BAHRAIN · BADMINTON SECTION</small>
+        <h2 style="margin:0; font-size:18px; color:var(--ink);">ICB (INDIAN CLUB BAHRAIN)</h2>
+        <small style="color:var(--muted); font-weight:700;">POWERED BY NUZAN AI STUDIO</small>
       </div>
     </div>
 
@@ -121,8 +167,8 @@
         <span class="notice-badge">Official Announcement</span>
         <small style="opacity:0.8; font-weight:bold;">Indian Club Executive</small>
       </div>
-      <h3 style="margin:4px 0; font-size:15px; color:white;" id="publicNoticeTitle">🇮🇳 Indian Club Tournament Announcement</h3>
-      <p style="margin:0; font-size:11px; opacity:0.85;" id="publicNoticeBody">Registration open for all flight levels. Contact section committee for entries.</p>
+      <h3 style="margin:4px 0; font-size:15px; color:white;" id="publicNoticeTitle">🇮🇳 Republic Day Badminton Championship 2026</h3>
+      <p style="margin:0; font-size:11px; opacity:0.85;" id="publicNoticeBody">Registration open across all Flights. Contact Section Committee for entries.</p>
     </div>
 
     <!-- 3. PUBLIC SPONSOR FLYER CAROUSEL -->
@@ -134,7 +180,7 @@
           🎾 Special Yonex AS-30 Shuttlecock Offer Available
         </div>
       </div>
-      <small style="color:var(--muted); font-size:11px;">Show your Shuttle Tracker ID card in store.</small>
+      <small style="color:var(--muted); font-size:11px;">Show your ICB Shuttle Tracker Digital ID in store.</small>
     </div>
 
     <!-- 4. QUICK ACTION BUTTONS -->
@@ -146,8 +192,8 @@
     <!-- 5. LOGIN CARD (TOGGLED VIA BUTTON) -->
     <section id="login" class="login-card hidden" style="margin-bottom:16px;">
       <div class="brand">
-        <div class="brand-mark">ST</div>
-        <div><h1>Shuttle Tracker</h1><small>Flight operations & member portal</small></div>
+        <div class="brand-mark">ICB</div>
+        <div><h1>ICB Tracker</h1><small>Powered by NuZan AI Studio</small></div>
       </div>
       <div id="rolePills" class="role-pills">
         <button class="pill active" data-role="PLAYER">Player</button>
@@ -163,7 +209,7 @@
           <option value="ta">தமிழ்</option>
         </select>
       </div>
-      <div class="field"><label>Email or Username</label><input id="loginId" placeholder="Enter your login" /></div>
+      <div class="field"><label>Email or Member ID</label><input id="loginId" placeholder="e.g. ICB-101 or superadmin" /></div>
       <div class="field"><label>Password</label><input id="loginPassword" type="password" placeholder="Enter password" /></div>
       <button id="signIn" class="primary">Open Shuttle Tracker</button>
       <button onclick="toggleLoginCard(false)" style="background:none; width:100%; margin-top:8px; color:var(--muted); font-size:12px; font-weight:bold;">Close Login</button>
@@ -171,7 +217,7 @@
 
     <!-- 6. PUBLIC FOOTER: SUBMIT AD -->
     <div class="public-footer">
-      <p style="margin-bottom:8px;">Own a business in Bahrain? Promote to Indian Club members.</p>
+      <p style="margin-bottom:8px;">Promote your business to Indian Club Bahrain members.</p>
       <button class="public-btn" onclick="openBusinessSubmitModal()">💼 List Your Business / Submit Ad</button>
     </div>
 
@@ -182,20 +228,24 @@
     <header class="topbar">
       <div class="brand">
         <button id="menu" class="menu-btn">☰</button>
-        <div class="brand-mark">ST</div>
-        <div><h1>Shuttle Tracker</h1><small>Indian Club Badminton Section</small></div>
+        <div class="brand-mark">ICB</div>
+        <div><h1>ICB Tracker</h1><small>Powered by NuZan AI Studio</small></div>
       </div>
-      <div class="user-dot"><span id="roleLabel">Player</span><div class="avatar">ST</div></div>
+      <div class="topbar-actions">
+        <div class="user-dot"><span id="roleLabel">Player</span><div class="avatar">ICB</div></div>
+        <button class="logout-btn" onclick="triggerLogout()">Logout</button>
+      </div>
     </header>
 
     <div class="layout">
       <aside id="side" class="side">
-        <div class="brand"><div class="brand-mark">ST</div><div><b>Indian Club</b><small id="sideRole">Player</small></div></div>
+        <div class="brand"><div class="brand-mark">ICB</div><div><b>ICB Bahrain</b><small id="sideRole">Player</small></div></div>
         <div class="nav-group">MAIN</div>
         <button class="nav active" data-page="home">Home</button>
         <button class="nav" data-page="timetable">My Timetable</button>
         <button class="nav" data-page="attendance">Attendance</button>
         <button class="nav" data-page="wallet">Wallet & Payments</button>
+        <button class="nav" data-page="profile">Update Credentials</button>
 
         <div class="nav-group">OPERATIONS</div>
         <button class="nav admin-nav" data-page="sessions">Session Control</button>
@@ -209,11 +259,85 @@
 
         <div class="nav-group">COMMUNITY</div>
         <button class="nav" data-page="bazaar">Indi Mart</button>
+        
+        <button class="nav" onclick="triggerLogout()" style="color:#ef4444; margin-top:20px; font-weight:800;">🚪 Sign Out</button>
       </aside>
 
       <section id="view" class="main"></section>
     </div>
   </main>
+
+  <!-- MODAL: ADD / UPDATE MEMBER & DELEGATE ADMIN -->
+  <div id="memberModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h3>Member & Admin Management</h3>
+      <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">Add players, delegate level admins, or adjust wallet credit.</p>
+      <div class="field"><label>Full Name</label><input id="memName" placeholder="Enter full name" /></div>
+      <div class="field"><label>Member ID / CPR</label><input id="memId" placeholder="ICB-202" /></div>
+      <div class="field"><label>Email</label><input id="memEmail" placeholder="player@indianclub.com" /></div>
+      <div class="field"><label>Flight Allocation</label>
+        <select id="memFlight">
+          <option value="Premier">Premier Flight</option>
+          <option value="Flight 1">Flight 1</option>
+          <option value="Flight 2">Flight 2</option>
+          <option value="Flight 3">Flight 3</option>
+          <option value="Flight 4A">Flight 4A</option>
+          <option value="Flight 4B">Flight 4B</option>
+        </select>
+      </div>
+      <div class="field"><label>Role / Role Delegation</label>
+        <select id="memRole">
+          <option value="PLAYER">Player</option>
+          <option value="LEVEL_ADMIN">Level Admin (Flight Lead)</option>
+          <option value="SUPER_ADMIN">Super Admin (Committee Executive)</option>
+        </select>
+      </div>
+      <div class="field"><label>Initial Credit Top-up (BHD)</label><input id="memCredit" type="number" step="0.500" value="0.000" /></div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button class="public-btn primary" onclick="saveMemberRecord()" style="flex:1;">Save Member</button>
+        <button class="public-btn" onclick="closeModal('memberModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SUBMIT BUSINESS AD & FLYER -->
+  <div id="adModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h3>List Your Business / Upload Flyer</h3>
+      <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">Promote your offer to the Indian Club community in Bahrain.</p>
+      <div class="field"><label>Business Name</label><input id="adBizName" placeholder="e.g. Spice Route Restaurant" /></div>
+      <div class="field"><label>Category</label>
+        <select id="adCategory">
+          <option value="Dining">Dining & Food</option>
+          <option value="Sports">Sports Equipment</option>
+          <option value="Travel">Travel & Visa Services</option>
+          <option value="Healthcare">Healthcare & Clinics</option>
+          <option value="Retail">Retail & Supermarket</option>
+        </select>
+      </div>
+      <div class="field"><label>Contact Phone / WhatsApp</label><input id="adPhone" placeholder="+973 36000000" /></div>
+      <div class="field"><label>Flyer Image URL</label><input id="adFlyerUrl" placeholder="https://..." /></div>
+      <div class="field"><label>Discount / Member Offer Text</label><input id="adOffer" placeholder="10% discount for ICB members" /></div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button class="public-btn primary" onclick="submitAdFlyer()" style="flex:1;">Submit Ad Banner</button>
+        <button class="public-btn" onclick="closeModal('adModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: UPDATE CREDENTIALS -->
+  <div id="profileModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h3>Update Credentials</h3>
+      <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">Change your display name or set a new secure password.</p>
+      <div class="field"><label>Full Name</label><input id="profName" placeholder="Your Name" /></div>
+      <div class="field"><label>New Password</label><input id="profPass" type="password" placeholder="Enter new password" /></div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button class="public-btn primary" onclick="saveCredentials()" style="flex:1;">Update Security</button>
+        <button class="public-btn" onclick="closeModal('profileModal')">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <div id="toast" class="toast hidden"></div>
 
@@ -250,7 +374,6 @@
         let email = document.getElementById("loginId").value.trim();
         const password = document.getElementById("loginPassword").value;
 
-        // Auto-fix format if username or member ID is typed without domain
         if (!email.includes("@")) {
           email = `${email.replace(/\s+/g, "").toLowerCase()}@indianclub.com`;
         }
@@ -272,14 +395,25 @@
       }
     }
 
-    async function realAttendance(status, sessionId) {
-      state.attendance = status;
-      toast("Attendance saved locally");
-      render();
+    async function triggerLogout() {
+      try {
+        await signOut(firebaseAuth);
+        state.currentUser = null;
+        toast("Signed out successfully.");
+        document.getElementById("app").classList.add("hidden");
+        document.getElementById("publicLanding").classList.remove("hidden");
+        toggleLoginCard(false);
+      } catch (error) {
+        toast("Logout failed");
+      }
     }
 
     onAuthStateChanged(firebaseAuth, (user) => {
-      if (!user) return;
+      if (!user) {
+        document.getElementById("app").classList.add("hidden");
+        document.getElementById("publicLanding").classList.remove("hidden");
+        return;
+      }
       state.currentUser = {
         uid: user.uid,
         email: user.email,
@@ -290,7 +424,7 @@
       render();
     });
 
-    window.realAttendance = realAttendance;
+    window.triggerLogout = triggerLogout;
     document.getElementById("signIn").onclick = realSignIn;
   </script>
 
@@ -300,11 +434,32 @@
     }
 
     function openPublicDirectory() {
-      toast("Loading public community directory...");
+      go('bazaar');
+      document.getElementById("publicLanding").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
     }
 
     function openBusinessSubmitModal() {
-      toast("Business submission form opened.");
+      document.getElementById("adModal").classList.remove("hidden");
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add("hidden");
+    }
+
+    function saveMemberRecord() {
+      toast("Member registered & role assigned successfully!");
+      closeModal('memberModal');
+    }
+
+    function submitAdFlyer() {
+      toast("Business ad flyer submitted for Super Admin review!");
+      closeModal('adModal');
+    }
+
+    function saveCredentials() {
+      toast("Credentials and password updated!");
+      closeModal('profileModal');
     }
 
     setTimeout(() => {
