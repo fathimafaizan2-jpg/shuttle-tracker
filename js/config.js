@@ -1,4 +1,19 @@
 // GLOBAL STATE & STORAGE CONFIGURATION
+// INITIALIZE GLOBAL APPLICATION STATE
+window.state = {
+  page: 'home',
+  role: 'PLAYER',
+  currentUser: null
+};
+
+// EXPOSE AS GLOBAL SHORTCUTS
+var state = window.state;
+var currentUser = state.currentUser;
+var isAdmin = false;
+var isSuperAdmin = false;
+var adminLevel = "Level 4A";
+var tubePacks = 2;
+var currentCorkCount = 2;
 const BUILD_VERSION = "v5.1.0-fulltabs";
 if (localStorage.getItem('icst_build_ver') !== BUILD_VERSION) {
   localStorage.clear();
