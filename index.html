@@ -385,6 +385,14 @@
 
   <div id="toast" class="toast hidden"></div>
 
+  <!-- INITIALIZE GLOBAL STATE OBJECT BEFORE MODULES -->
+  <script>
+    if (typeof window.state === 'undefined') {
+      window.state = { page: 'home', role: 'PLAYER', currentUser: null };
+    }
+    var state = window.state;
+  </script>
+
   <!-- CORE MODULE SCRIPTS -->
   <script src="js/config.js"></script>
   <script src="js/router.js"></script>
