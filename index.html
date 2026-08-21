@@ -416,16 +416,16 @@
     const firebaseAuth = getAuth(firebaseApp);
 
     function unlockAdminTabs() {
-      if (isAdmin || isSuperAdmin) {
-        document.querySelectorAll('.admin-nav, .admin-only-tab, .admin-only-inline').forEach(e => {
-          e.style.display = 'block';
-        });
-      }
-      if (isSuperAdmin) {
-        document.querySelectorAll('.super-nav, .is-super-only').forEach(e => {
-          e.style.display = 'block';
-        });
-      }
+      const role = state.role || "PLAYER";
+      const isAdmin = role === "LEVEL_ADMIN" || role === "SUPER_ADMIN";
+      const isSuper = role === "SUPER_ADMIN";
+
+      document.querySelectorAll('.admin-nav, .admin-only-tab, .admin-only-inline').forEach(e => {
+        e.style.display = isAdmin ? 'block' : 'none';
+      });
+      document.querySelectorAll('.super-nav, .is-super-only').forEach(e => {
+        e.style.display = isSuper ? 'block' : 'none';
+      });
     }
 
     async function realSignIn() {
@@ -447,32 +447,19 @@
 
         const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
 
-        currentUser = {
+        state.role = selectedRole;
+        state.currentUser = {
           id: userCredential.user.uid,
           memberId: email.split("@")[0].toUpperCase(),
           email: userCredential.user.email,
           name: userCredential.user.displayName || email.split("@")[0],
-          level: adminLevel || "Level 4A",
+          level: "Level 4A",
           wallet: 0.000,
           pendingDues: 0.000
         };
 
-        if (selectedRole === "SUPER_ADMIN") {
-          isAdmin = true;
-          isSuperAdmin = true;
-          adminLevel = "Level 4A";
-        } else if (selectedRole === "LEVEL_ADMIN") {
-          isAdmin = true;
-          isSuperAdmin = false;
-        } else {
-          isAdmin = false;
-          isSuperAdmin = false;
-        }
-
-        localStorage.setItem('shuttle_user', JSON.stringify(currentUser));
-        if (typeof addAuditLog === "function") {
-          addAuditLog(currentUser.name, `Logged in as ${selectedRole}`);
-        }
+        localStorage.setItem('shuttle_user', JSON.stringify(state.currentUser));
+        localStorage.setItem('shuttle_role', state.role);
 
         unlockAdminTabs();
 
@@ -480,9 +467,7 @@
         document.getElementById("publicLanding").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
 
-        if (typeof checkUserSession === "function") {
-          checkUserSession();
-        }
+        if (typeof render === "function") render();
       } catch (error) {
         toast(error.message);
       }
@@ -492,13 +477,11 @@
       try {
         await signOut(firebaseAuth);
         localStorage.removeItem('shuttle_user');
-        currentUser = null;
-        isAdmin = false;
-        isSuperAdmin = false;
+        localStorage.removeItem('shuttle_role');
+        state.currentUser = null;
+        state.role = "PLAYER";
 
-        document.querySelectorAll('.admin-nav, .super-nav, .admin-only-tab, .is-super-only').forEach(e => {
-          e.style.display = 'none';
-        });
+        unlockAdminTabs();
 
         toast("Signed out successfully.");
         document.getElementById("app").classList.add("hidden");
@@ -516,18 +499,22 @@
         return;
       }
 
-      if (!currentUser) {
-        currentUser = {
+      state.role = localStorage.getItem('shuttle_role') || "PLAYER";
+      if (!state.currentUser) {
+        state.currentUser = {
           id: user.uid,
           memberId: user.email.split("@")[0].toUpperCase(),
           email: user.email,
           name: user.displayName || user.email.split("@")[0],
-          level: adminLevel || "Level 4A",
+          level: "Level 4A",
           wallet: 0.000
         };
       }
 
       unlockAdminTabs();
+      document.getElementById("publicLanding").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+      if (typeof render === "function") render();
     });
 
     window.triggerLogout = triggerLogout;
@@ -536,6 +523,34 @@
   </script>
 
   <script>
+    // 1. ROLE PILLS CLICK SELECTOR
+    document.querySelectorAll('#rolePills .pill').forEach(pill => {
+      pill.addEventListener('click', function() {
+        document.querySelectorAll('#rolePills .pill').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        if (typeof state !== 'undefined') {
+          state.role = this.dataset.role;
+        }
+      });
+    });
+
+    // 2. SIDEBAR NAVIGATION CLICK HANDLER
+    document.querySelectorAll('.nav[data-page]').forEach(button => {
+      button.addEventListener('click', function() {
+        const page = this.dataset.page;
+        if (page && typeof go === "function") go(page);
+      });
+    });
+
+    // 3. MOBILE MENU TOGGLE HANDLER
+    const menuBtn = document.getElementById('menu');
+    if (menuBtn) {
+      menuBtn.addEventListener('click', function() {
+        const side = document.getElementById('side');
+        if (side) side.classList.toggle('open');
+      });
+    }
+
     function toggleLoginCard(show) {
       document.getElementById("login").classList.toggle("hidden", !show);
     }
