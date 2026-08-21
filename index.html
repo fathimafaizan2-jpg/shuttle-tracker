@@ -189,7 +189,7 @@
     </header>
 
     <div class="layout">
-      <aside id="side" class="side">
+      aside id="side" class="side">
         <div class="brand"><div class="brand-mark">ST</div><div><b>Indian Club</b><small id="sideRole">Player</small></div></div>
         <div class="nav-group">MAIN</div>
         <button class="nav active" data-page="home">Home</button>
@@ -225,7 +225,6 @@
   <script src="js/modules/auth.js"></script>
 
   <!-- FIREBASE WEB SDK INITIALIZATION SCRIPT -->
-  <!-- FIREBASE WEB SDK INITIALIZATION SCRIPT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import {
@@ -234,7 +233,7 @@
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-    // YOUR FIREBASE CONFIG
+    // PASTE YOUR REAL FIREBASE KEYS HERE FROM THE FIREBASE CONSOLE
     const firebaseConfig = {
       apiKey: "AIzaSyAZEE6jX1o5r5a4pS5uqrKkdZFEgsLlaTQ",
       authDomain: "shuttle-platform-icb.firebaseapp.com",
@@ -250,12 +249,10 @@
         let email = document.getElementById("loginId").value.trim();
         const password = document.getElementById("loginPassword").value;
 
-        // Auto-fix format if no '@' is typed
         if (!email.includes("@")) {
           email = `${email.replace(/\s+/g, "").toLowerCase()}@indianclub.com`;
         }
 
-        // Sign in directly with Firebase
         const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
         
         state.currentUser = {
@@ -273,7 +270,6 @@
       }
     }
 
-    // Keep user logged in on page refresh
     onAuthStateChanged(firebaseAuth, (user) => {
       if (!user) return;
       state.currentUser = {
@@ -288,7 +284,7 @@
 
     document.getElementById("signIn").onclick = realSignIn;
   </script>
-  
+
   <script>
     function toggleLoginCard(show) {
       document.getElementById("login").classList.toggle("hidden", !show);
