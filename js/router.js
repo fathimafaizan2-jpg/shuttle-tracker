@@ -25,28 +25,32 @@ function simple(title, text) {
 }
 
 function render() {
+  const v = window.views || {};
+  const av = window.adminViews || {};
+
   const pageMap = {
-    home: window.views.home,
-    timetable: window.views.timetable,
-    attendance: window.views.attendance,
-    wallet: window.views.wallet,
+    home: v.home || (() => simple("Home Dashboard", "Welcome to ICB Shuttle Tracker.")),
+    timetable: v.timetable || (() => simple("My Timetable", "Weekly match schedule and court allocations.")),
+    attendance: v.attendance || (() => simple("Attendance Roster", "View and update your session attendance.")),
+    wallet: v.wallet || (() => simple("Wallet & Payments", "Check balance and settle session costs.")),
     history: () => simple("My History", "Attendance, session cost and payment history."),
-    sessions: window.adminViews.sessions,
+    sessions: av.sessions || (() => simple("Session Control", "Flight level session operations.")),
     stock: () => simple("Shuttle Stock", "Inventory, tube usage, valuation and low-stock warnings."),
     reports: () => simple("Reports & Print", "Attendance report, unpaid statement, stock report and printable receipt."),
-    master: window.adminViews.master,
-    flights: window.adminViews.flightsPage,
-    finance: window.adminViews.finance,
-    ads: window.adminViews.ads,
+    master: av.master || (() => simple("Master Timetable", "Quarterly rotational court schedule.")),
+    flights: av.flightsPage || (() => simple("Flights & Members", "Register players and manage flight rosters.")),
+    finance: av.finance || (() => simple("Finance & Arrears", "Track unpaid player dues and top-up balances.")),
+    ads: av.ads || (() => simple("Advertising Management", "Sponsor flyer submissions and approvals.")),
     audit: () => simple("Audit History", "Read-only corrections, approvals, payment checks and timetable changes."),
     announcements: () => simple("Announcements", "Club notices, flight reminders and manual WhatsApp sharing."),
-    bazaar: window.views.community,
+    bazaar: v.community || (() => simple("Indi Mart", "Community directory and local business offers.")),
     profile: () => simple("My Profile", "Profile, contact preferences, language and secure password change.")
   };
 
   const viewContainer = document.getElementById("view");
   if (viewContainer) {
-    viewContainer.innerHTML = (pageMap[state.page] || window.views.home)();
+    const viewFn = pageMap[state.page] || pageMap.home;
+    viewContainer.innerHTML = viewFn();
   }
 
   const isAdmin = state.role === "LEVEL_ADMIN" || state.role === "SUPER_ADMIN";
@@ -57,5 +61,5 @@ function render() {
   document.querySelectorAll(".nav").forEach(el => el.classList.toggle("active", el.dataset.page === state.page));
 
   const roleLabel = document.getElementById("roleLabel");
-  if (roleLabel) roleLabel.textContent = state.role.replace("_", " ");
+  if (roleLabel) roleLabel.textContent = (state.role || "PLAYER").replace("_", " ");
 }
