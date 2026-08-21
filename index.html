@@ -7,6 +7,11 @@
   <title>ICB | Powered by NuZan AI Studio</title>
   <link rel="stylesheet" href="css/styles.css" />
   <style>
+    /* STRICT SCREEN ISOLATION */
+    #publicLanding.hidden, #app.hidden {
+      display: none !important;
+    }
+
     /* PUBLIC LANDING PAGE STYLES */
     .public-container {
       max-width: 540px;
@@ -429,10 +434,10 @@
       const isSuper = role === "SUPER_ADMIN";
 
       document.querySelectorAll('.admin-nav, .admin-only-tab, .admin-only-inline').forEach(e => {
-        e.style.display = isAdmin ? 'block' : 'none';
+        e.classList.toggle('hidden', !isAdmin);
       });
       document.querySelectorAll('.super-nav, .is-super-only').forEach(e => {
-        e.style.display = isSuper ? 'block' : 'none';
+        e.classList.toggle('hidden', !isSuper);
       });
     }
 
