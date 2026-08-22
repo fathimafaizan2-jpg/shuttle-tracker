@@ -1,0 +1,23 @@
+# Private environment values and Firebase administrator credentials
+.env
+.env.*
+!.env.example
+service-account.json
+firebase-service-account*.json
+*-firebase-adminsdk-*.json
+
+# Node packages and runtime output
+node_modules/
+npm-debug.log*
+*.log
+coverage/
+dist/
+
+# Local editor and system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Generated local reports
+package-lock.json
