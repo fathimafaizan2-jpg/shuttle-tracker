@@ -1,24 +1,11 @@
 {
-  "name": "Shuttle Tracker",
-  "short_name": "ShuttleTracker",
-  "description": "Badminton Operations Platform by NuZan",
+  "name": "Indian Club Shuttle Tracker",
+  "short_name": "Indian Club",
+  "description": "Indian Club Bahrain badminton, community and Indi Mart platform",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "background_color": "#172554",
   "theme_color": "#2563eb",
-  "orientation": "portrait",
-  "icons": [
-    {
-      "src": "https://img.icons8.com/color/512/badminton.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "https://img.icons8.com/color/512/badminton.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ]
+  "orientation": "any",
+  "icons": []
 }
