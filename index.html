@@ -59,8 +59,7 @@
     List Your Business
     <span>Submit an Indi Mart listing for approval</span>
   </button>
-</section>
->
+  </section>
 
     <!-- Business is NOT a dashboard login. It is a public submission form only. -->
     <section id="businessForm" class="card hidden">
@@ -206,7 +205,11 @@ Powered by <b>Nuzan AI Studio</b></footer>
       $("app").classList.remove("hidden");
       $("view").innerHTML = await publicIndiMart();
     };
-    $("openBusiness").onclick = () => $("businessForm").classList.remove("hidden");
+    const openBusinessButton = $("openBusiness");
+  if (openBusinessButton) {
+     openBusinessButton.onclick = () => $("businessForm").classList.remove("hidden");
+   }
+
     $("closeBusinessForm").onclick = () => $("businessForm").classList.add("hidden");
 
     $("submitBusiness").onclick = async () => {
