@@ -1,127 +1,57 @@
-// PLAYER VIEWS, ATTENDANCE & COST CALCULATOR
-function renderAttendees() {
-  if (!currentUser && !isAdmin) return;
-  const container = document.getElementById('attendeeChecklist');
-  if (!container) return;
-  container.innerHTML = '';
+import { api, submitPublicBusiness } from "./auth.js";
+import { APP_CONFIG } from "../config.js";
 
-  const targetLevel = isAdmin ? adminLevel : (currentUser ? currentUser.level : "Level 4A");
-  const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(targetLevel));
+const escapeHtml = value => String(value ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));
+const money = fils => `BHD ${(Number(fils || 0) / 1000).toFixed(3)}`;
 
-  if (levelMembers.length === 0) {
-    container.innerHTML = `<small style="color:#adb5bd;">No members registered under ${targetLevel} yet.</small>`;
-    return;
-  }
+export async function playerDashboard(member) {
+  const sessions = await api("/timetable/mine");
+  const next = sessions.sort((a,b) => a.startAtUtc - b.startAtUtc).find(s => s.startAtUtc >= Date.now());
+  return `
+    <section class="page">
+      <h2>Welcome, ${escapeHtml(member.fullName)}</h2>
+      <p>${escapeHtml(member.flightId || "No flight assigned")}</p>
+      <article class="card"><h3>Next game</h3>${next ? `<b>${new Date(next.startAtUtc).toLocaleString()}</b><p>2 courts · ${escapeHtml(member.flightId)}</p>` : "No upcoming game"}</article>
+      <article class="card"><h3>Rules</h3><p>Attendance locks automatically 15 minutes after session start. Only actual attendees pay shuttlecock cost.</p></article>
+    </section>`;
+}
 
-  levelMembers.forEach(p => {
-    const isSelf = currentUser && p.id === currentUser.id;
-    const isComing = p.coming !== false;
-    const isLocked = p.locked === true && !isAdmin;
-    const canEdit = (isSelf && !isLocked) || isAdmin;
+export async function playerTimetable() {
+  const sessions = await api("/timetable/mine");
+  return `<section class="page"><h2>My Timetable</h2><div class="carousel">${sessions.map(s => `<article class="card"><b>${new Date(s.startAtUtc).toLocaleDateString()}</b><p>${new Date(s.startAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} – ${new Date(s.endAtUtc).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</p><p>2 courts · ${escapeHtml(s.flightId)}</p></article>`).join("") || "No sessions"}</div></section>`;
+}
 
-    let walletText = '';
-    if (isSelf || isAdmin) {
-      walletText = `<br><small style="color:${(p.wallet||0)<=0?'var(--red)':'var(--text-muted)'};">
-        Credit: BHD ${(p.wallet||0).toFixed(3)} ${(p.wallet||0)<=0?'(OUT)':''}
-      </small>`;
-    }
+export async function attendanceView(sessionId) {
+  const data = await api(`/attendance/${sessionId}/roster`);
+  return `<section class="page"><h2>Attendance</h2><p>${data.locked ? "Locked: Flight Admin only can correct." : "Open: update only your own response."}</p>${data.roster.map(p => `<article class="roster-row"><b>${escapeHtml(p.fullName)}</b><span>${escapeHtml(p.status)}</span>${p.isCurrentUser && !data.locked ? `<button data-attendance="COMING">Coming</button><button data-attendance="NOT_COMING">Not coming</button>` : ""}</article>`).join("")}</section>`;
+}
 
-    const initial = p.name ? p.name.charAt(0).toUpperCase() : 'M';
+export async function publicIndiMart(search = "") {
+  const [notices, sponsors, directory] = await Promise.all([
+    fetch(`${APP_CONFIG.API_BASE_URL}/business/public/notices`).then(r => r.json()),
+    fetch(`${APP_CONFIG.API_BASE_URL}/business/public/sponsors`).then(r => r.json()),
+    fetch(`${APP_CONFIG.API_BASE_URL}/business/public/directory?search=${encodeURIComponent(search)}`).then(r => r.json())
+  ]);
+  return `<section class="page"><h2>Indi Mart</h2><p>Indian community notices, approved sponsors and local directory.</p>
+    <div class="ad-carousel">${sponsors.map(s => `<article class="ad-card">${s.flyerUrl ? `<img src="${escapeHtml(s.flyerUrl)}" alt="${escapeHtml(s.businessName)}">` : ""}<h3>${escapeHtml(s.businessName)}</h3><p>${escapeHtml(s.discountText || "Approved sponsor")}</p></article>`).join("")}</div>
+    <h3>Official notices</h3>${notices.map(n => `<article class="notice"><b>${escapeHtml(n.title)}</b><p>${escapeHtml(n.body)}</p></article>`).join("")}
+    <h3>Directory</h3>${directory.map(b => `<article class="card"><h3>${escapeHtml(b.businessName)}</h3><p>${escapeHtml(b.category)}</p><p>${escapeHtml(b.description)}</p>${b.googleMapsUrl ? `<a href="${escapeHtml(b.googleMapsUrl)}" target="_blank" rel="noopener">Open map</a>` : ""}</article>`).join("")}</section>`;
+}
 
-    container.innerHTML += `
-      <div class="attendee-item">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div class="member-avatar">${initial}</div>
-          <div>
-            <strong>${p.name}</strong> ${isSelf ? '<small style="color:var(--primary); font-weight:bold;">(You)</small>' : ''}
-            ${walletText}
-          </div>
-        </div>
-        <div class="att-btn-group">
-          <button class="att-btn yes ${isComing ? 'active' : ''}" ${!canEdit ? 'disabled' : ''} onclick="setAttendance('${p.id}', true)">Yes</button>
-          <button class="att-btn no ${!isComing ? 'active' : ''}" ${!canEdit ? 'disabled' : ''} onclick="setAttendance('${p.id}', false)">No</button>
-        </div>
-      </div>`;
+export async function businessSubmissionForm() {
+  return `<section class="business-form"><h2>Business Submission</h2><p>This form goes only to Super Admin approval. It does not create Player/Admin access.</p><input id="bizName" placeholder="Business name"><input id="bizOwner" placeholder="Owner name"><input id="bizPhone" placeholder="Phone"><input id="bizCategory" placeholder="Category"><textarea id="bizDescription" placeholder="Description / offer"></textarea><button id="submitBusiness">Submit</button></section>`;
+}
+
+export function bindBusinessSubmission() {
+  document.getElementById("submitBusiness")?.addEventListener("click", async () => {
+    const result = await submitPublicBusiness({
+      businessName: document.getElementById("bizName").value,
+      ownerName: document.getElementById("bizOwner").value,
+      phone: document.getElementById("bizPhone").value,
+      category: document.getElementById("bizCategory").value,
+      description: document.getElementById("bizDescription").value,
+      packageId: "community-standard"
+    });
+    alert(`Submitted. Save your reference code: ${result.referenceCode}`);
   });
-}
-
-function setAttendance(id, status) {
-  const player = playersList.find(p => p.id === id);
-  if (!player) return;
-
-  if (!isAdmin && currentUser.id !== id) {
-    alert("⚠️ You can only mark attendance for yourself!");
-    return;
-  }
-
-  if (!isAdmin && player.coming === true && status === false) {
-    alert("⚠️ Session is locked! If you cannot attend, ask the Admin to mark you as 'No'.");
-    return;
-  }
-
-  player.coming = status;
-  if (status === true) player.locked = true;
-
-  savePlayersData();
-  renderAttendees();
-  recalculateSplit();
-  addAuditLog(currentUser ? currentUser.name : (currentAdminObj ? currentAdminObj.name : "Admin"), `Set attendance for ${player.name} to ${status ? 'Yes' : 'No'}.`);
-}
-
-function recalculateSplit() {
-  if (!currentUser && !isAdmin) return;
-  const targetLevel = isAdmin ? adminLevel : (currentUser ? currentUser.level : "Level 4A");
-  const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(targetLevel));
-  const activeCount = levelMembers.filter(p => p.coming !== false).length || 1;
-
-  const totalShuttlesLoaded = tubePacks * 12;
-  const availableShuttles = Math.max(0, totalShuttlesLoaded - currentCorkCount);
-  const singleShuttlePrice = (tubePacks * tubePriceBHD) / totalShuttlesLoaded;
-  const totalGameCost = currentCorkCount * singleShuttlePrice;
-  const shareCost = totalGameCost / activeCount;
-
-  if (document.getElementById('playerCurrentLevelDisplay')) document.getElementById('playerCurrentLevelDisplay').innerText = targetLevel;
-  if (document.getElementById('tubeCountDisplay')) document.getElementById('tubeCountDisplay').innerText = tubePacks;
-  if (document.getElementById('totalShuttlesLoadedDisplay')) document.getElementById('totalShuttlesLoadedDisplay').innerText = totalShuttlesLoaded;
-  if (document.getElementById('tubePriceDisplay')) document.getElementById('tubePriceDisplay').innerText = tubePriceBHD.toFixed(3);
-  if (document.getElementById('availableShuttlesDisplay')) document.getElementById('availableShuttlesDisplay').innerText = availableShuttles;
-  if (document.getElementById('singleShuttlePriceDisplay')) document.getElementById('singleShuttlePriceDisplay').innerText = singleShuttlePrice.toFixed(3);
-  
-  if (document.getElementById('playerCountDisplay')) document.getElementById('playerCountDisplay').innerText = activeCount;
-  if (document.getElementById('totalCostDisplay')) document.getElementById('totalCostDisplay').innerText = totalGameCost.toFixed(3);
-  if (document.getElementById('splitDisplay')) document.getElementById('splitDisplay').innerText = `BHD ${shareCost.toFixed(3)}`;
-
-  if (document.getElementById('dashActivePlayers')) document.getElementById('dashActivePlayers').innerText = levelMembers.length;
-  if (document.getElementById('dashTubesStocked')) document.getElementById('dashTubesStocked').innerText = tubePacks;
-  if (document.getElementById('dashShuttlesUsed')) document.getElementById('dashShuttlesUsed').innerText = currentCorkCount;
-  if (document.getElementById('dashAvailableShuttles')) document.getElementById('dashAvailableShuttles').innerText = availableShuttles;
-
-  const stockBox = document.getElementById('stockAlertBox');
-  if (stockBox) stockBox.style.display = availableShuttles < 12 ? 'block' : 'none';
-}
-
-function payViaWallet() {
-  if (!currentUser) return;
-  const levelMembers = playersList.filter(p => normalizeLevel(p.level) === normalizeLevel(currentUser.level) && p.coming !== false);
-  const activeCount = levelMembers.length || 1;
-  const singleShuttlePrice = (tubePacks * tubePriceBHD) / (tubePacks * 12);
-  const shareCost = (currentCorkCount * singleShuttlePrice) / activeCount;
-
-  if ((currentUser.wallet || 0) < shareCost) {
-    alert(`⚠️ Insufficient Wallet Credit! Share is BHD ${shareCost.toFixed(3)}, balance is BHD ${(currentUser.wallet||0).toFixed(3)}. Deficit added to pending dues.`);
-    currentUser.pendingDues = (currentUser.pendingDues || 0) + shareCost;
-  } else {
-    currentUser.wallet = (currentUser.wallet || 0) - shareCost;
-  }
-
-  currentUser.paidCurrent = true;
-  if (!currentUser.logs) currentUser.logs = [];
-  currentUser.logs.push({ date: new Date().toLocaleDateString('en-GB'), attended: true, amount: shareCost, method: "Wallet Credit" });
-
-  savePlayersData();
-  addAuditLog(currentUser.name, `Paid BHD ${shareCost.toFixed(3)} via Wallet Credit.`);
-
-  const waMsg = `Hi Admin, ${currentUser.name} paid BHD ${shareCost.toFixed(3)} using Wallet Credit (${currentUser.level}). Remaining Balance: BHD ${currentUser.wallet.toFixed(3)}.`;
-  window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(waMsg)}`, '_blank');
-  showSection('dashboard');
 }
