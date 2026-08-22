@@ -1,104 +1,121 @@
 import { Router } from "express";
-import { FieldValue } from "firebase-admin/firestore";
-import { z } from "zod";
-import { db } from "../firebaseAdmin.js";
-import { requireAuth, requireRoles } from "../auth.js";
+import { db, FieldValue } from "../firebaseAdmin.js";
+import { requireAuth, requireRole } from "../auth.js";
 
-export const activitiesRouter = Router();
+const router = Router();
 
-const createActivitySchema = z.object({
-  name: z.string().trim().min(2).max(60),
-  kind: z.enum(["BADMINTON", "CRICKET", "FOOTBALL", "VOLLEYBALL", "TABLE_TENNIS", "OTHER"]),
-  active: z.boolean().default(true)
+const cleanText = (value: unknown, label: string, max = 80) => {
+  const text = String(value || "").trim();
+  if (!text || text.length > max) throw new Error(`${label} is required and must be under ${max} characters.`);
+  return text;
+};
+
+/* All approved members can view active activities and flights. */
+router.get("/", requireAuth, async (_request, response) => {
+  const activities = await db.collection("activities").where("active", "==", true).orderBy("name").get();
+  const result = await Promise.all(activities.docs.map(async activity => {
+    const flights = await activity.ref.collection("flights").where("active", "==", true).orderBy("sortOrder").get();
+    return {
+      id: activity.id,
+      ...activity.data(),
+      flights: flights.docs.map(flight => ({ id: flight.id, ...flight.data() }))
+    };
+  }));
+  response.json(result);
 });
 
-const createFlightSchema = z.object({
-  activityId: z.string().min(1),
-  name: z.string().trim().min(2).max(40),
-  active: z.boolean().default(true),
-  displayOrder: z.number().int().min(0).default(0)
-});
+/* Super Admin creates future sports such as Cricket, Football, Volleyball, Table Tennis and Other. */
+router.post("/", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
+  try {
+    const name = cleanText(request.body.name, "Activity name");
+    const existing = await db.collection("activities").where("nameLower", "==", name.toLowerCase()).limit(1).get();
+    if (!existing.empty) return response.status(409).json({ message: "An activity with this name already exists." });
 
-// Super Admin creates Badminton and future sports only here.
-activitiesRouter.post("/", requireAuth, requireRoles("SUPER_ADMIN"), async (req, res) => {
-  const input = createActivitySchema.parse(req.body);
-  const ref = await db.collection("activities").add({
-    clubId: req.member!.clubId,
-    ...input,
-    createdBy: req.member!.uid,
-    createdAt: FieldValue.serverTimestamp()
-  });
-  res.status(201).json({ id: ref.id });
-});
-
-activitiesRouter.get("/", requireAuth, async (req, res) => {
-  const rows = await db.collection("activities")
-    .where("clubId", "==", req.member!.clubId)
-    .where("active", "==", true)
-    .get();
-  res.json(rows.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-});
-
-// Dynamic flight creation: Flight 5 is created here, not hard-coded.
-activitiesRouter.post("/flights", requireAuth, requireRoles("SUPER_ADMIN"), async (req, res) => {
-  const input = createFlightSchema.parse(req.body);
-  const activity = await db.collection("activities").doc(input.activityId).get();
-  if (!activity.exists || activity.data()!.clubId !== req.member!.clubId) {
-    return res.status(404).json({ error: "Activity not found" });
+    const created = await db.collection("activities").add({
+      name,
+      nameLower: name.toLowerCase(),
+      active: true,
+      createdAt: FieldValue.serverTimestamp(),
+      createdBy: request.member!.uid
+    });
+    response.status(201).json({ id: created.id, name, active: true });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not create activity." });
   }
-
-  const duplicate = await db.collection("flights")
-    .where("activityId", "==", input.activityId)
-    .where("name", "==", input.name)
-    .limit(1)
-    .get();
-  if (!duplicate.empty) return res.status(409).json({ error: "Flight already exists" });
-
-  const ref = await db.collection("flights").add({
-    clubId: req.member!.clubId,
-    ...input,
-    createdBy: req.member!.uid,
-    createdAt: FieldValue.serverTimestamp()
-  });
-
-  await db.collection("auditLogs").add({
-    actorUid: req.member!.uid,
-    action: "FLIGHT_CREATED",
-    targetId: ref.id,
-    createdAt: FieldValue.serverTimestamp()
-  });
-
-  res.status(201).json({ id: ref.id });
 });
 
-activitiesRouter.get("/:activityId/flights", requireAuth, async (req, res) => {
-  const rows = await db.collection("flights")
-    .where("activityId", "==", req.params.activityId)
-    .where("active", "==", true)
-    .orderBy("displayOrder", "asc")
-    .get();
-  res.json(rows.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+router.patch("/:activityId", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
+  try {
+    const activityId = cleanText(request.params.activityId, "Activity ID");
+    const update: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp(), updatedBy: request.member!.uid };
+    if (request.body.name !== undefined) {
+      const name = cleanText(request.body.name, "Activity name");
+      update.name = name;
+      update.nameLower = name.toLowerCase();
+    }
+    if (request.body.active !== undefined) update.active = Boolean(request.body.active);
+    await db.collection("activities").doc(activityId).update(update);
+    response.json({ success: true });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not update activity." });
+  }
 });
 
-activitiesRouter.patch("/flights/:flightId", requireAuth, requireRoles("SUPER_ADMIN"), async (req, res) => {
-  const input = z.object({
-    name: z.string().trim().min(2).max(40).optional(),
-    active: z.boolean().optional(),
-    displayOrder: z.number().int().min(0).optional()
-  }).parse(req.body);
+/* Flights are dynamic. Super Admin may add Flight 5 or any future flight without code changes. */
+router.post("/:activityId/flights", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
+  try {
+    const activityId = cleanText(request.params.activityId, "Activity ID");
+    const name = cleanText(request.body.name, "Flight name");
+    const sortOrder = Number(request.body.sortOrder ?? 999);
+    if (!Number.isInteger(sortOrder) || sortOrder < 0) throw new Error("Sort order must be a whole number.");
 
-  await db.collection("flights").doc(req.params.flightId).update({
-    ...input,
-    updatedBy: req.member!.uid,
-    updatedAt: FieldValue.serverTimestamp()
-  });
+    const activity = await db.collection("activities").doc(activityId).get();
+    if (!activity.exists) return response.status(404).json({ message: "Activity not found." });
 
-  await db.collection("auditLogs").add({
-    actorUid: req.member!.uid,
-    action: "FLIGHT_UPDATED",
-    targetId: req.params.flightId,
-    createdAt: FieldValue.serverTimestamp()
-  });
+    const duplicate = await activity.ref.collection("flights").where("nameLower", "==", name.toLowerCase()).limit(1).get();
+    if (!duplicate.empty) return response.status(409).json({ message: "A flight with this name already exists." });
 
-  res.json({ ok: true });
+    const created = await activity.ref.collection("flights").add({
+      name,
+      nameLower: name.toLowerCase(),
+      activityId,
+      active: true,
+      sortOrder,
+      courtCount: 2,
+      createdAt: FieldValue.serverTimestamp(),
+      createdBy: request.member!.uid
+    });
+    response.status(201).json({ id: created.id, name, activityId, courtCount: 2 });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not create flight." });
+  }
 });
+
+router.patch("/:activityId/flights/:flightId", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
+  try {
+    const { activityId, flightId } = request.params;
+    const flightRef = db.collection("activities").doc(activityId).collection("flights").doc(flightId);
+    const flight = await flightRef.get();
+    if (!flight.exists) return response.status(404).json({ message: "Flight not found." });
+
+    const update: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp(), updatedBy: request.member!.uid, courtCount: 2 };
+    if (request.body.name !== undefined) {
+      const name = cleanText(request.body.name, "Flight name");
+      update.name = name;
+      update.nameLower = name.toLowerCase();
+    }
+    if (request.body.sortOrder !== undefined) {
+      const sortOrder = Number(request.body.sortOrder);
+      if (!Number.isInteger(sortOrder) || sortOrder < 0) throw new Error("Sort order must be a whole number.");
+      update.sortOrder = sortOrder;
+    }
+    if (request.body.active !== undefined) update.active = Boolean(request.body.active);
+
+    await flightRef.update(update);
+    response.json({ success: true });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not update flight." });
+  }
+});
+
+export default router;
