@@ -1,116 +1,111 @@
-export const FILS_PER_BHD = 1000;
-export const ATTENDANCE_LOCK_AFTER_MINUTES = 15;
-export const ARREARS_AFTER_HOURS = 24;
+import { describe, expect, it } from "vitest";
+import {
+  ARREARS_AFTER_HOURS,
+  ATTENDANCE_LOCK_AFTER_MINUTES,
+  calculateShuttleCost,
+  isSessionLocked,
+  splitFilsEqually
+} from "./clubLogic.js";
 
-export type AttendanceStatus = "PRESENT" | "ABSENT" | "NO_RESPONSE";
+describe("Indian Club shuttlecock cost formula", () => {
+  it("calculates available shuttlecocks and remaining stock", () => {
+    const result = calculateShuttleCost(
+      {
+        availableTubes: 4,
+        looseShuttles: 3,
+        shuttlesPerTube: 12,
+        tubePriceFils: 3000
+      },
+      15,
+      ["member-b", "member-a", "member-c"]
+    );
 
-export type StockBeforeGame = {
-  availableTubes: number;
-  looseShuttles: number;
-  shuttlesPerTube: number;
-  tubePriceFils: number;
-};
+    expect(result.totalAvailableShuttles).toBe(51);
+    expect(result.actualShuttlesUsed).toBe(15);
+    expect(result.remainingShuttles).toBe(36);
+  });
 
-export type PlayerCharge = {
-  memberUid: string;
-  amountFils: number;
-};
+  it("calculates total day cost from actual shuttlecocks used only", () => {
+    const result = calculateShuttleCost(
+      {
+        availableTubes: 2,
+        looseShuttles: 0,
+        shuttlesPerTube: 12,
+        tubePriceFils: 3000
+      },
+      5,
+      ["member-a", "member-b"]
+    );
 
-export type ShuttleCostResult = {
-  totalAvailableShuttles: number;
-  actualShuttlesUsed: number;
-  remainingShuttles: number;
-  costPerShuttleExactFils: number;
-  totalDayCostFils: number;
-  attendeeCount: number;
-  charges: PlayerCharge[];
-};
+    /* 5 × 3,000 / 12 = 1,250 fils = BHD 1.250 */
+    expect(result.totalDayCostFils).toBe(1250);
+    expect(result.attendeeCount).toBe(2);
+    expect(result.charges).toEqual([
+      { memberUid: "member-a", amountFils: 625 },
+      { memberUid: "member-b", amountFils: 625 }
+    ]);
+  });
 
-export function ceilDivide(numerator: number, denominator: number): number {
-  if (!Number.isInteger(numerator) || !Number.isInteger(denominator) || denominator <= 0) {
-    throw new Error("Invalid calculation values.");
-  }
-  return Math.ceil(numerator / denominator);
-}
+  it("charges final PRESENT attendees only and ignores duplicate IDs", () => {
+    const result = calculateShuttleCost(
+      {
+        availableTubes: 1,
+        looseShuttles: 0,
+        shuttlesPerTube: 15,
+        tubePriceFils: 4500
+      },
+      4,
+      ["player-1", "player-1", "player-2"]
+    );
 
-export function toFils(bhd: number): number {
-  if (!Number.isFinite(bhd) || bhd < 0) throw new Error("BHD amount must be zero or greater.");
-  return Math.round(bhd * FILS_PER_BHD);
-}
+    /* 4 × 4,500 / 15 = 1,200 fils; two final PRESENT attendees pay 600 each. */
+    expect(result.attendeeCount).toBe(2);
+    expect(result.totalDayCostFils).toBe(1200);
+    expect(result.charges).toEqual([
+      { memberUid: "player-1", amountFils: 600 },
+      { memberUid: "player-2", amountFils: 600 }
+    ]);
+  });
 
-export function toBhd(fils: number): number {
-  return Number((fils / FILS_PER_BHD).toFixed(3));
-}
+  it("distributes remainder fils deterministically in alphabetical member UID order", () => {
+    const charges = splitFilsEqually(1000, ["member-c", "member-a", "member-b"]);
 
-export function isSessionLocked(startAt: Date | string | number, now = new Date()): boolean {
-  const start = new Date(startAt).getTime();
-  if (Number.isNaN(start)) throw new Error("Invalid session start time.");
-  return now.getTime() >= start + ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000;
-}
+    expect(charges).toEqual([
+      { memberUid: "member-a", amountFils: 334 },
+      { memberUid: "member-b", amountFils: 333 },
+      { memberUid: "member-c", amountFils: 333 }
+    ]);
+    expect(charges.reduce((sum, charge) => sum + charge.amountFils, 0)).toBe(1000);
+  });
 
-export function arrearsDueAt(sessionEndAt: Date | string | number): Date {
-  const end = new Date(sessionEndAt).getTime();
-  if (Number.isNaN(end)) throw new Error("Invalid session end time.");
-  return new Date(end + ARREARS_AFTER_HOURS * 60 * 60 * 1000);
-}
+  it("rejects usage greater than available stock", () => {
+    expect(() => calculateShuttleCost(
+      { availableTubes: 1, looseShuttles: 0, shuttlesPerTube: 12, tubePriceFils: 3000 },
+      13,
+      ["member-a"]
+    )).toThrow("Actual shuttles used cannot be more than available stock.");
+  });
 
-/*
-  Formula:
-  Total available shuttlecocks = tubes × shuttles per tube + loose shuttlecocks.
-  Total day cost in fils      = ceil(actual used × tube price in fils / shuttles per tube).
-  Final attendee charge       = total day cost ÷ actual PRESENT members only.
+  it("requires a final PRESENT attendee if any shuttlecock was used", () => {
+    expect(() => calculateShuttleCost(
+      { availableTubes: 1, looseShuttles: 0, shuttlesPerTube: 12, tubePriceFils: 3000 },
+      1,
+      []
+    )).toThrow("At least one final PRESENT attendee is required");
+  });
+});
 
-  Any 1-fil remainder is assigned alphabetically by member UID so that the result
-  is deterministic, auditable, and always adds back to exactly the total day cost.
-*/
-export function calculateShuttleCost(
-  stock: StockBeforeGame,
-  actualShuttlesUsed: number,
-  presentMemberUids: string[]
-): ShuttleCostResult {
-  const { availableTubes, looseShuttles, shuttlesPerTube, tubePriceFils } = stock;
+describe("Attendance lock rule", () => {
+  it("locks attendance exactly 15 minutes after the scheduled start", () => {
+    const startAt = new Date("2026-08-22T17:00:00.000Z");
+    const beforeLock = new Date(startAt.getTime() + (ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000) - 1);
+    const atLock = new Date(startAt.getTime() + ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000);
 
-  for (const [name, value] of Object.entries({ availableTubes, looseShuttles, shuttlesPerTube, tubePriceFils, actualShuttlesUsed })) {
-    if (!Number.isInteger(value) || value < 0) throw new Error(`${name} must be a whole number of zero or greater.`);
-  }
-  if (shuttlesPerTube < 1) throw new Error("Shuttles per tube must be at least 1.");
-  if (tubePriceFils < 1) throw new Error("Tube price must be greater than zero.");
+    expect(isSessionLocked(startAt, beforeLock)).toBe(false);
+    expect(isSessionLocked(startAt, atLock)).toBe(true);
+  });
 
-  const uniqueMembers = [...new Set(presentMemberUids.filter(Boolean))].sort((a, b) => a.localeCompare(b));
-  const totalAvailableShuttles = availableTubes * shuttlesPerTube + looseShuttles;
-
-  if (actualShuttlesUsed > totalAvailableShuttles) {
-    throw new Error("Actual shuttles used cannot be more than available stock.");
-  }
-  if (actualShuttlesUsed > 0 && uniqueMembers.length === 0) {
-    throw new Error("At least one final PRESENT attendee is required to split shuttle cost.");
-  }
-
-  const totalDayCostFils = ceilDivide(actualShuttlesUsed * tubePriceFils, shuttlesPerTube);
-  const baseChargeFils = uniqueMembers.length ? Math.floor(totalDayCostFils / uniqueMembers.length) : 0;
-  const remainderFils = uniqueMembers.length ? totalDayCostFils % uniqueMembers.length : 0;
-
-  const charges = uniqueMembers.map((memberUid, index) => ({
-    memberUid,
-    amountFils: baseChargeFils + (index < remainderFils ? 1 : 0)
-  }));
-
-  return {
-    totalAvailableShuttles,
-    actualShuttlesUsed,
-    remainingShuttles: totalAvailableShuttles - actualShuttlesUsed,
-    costPerShuttleExactFils: tubePriceFils / shuttlesPerTube,
-    totalDayCostFils,
-    attendeeCount: uniqueMembers.length,
-    charges
-  };
-}
-
-export function splitFilsEqually(totalFils: number, memberUids: string[]): PlayerCharge[] {
-  if (!Number.isInteger(totalFils) || totalFils < 0) throw new Error("Total fils must be a whole number of zero or greater.");
-  const members = [...new Set(memberUids.filter(Boolean))].sort((a, b) => a.localeCompare(b));
-  if (!members.length && totalFils > 0) throw new Error("Cannot split a positive amount without members.");
-  const base = members.length ? Math.floor(totalFils / members.length) : 0;
-  const remainder = members.length ? totalFils % members.length : 0;
-  return members.map((memberUid, index) => ({ memberUid, amountFils: base + (index < remainder ? 1 : 0) }));
-}
+  it("keeps arrears rule at 24 hours after session end", () => {
+    expect(ARREARS_AFTER_HOURS).toBe(24);
+  });
+});
