@@ -1,140 +1,116 @@
-export const FIXED_COURT_COUNT = 2;
-export const ATTENDANCE_LOCK_DELAY_MS = 15 * 60 * 1000;
-export const ARREARS_DELAY_MS = 24 * 60 * 60 * 1000;
+export const FILS_PER_BHD = 1000;
+export const ATTENDANCE_LOCK_AFTER_MINUTES = 15;
+export const ARREARS_AFTER_HOURS = 24;
 
-export type ShuttleCostInput = {
-  tubePriceFils: number;        // Price of one tube in fils: BHD 6.000 = 6000
-  shuttlesPerTube: number;      // Example: 12 or 15
-  availableTubeCount: number;   // Tubes currently available/opened for this flight
-  looseShuttlesBeforeGame: number; // Shuttles remaining from earlier opened tubes
-  shuttlesUsedAfterGame: number;   // Actual shuttles used after the game finishes
-  actualAttendeeCount: number;  // Only players marked PRESENT after final correction
+export type AttendanceStatus = "PRESENT" | "ABSENT" | "NO_RESPONSE";
+
+export type StockBeforeGame = {
+  availableTubes: number;
+  looseShuttles: number;
+  shuttlesPerTube: number;
+  tubePriceFils: number;
+};
+
+export type PlayerCharge = {
+  memberUid: string;
+  amountFils: number;
 };
 
 export type ShuttleCostResult = {
-  costPerShuttleExactFils: number;
-  totalShuttlesBeforeGame: number;
-  shuttlesUsedAfterGame: number;
+  totalAvailableShuttles: number;
+  actualShuttlesUsed: number;
   remainingShuttles: number;
+  costPerShuttleExactFils: number;
   totalDayCostFils: number;
-  attendeeChargesFils: number[];
-  normalChargeFils: number;
-  oneFilExtraPlayerCount: number;
+  attendeeCount: number;
+  charges: PlayerCharge[];
 };
 
-function requireWholeNonNegative(value: number, field: string) {
-  if (!Number.isInteger(value) || value < 0) {
-    throw new Error(`${field} must be a whole number of zero or more`);
+export function ceilDivide(numerator: number, denominator: number): number {
+  if (!Number.isInteger(numerator) || !Number.isInteger(denominator) || denominator <= 0) {
+    throw new Error("Invalid calculation values.");
   }
+  return Math.ceil(numerator / denominator);
 }
 
-function requirePositiveWhole(value: number, field: string) {
-  if (!Number.isInteger(value) || value <= 0) {
-    throw new Error(`${field} must be a positive whole number`);
-  }
+export function toFils(bhd: number): number {
+  if (!Number.isFinite(bhd) || bhd < 0) throw new Error("BHD amount must be zero or greater.");
+  return Math.round(bhd * FILS_PER_BHD);
 }
 
-/**
- * Indian Club shuttlecock rule:
- *
- * cost of one shuttle = tube price ÷ shuttles per tube
- * day shuttle cost = actual shuttles used × cost of one shuttle
- * only actual attendees share that day cost
- * remaining shuttles = starting shuttles − actual shuttles used
- *
- * Fils are integers. If an equal split leaves a few fils, the first few
- * attendee charges receive one additional fil so the total is exact.
- */
-export function calculateShuttleSessionCost(input: ShuttleCostInput): ShuttleCostResult {
-  requireWholeNonNegative(input.tubePriceFils, "tubePriceFils");
-  requirePositiveWhole(input.shuttlesPerTube, "shuttlesPerTube");
-  requireWholeNonNegative(input.availableTubeCount, "availableTubeCount");
-  requireWholeNonNegative(input.looseShuttlesBeforeGame, "looseShuttlesBeforeGame");
-  requireWholeNonNegative(input.shuttlesUsedAfterGame, "shuttlesUsedAfterGame");
-  requirePositiveWhole(input.actualAttendeeCount, "actualAttendeeCount");
+export function toBhd(fils: number): number {
+  return Number((fils / FILS_PER_BHD).toFixed(3));
+}
 
-  const totalShuttlesBeforeGame =
-    input.availableTubeCount * input.shuttlesPerTube + input.looseShuttlesBeforeGame;
+export function isSessionLocked(startAt: Date | string | number, now = new Date()): boolean {
+  const start = new Date(startAt).getTime();
+  if (Number.isNaN(start)) throw new Error("Invalid session start time.");
+  return now.getTime() >= start + ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000;
+}
 
-  if (input.shuttlesUsedAfterGame > totalShuttlesBeforeGame) {
-    throw new Error("Used shuttles cannot be greater than available shuttles");
+export function arrearsDueAt(sessionEndAt: Date | string | number): Date {
+  const end = new Date(sessionEndAt).getTime();
+  if (Number.isNaN(end)) throw new Error("Invalid session end time.");
+  return new Date(end + ARREARS_AFTER_HOURS * 60 * 60 * 1000);
+}
+
+/*
+  Formula:
+  Total available shuttlecocks = tubes × shuttles per tube + loose shuttlecocks.
+  Total day cost in fils      = ceil(actual used × tube price in fils / shuttles per tube).
+  Final attendee charge       = total day cost ÷ actual PRESENT members only.
+
+  Any 1-fil remainder is assigned alphabetically by member UID so that the result
+  is deterministic, auditable, and always adds back to exactly the total day cost.
+*/
+export function calculateShuttleCost(
+  stock: StockBeforeGame,
+  actualShuttlesUsed: number,
+  presentMemberUids: string[]
+): ShuttleCostResult {
+  const { availableTubes, looseShuttles, shuttlesPerTube, tubePriceFils } = stock;
+
+  for (const [name, value] of Object.entries({ availableTubes, looseShuttles, shuttlesPerTube, tubePriceFils, actualShuttlesUsed })) {
+    if (!Number.isInteger(value) || value < 0) throw new Error(`${name} must be a whole number of zero or greater.`);
+  }
+  if (shuttlesPerTube < 1) throw new Error("Shuttles per tube must be at least 1.");
+  if (tubePriceFils < 1) throw new Error("Tube price must be greater than zero.");
+
+  const uniqueMembers = [...new Set(presentMemberUids.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const totalAvailableShuttles = availableTubes * shuttlesPerTube + looseShuttles;
+
+  if (actualShuttlesUsed > totalAvailableShuttles) {
+    throw new Error("Actual shuttles used cannot be more than available stock.");
+  }
+  if (actualShuttlesUsed > 0 && uniqueMembers.length === 0) {
+    throw new Error("At least one final PRESENT attendee is required to split shuttle cost.");
   }
 
-  // Exact total cost in fils. ceil prevents the club from losing a fraction of one fil.
-  const totalDayCostFils = Math.ceil(
-    (input.tubePriceFils * input.shuttlesUsedAfterGame) / input.shuttlesPerTube
-  );
+  const totalDayCostFils = ceilDivide(actualShuttlesUsed * tubePriceFils, shuttlesPerTube);
+  const baseChargeFils = uniqueMembers.length ? Math.floor(totalDayCostFils / uniqueMembers.length) : 0;
+  const remainderFils = uniqueMembers.length ? totalDayCostFils % uniqueMembers.length : 0;
 
-  const normalChargeFils = Math.floor(totalDayCostFils / input.actualAttendeeCount);
-  const oneFilExtraPlayerCount = totalDayCostFils % input.actualAttendeeCount;
-
-  const attendeeChargesFils = Array.from(
-    { length: input.actualAttendeeCount },
-    (_, attendeeIndex) =>
-      normalChargeFils + (attendeeIndex < oneFilExtraPlayerCount ? 1 : 0)
-  );
+  const charges = uniqueMembers.map((memberUid, index) => ({
+    memberUid,
+    amountFils: baseChargeFils + (index < remainderFils ? 1 : 0)
+  }));
 
   return {
-    costPerShuttleExactFils: input.tubePriceFils / input.shuttlesPerTube,
-    totalShuttlesBeforeGame,
-    shuttlesUsedAfterGame: input.shuttlesUsedAfterGame,
-    remainingShuttles: totalShuttlesBeforeGame - input.shuttlesUsedAfterGame,
+    totalAvailableShuttles,
+    actualShuttlesUsed,
+    remainingShuttles: totalAvailableShuttles - actualShuttlesUsed,
+    costPerShuttleExactFils: tubePriceFils / shuttlesPerTube,
     totalDayCostFils,
-    attendeeChargesFils,
-    normalChargeFils,
-    oneFilExtraPlayerCount
+    attendeeCount: uniqueMembers.length,
+    charges
   };
 }
 
-/** Returns true exactly 15 minutes after scheduled game start. */
-export function isAttendanceLocked(sessionStartAtUtc: number, nowUtc = Date.now()) {
-  requireWholeNonNegative(sessionStartAtUtc, "sessionStartAtUtc");
-  return nowUtc >= sessionStartAtUtc + ATTENDANCE_LOCK_DELAY_MS;
-}
-
-/** Payment becomes arrears exactly one day after it remains pending. */
-export function isPaymentArrears(
-  paymentCreatedAtUtc: number,
-  paymentStatus: "PENDING" | "VERIFIED" | "PAID" | "ARREARS",
-  nowUtc = Date.now()
-) {
-  requireWholeNonNegative(paymentCreatedAtUtc, "paymentCreatedAtUtc");
-  return paymentStatus === "PENDING" && nowUtc >= paymentCreatedAtUtc + ARREARS_DELAY_MS;
-}
-
-/** Every timetable cell is permanently two courts. */
-export function fixedCourtCount() {
-  return FIXED_COURT_COUNT;
-}
-
-/**
- * The Super Admin creates one weekly timetable pattern.
- * The same weekday/time/flight pattern repeats across the selected month.
- */
-export function repeatingWeeklyDatesForMonth(
-  year: number,
-  monthIndexZeroBased: number,
-  weekdayZeroSunday: number
-) {
-  requirePositiveWhole(year, "year");
-  if (!Number.isInteger(monthIndexZeroBased) || monthIndexZeroBased < 0 || monthIndexZeroBased > 11) {
-    throw new Error("monthIndexZeroBased must be between 0 and 11");
-  }
-  if (!Number.isInteger(weekdayZeroSunday) || weekdayZeroSunday < 0 || weekdayZeroSunday > 6) {
-    throw new Error("weekdayZeroSunday must be between 0 and 6");
-  }
-
-  const dates: number[] = [];
-  const day = new Date(Date.UTC(year, monthIndexZeroBased, 1));
-  while (day.getUTCMonth() === monthIndexZeroBased) {
-    if (day.getUTCDay() === weekdayZeroSunday) dates.push(day.getTime());
-    day.setUTCDate(day.getUTCDate() + 1);
-  }
-  return dates;
-}
-
-/** Converts fils to BHD display text. */
-export function filsToBhd(fils: number) {
-  requireWholeNonNegative(Math.abs(fils), "fils");
-  return (fils / 1000).toFixed(3);
+export function splitFilsEqually(totalFils: number, memberUids: string[]): PlayerCharge[] {
+  if (!Number.isInteger(totalFils) || totalFils < 0) throw new Error("Total fils must be a whole number of zero or greater.");
+  const members = [...new Set(memberUids.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  if (!members.length && totalFils > 0) throw new Error("Cannot split a positive amount without members.");
+  const base = members.length ? Math.floor(totalFils / members.length) : 0;
+  const remainder = members.length ? totalFils % members.length : 0;
+  return members.map((memberUid, index) => ({ memberUid, amountFils: base + (index < remainder ? 1 : 0) }));
 }
