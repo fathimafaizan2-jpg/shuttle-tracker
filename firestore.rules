@@ -1,18 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /members/{memberId} {
-      allow read: if request.auth != null && request.auth.uid == memberId;
-      allow write: if false;
-    }
-
-    match /publicBusinesses/{businessId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    // Browser code does not directly modify attendance, finance, members, stock, sessions, or ads.
+    // Express + Firebase Admin is the sole write authority for protected club data.
+    match /publicBusinesses/{id} { allow read: if true; allow write: if false; }
+    match /publicNotices/{id} { allow read: if resource.data.status == "APPROVED"; allow write: if false; }
+    match /members/{uid} { allow read: if request.auth != null && request.auth.uid == uid; allow write: if false; }
+    match /{document=**} { allow read, write: if false; }
   }
 }
