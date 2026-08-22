@@ -58,4 +58,63 @@ export async function financeAdminView() {
       <article class="card metric"><span>Session costs</span><b>${bhd(data.monthCostFils)}</b><i>Current month</i></article>
     </div>
     <section class="card"><h3>Pending Cash / Benefit payment confirmations</h3>
-      ${(data.pendingPayments || []).map(payment => `<div class="session"><div class="grow"><b>${escapeHtml(payment.memberName)}</b><p>${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-verify-payment="${escapeHtml(payment.id)}">Verify</button></div
+      ${(data.pendingPayments || []).map(payment => `<div class="session"><div class="grow"><b>${escapeHtml(payment.memberName)}</b><p>${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-verify-payment="${escapeHtml(payment.id)}">Verify</button></div>`).join("") || "<p class='note'>No payments await verification.</p>"}
+    </section>
+    <section class="card"><h3>Arrears requiring follow-up</h3>
+      ${(data.arrears || []).map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.memberName)}</b><p>${escapeHtml(row.flightName)} · Due: ${new Date(row.dueAt).toLocaleString("en-BH")}</p></div><strong>${bhd(row.amountFils)}</strong><a class="pill" href="https://wa.me/${encodeURIComponent(row.phone || "" )}?text=${encodeURIComponent(`Indian Club Bahrain reminder: your pending shuttle session amount is ${bhd(row.amountFils)}.`)}" target="_blank" rel="noopener">WhatsApp</a></div>`).join("") || "<p class='note'>No current arrears.</p>"}
+    </section>`;
+}
+
+export function bindFinanceAdmin() {
+  document.querySelectorAll("[data-verify-payment]").forEach(button => {
+    button.onclick = async () => {
+      try {
+        await api(`/finance/payments/${encodeURIComponent(button.dataset.verifyPayment)}/verify`, { method: "POST" });
+        window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: "Payment verified and wallet updated." }));
+        window.dispatchEvent(new CustomEvent("indianclub:render"));
+      } catch (error) {
+        window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: error.message }));
+      }
+    };
+  });
+
+  const load = document.getElementById("loadMasterMonth");
+  if (load) load.onclick = () => {
+    const month = document.getElementById("masterMonth").value;
+    const activityId = document.getElementById("masterActivity").value;
+    window.location.hash = `master?month=${encodeURIComponent(month)}&activityId=${encodeURIComponent(activityId)}`;
+    window.dispatchEvent(new CustomEvent("indianclub:render"));
+  };
+
+  const saveSlot = document.getElementById("saveMasterSlot");
+  if (saveSlot) saveSlot.onclick = async () => {
+    try {
+      await api("/timetable/master/slot", {
+        method: "POST",
+        body: {
+          weekday: document.getElementById("slotDay").value,
+          flightId: document.getElementById("slotFlight").value,
+          startTime: document.getElementById("slotStart").value,
+          endTime: document.getElementById("slotEnd").value,
+          courtCount: 2
+        }
+      });
+      window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: "Weekly timetable slot saved." }));
+      window.dispatchEvent(new CustomEvent("indianclub:render"));
+    } catch (error) {
+      window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: error.message }));
+    }
+  };
+
+  document.querySelectorAll("[data-delete-slot]").forEach(button => {
+    button.onclick = async () => {
+      if (!confirm("Remove this weekly timetable slot?")) return;
+      try {
+        await api(`/timetable/master/slot/${encodeURIComponent(button.dataset.deleteSlot)}`, { method: "DELETE" });
+        window.dispatchEvent(new CustomEvent("indianclub:render"));
+      } catch (error) {
+        window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: error.message }));
+      }
+    };
+  });
+}
