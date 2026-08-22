@@ -1,11 +1,21 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Browser code does not directly modify attendance, finance, members, stock, sessions, or ads.
-    // Express + Firebase Admin is the sole write authority for protected club data.
-    match /publicBusinesses/{id} { allow read: if true; allow write: if false; }
-    match /publicNotices/{id} { allow read: if resource.data.status == "APPROVED"; allow write: if false; }
-    match /members/{uid} { allow read: if request.auth != null && request.auth.uid == uid; allow write: if false; }
-    match /{document=**} { allow read, write: if false; }
+
+    /*
+      All data access is intentionally denied from the browser.
+
+      Firebase Authentication signs the person in, but the browser must call
+      Express with its Firebase ID token. The Express server uses Firebase
+      Admin SDK, applies role/flight checks and then accesses Firestore.
+
+      Firebase Admin SDK bypasses these rules securely on the server.
+      This stops direct browser writes to wallet balances, attendance, prices,
+      stock, roles, business approval, or any other protected club data.
+    */
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
