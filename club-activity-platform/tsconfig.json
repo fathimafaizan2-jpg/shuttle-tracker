@@ -13,10 +13,10 @@
     "types": ["node", "vitest/globals"]
   },
   "include": [
-    "server/**/*.ts",
-    "js/**/*.js"
+    "server/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "club-activity-platform"
   ]
 }
