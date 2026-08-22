@@ -1,45 +1,84 @@
 import type { NextFunction, Request, Response } from "express";
 import { adminAuth, db } from "./firebaseAdmin.js";
 
-export type Role = "SUPER_ADMIN" | "LEVEL_ADMIN" | "PLAYER";
-export type Member = {
+export type ClubRole = "PLAYER" | "LEVEL_ADMIN" | "SUPER_ADMIN";
+
+export type AuthenticatedMember = {
   uid: string;
-  clubId: string;
+  email: string;
+  role: ClubRole;
   fullName: string;
   memberId: string;
-  phone: string;
-  role: Role;
-  flightId: string | null;
-  active: boolean;
-  mustChangePassword: boolean;
+  flightId?: string;
+  activityIds?: string[];
 };
 
 declare global {
-  namespace Express { interface Request { member?: Member } }
+  namespace Express {
+    interface Request {
+      member?: AuthenticatedMember;
+    }
+  }
 }
 
-export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+function bearerToken(request: Request): string | null {
+  const value = request.headers.authorization;
+  if (!value?.startsWith("Bearer ")) return null;
+  return value.slice("Bearer ".length).trim() || null;
+}
+
+export async function requireAuth(request: Request, response: Response, next: NextFunction) {
   try {
-    const header = req.headers.authorization;
-    if (!header?.startsWith("Bearer ")) return res.status(401).json({ error: "Sign in required" });
-    const token = await adminAuth.verifyIdToken(header.slice(7));
-    const snap = await db.collection("members").doc(token.uid).get();
-    if (!snap.exists) return res.status(403).json({ error: "Account must be created by Super Admin" });
-    const member = { uid: token.uid, ...snap.data() } as Member;
-    if (!member.active) return res.status(403).json({ error: "Account inactive" });
-    req.member = member;
+    const token = bearerToken(request);
+    if (!token) return response.status(401).json({ message: "Missing sign-in token." });
+
+    const decoded = await adminAuth.verifyIdToken(token);
+    const memberDocument = await db.collection("members").doc(decoded.uid).get();
+
+    if (!memberDocument.exists) {
+      return response.status(403).json({
+        message: "This Firebase account is not an approved Indian Club member account."
+      });
+    }
+
+    const member = memberDocument.data() as Omit<AuthenticatedMember, "uid" | "email">;
+    if (!member || !["PLAYER", "LEVEL_ADMIN", "SUPER_ADMIN"].includes(member.role)) {
+      return response.status(403).json({ message: "Your Indian Club role is not valid." });
+    }
+
+    request.member = {
+      uid: decoded.uid,
+      email: decoded.email || "",
+      role: member.role,
+      fullName: member.fullName,
+      memberId: member.memberId,
+      flightId: member.flightId || undefined,
+      activityIds: member.activityIds || []
+    };
+
     next();
-  } catch { res.status(401).json({ error: "Invalid sign-in token" }); }
+  } catch (error) {
+    console.error("Authentication error:", error);
+    return response.status(401).json({ message: "Your login session is invalid or expired." });
+  }
 }
 
-export function requireRoles(...roles: Role[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.member || !roles.includes(req.member.role)) return res.status(403).json({ error: "Not allowed" });
+export function requireRole(...allowedRoles: ClubRole[]) {
+  return (request: Request, response: Response, next: NextFunction) => {
+    if (!request.member) return response.status(401).json({ message: "Sign in required." });
+    if (!allowedRoles.includes(request.member.role)) {
+      return response.status(403).json({ message: "You do not have permission for this action." });
+    }
     next();
   };
 }
 
-export function requireSameFlight(flightId: string, req: Request) {
-  if (req.member?.role === "SUPER_ADMIN") return;
-  if (req.member?.flightId !== flightId) throw new Error("Flight access denied");
+export function requireFlightAccess(flightId: string | undefined, member: AuthenticatedMember) {
+  if (member.role === "SUPER_ADMIN") return true;
+  if (member.role === "LEVEL_ADMIN" && member.flightId === flightId) return true;
+  return false;
+}
+
+export function requireOwnMember(targetUid: string, member: AuthenticatedMember) {
+  return member.role === "SUPER_ADMIN" || member.uid === targetUid;
 }
