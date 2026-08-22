@@ -1,16 +1,30 @@
-export const APP_CONFIG = {
-  API_BASE_URL: "http://localhost:3000/api",
-  CLUB_NAME: "Indian Club",
-  FIXED_COURT_COUNT: 2,
-  ATTENDANCE_LOCK_MINUTES: 15,
-  LANGUAGES: ["en", "ml", "hi"]
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  setPersistence,
+  browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+/*
+  Paste the values from:
+  Firebase Console → Project settings → Your apps → Web app → SDK setup and configuration.
+
+  These are PUBLIC web values. They identify your Firebase project; they are not
+  administrator credentials and do not grant Firestore access by themselves.
+*/
+const firebaseConfig = {
+  apiKey: "PASTE_YOUR_FIREBASE_WEB_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID",
+  appId: "PASTE_YOUR_WEB_APP_ID"
 };
 
-// Paste only your Firebase WEB configuration here.
-// Never put Firebase Admin service-account keys in this file or GitHub.
-export const FIREBASE_WEB_CONFIG = {
-  apiKey: "AIzaSyAZEE6jX1o5r5a4pS5uqrKkdZFEgsLlaTQ",
-  authDomain: "shuttle-platform-icb.firebaseapp.com",
-  projectId: "shuttle-platform-icb",
-  appId: "1:135658920486:web:56101e2f46de24747324e7"
-};
+const firebaseApp = initializeApp(firebaseConfig );
+const firebaseAuth = getAuth(firebaseApp);
+
+/* Keep the signed-in member available after a browser refresh. */
+await setPersistence(firebaseAuth, browserLocalPersistence);
+
+export { firebaseApp, firebaseAuth };
