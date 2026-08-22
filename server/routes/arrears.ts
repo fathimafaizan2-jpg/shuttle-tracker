@@ -1,18 +1,91 @@
 import { Router } from "express";
-import { db } from "../firebaseAdmin.js";
-import { isPaymentArrears } from "../clubLogic.js";
-import { requireAuth, requireRoles } from "../auth.js";
+import { db, Timestamp } from "../firebaseAdmin.js";
+import { requireAuth, requireFlightAccess, requireRole } from "../auth.js";
 
-export const arrearsRouter = Router();
+const router = Router();
 
-// Super Admin runs this before viewing/exporting arrears. A future scheduled job can call the same rule.
-arrearsRouter.post("/refresh", requireAuth, requireRoles("SUPER_ADMIN"), async (_req, res) => {
-  const rows = await db.collection("payments").where("status", "==", "PENDING").get();
-  const batch = db.batch(); let marked = 0;
-  for (const row of rows.docs) {
-    const payment = row.data();
-    if (isPaymentArrears(payment.createdAtUtc, payment.status)) { batch.update(row.ref, { status:"ARREARS" }); marked++; }
+function toDate(value: unknown) {
+  if (value && typeof (value as Timestamp).toDate === "function") return (value as Timestamp).toDate();
+  return new Date(value as string);
+}
+
+function serializeCharge(document: FirebaseFirestore.QueryDocumentSnapshot) {
+  const row = document.data();
+  return {
+    id: document.id,
+    sessionId: row.sessionId,
+    memberUid: row.memberUid,
+    flightId: row.flightId,
+    flightName: row.flightName,
+    totalChargeFils: Number(row.totalChargeFils || 0),
+    coveredByCreditFils: Number(row.coveredByCreditFils || 0),
+    amountDueFils: Number(row.amountDueFils || 0),
+    dueAt: toDate(row.dueAt).toISOString(),
+    status: row.status
+  };
+}
+
+/* Player sees only their own arrears. */
+router.get("/mine", requireAuth, async (request, response) => {
+  try {
+    const charges = await db.collection("sessionCharges")
+      .where("memberUid", "==", request.member!.uid)
+      .where("status", "==", "DUE")
+      .get();
+
+    const now = Date.now();
+    const arrears = charges.docs
+      .filter(doc => toDate(doc.data().dueAt).getTime() <= now)
+      .map(serializeCharge)
+      .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
+
+    response.json({
+      totalFils: arrears.reduce((sum, row) => sum + row.amountDueFils, 0),
+      arrears
+    });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not load your arrears." });
   }
-  if (marked) await batch.commit();
-  res.json({ marked });
 });
+
+/* Flight Admin sees arrears for assigned flight; Super Admin sees all. */
+router.get("/", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), async (request, response) => {
+  try {
+    const requestedFlightId = String(request.query.flightId || "").trim();
+    const flightId = request.member!.role === "SUPER_ADMIN" ? requestedFlightId || undefined : request.member!.flightId;
+
+    if (flightId && !requireFlightAccess(flightId, request.member!)) {
+      return response.status(403).json({ message: "You may view arrears only for your assigned flight." });
+    }
+
+    let query: FirebaseFirestore.Query = db.collection("sessionCharges").where("status", "==", "DUE");
+    if (flightId) query = query.where("flightId", "==", flightId);
+    const charges = await query.get();
+    const now = Date.now();
+
+    const overdue = charges.docs.filter(doc => toDate(doc.data().dueAt).getTime() <= now);
+    const memberUids = [...new Set(overdue.map(doc => String(doc.data().memberUid)))];
+    const members = await Promise.all(memberUids.map(uid => db.collection("members").doc(uid).get()));
+    const memberByUid = new Map(members.filter(doc => doc.exists).map(doc => [doc.id, doc.data()]));
+
+    const arrears = overdue.map(doc => {
+      const base = serializeCharge(doc);
+      const member = memberByUid.get(base.memberUid);
+      return {
+        ...base,
+        memberName: member?.fullName || "Former member",
+        memberId: member?.memberId || "",
+        phone: member?.phone || ""
+      };
+    }).sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
+
+    response.json({
+      totalFils: arrears.reduce((sum, row) => sum + row.amountDueFils, 0),
+      arrears
+    });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not load arrears." });
+  }
+});
+
+export default router;
