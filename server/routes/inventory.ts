@@ -1,113 +1,155 @@
 import { Router } from "express";
-import { FieldValue } from "firebase-admin/firestore";
-import { z } from "zod";
-import { db } from "../firebaseAdmin.js";
-import { requireAuth, requireRoles, requireSameFlight } from "../auth.js";
+import { db, FieldValue } from "../firebaseAdmin.js";
+import { requireAuth, requireFlightAccess, requireRole } from "../auth.js";
 
-export const inventoryRouter = Router();
+const router = Router();
 
-inventoryRouter.post("/add-tubes", requireAuth, requireRoles("LEVEL_ADMIN", "SUPER_ADMIN"), async (req, res) => {
-  const input = z.object({
-    flightId: z.string(),
-    tubeCount: z.number().int().positive(),
-    tubePriceFils: z.number().int().min(0),
-    shuttlesPerTube: z.number().int().positive(),
-    note: z.string().trim().max(300).optional()
-  }).parse(req.body);
+function wholeNumber(value: unknown, label: string, minimum = 0) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < minimum) {
+    throw new Error(`${label} must be a whole number of ${minimum} or greater.`);
+  }
+  return number;
+}
 
-  requireSameFlight(input.flightId, req);
-  const stockRef = db.collection("flightStock").doc(input.flightId);
+function text(value: unknown, label: string) {
+  const result = String(value || "").trim();
+  if (!result) throw new Error(`${label} is required.`);
+  return result;
+}
 
-  await db.runTransaction(async tx => {
-    const current = (await tx.get(stockRef)).data() ?? { tubeCount: 0, looseShuttles: 0 };
-    tx.set(stockRef, {
-      flightId: input.flightId,
-      tubeCount: current.tubeCount + input.tubeCount,
-      looseShuttles: current.looseShuttles,
-      tubePriceFils: input.tubePriceFils,
-      shuttlesPerTube: input.shuttlesPerTube,
-      lowStockTubeThreshold: current.lowStockTubeThreshold ?? 8,
-      updatedAt: FieldValue.serverTimestamp()
+async function findFlight(flightId: string) {
+  const activities = await db.collection("activities").get();
+  for (const activity of activities.docs) {
+    const flight = await activity.ref.collection("flights").doc(flightId).get();
+    if (flight.exists) return { activityId: activity.id, activity: activity.data(), id: flight.id, ...flight.data() };
+  }
+  throw new Error("Flight not found.");
+}
+
+function assertInventoryAccess(flightId: string, member: Express.Request["member"]) {
+  if (!requireFlightAccess(flightId, member!)) {
+    throw new Error("You may manage inventory only for your assigned flight.");
+  }
+}
+
+/* Flight Admin sees only own stock. Super Admin may filter by flight or view all. */
+router.get("/mine", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), async (request, response) => {
+  try {
+    if (request.member!.role === "LEVEL_ADMIN") {
+      if (!request.member!.flightId) return response.json([]);
+      const record = await db.collection("inventory").doc(request.member!.flightId).get();
+      return response.json(record.exists ? [{ id: record.id, ...record.data() }] : []);
+    }
+
+    const records = await db.collection("inventory").orderBy("updatedAt", "desc").get();
+    response.json(records.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not load stock." });
+  }
+});
+
+router.get("/:flightId", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), async (request, response) => {
+  try {
+    const flightId = text(request.params.flightId, "Flight ID");
+    assertInventoryAccess(flightId, request.member);
+    const record = await db.collection("inventory").doc(flightId).get();
+    response.json(record.exists ? { id: record.id, ...record.data() } : null);
+  } catch (error) {
+    response.status(403).json({ message: error instanceof Error ? error.message : "Could not load stock." });
+  }
+});
+
+/* Price is always stored as integer fils. Example: BHD 3.250 is saved as 3250. */
+router.put("/:flightId/config", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), async (request, response) => {
+  try {
+    const flightId = text(request.params.flightId, "Flight ID");
+    assertInventoryAccess(flightId, request.member);
+    const flight = await findFlight(flightId);
+
+    const tubePriceFils = wholeNumber(request.body.tubePriceFils, "Tube price in fils", 1);
+    const shuttlesPerTube = wholeNumber(request.body.shuttlesPerTube, "Shuttles per tube", 1);
+    const availableTubes = wholeNumber(request.body.availableTubes, "Available tubes");
+    const looseShuttles = wholeNumber(request.body.looseShuttles, "Loose shuttles");
+
+    await db.collection("inventory").doc(flightId).set({
+      flightId,
+      flightName: flight.name,
+      activityId: flight.activityId,
+      activityName: flight.activity.name,
+      tubePriceFils,
+      shuttlesPerTube,
+      availableTubes,
+      looseShuttles,
+      totalAvailableShuttles: availableTubes * shuttlesPerTube + looseShuttles,
+      updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: request.member!.uid
     }, { merge: true });
 
-    tx.create(db.collection("inventoryLedger").doc(), {
-      flightId: input.flightId,
-      movement: "TUBES_ADDED",
-      tubeCount: input.tubeCount,
-      shuttleCount: input.tubeCount * input.shuttlesPerTube,
-      tubePriceFils: input.tubePriceFils,
-      note: input.note ?? null,
-      recordedBy: req.member!.uid,
+    await db.collection("inventoryAudit").add({
+      flightId,
+      action: "CONFIGURATION_UPDATED",
+      tubePriceFils,
+      shuttlesPerTube,
+      availableTubes,
+      looseShuttles,
+      actionBy: request.member!.uid,
+      actionRole: request.member!.role,
       createdAt: FieldValue.serverTimestamp()
     });
-  });
 
-  res.status(201).json({ ok: true });
+    response.json({
+      success: true,
+      totalAvailableShuttles: availableTubes * shuttlesPerTube + looseShuttles
+    });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not save inventory configuration." });
+  }
 });
 
-// Called only after the game is finished and Level Admin records actual shuttle use.
-inventoryRouter.post("/record-game-use", requireAuth, requireRoles("LEVEL_ADMIN", "SUPER_ADMIN"), async (req, res) => {
-  const input = z.object({
-    sessionId: z.string(),
-    flightId: z.string(),
-    shuttlesUsedAfterGame: z.number().int().min(0)
-  }).parse(req.body);
+/* Physical stock top-up or correction. Consumption after a completed game happens only in finance.ts. */
+router.post("/:flightId/adjust", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), async (request, response) => {
+  try {
+    const flightId = text(request.params.flightId, "Flight ID");
+    assertInventoryAccess(flightId, request.member);
+    const reason = text(request.body.reason, "Stock adjustment reason");
+    const tubeChange = wholeNumber(Math.abs(Number(request.body.tubeChange)), "Tube change");
+    const looseChange = wholeNumber(Math.abs(Number(request.body.looseChange)), "Loose shuttle change");
+    const direction = request.body.direction === "REMOVE" ? "REMOVE" : "ADD";
 
-  requireSameFlight(input.flightId, req);
-  const stockRef = db.collection("flightStock").doc(input.flightId);
-  const sessionRef = db.collection("sessions").doc(input.sessionId);
-
-  await db.runTransaction(async tx => {
-    const [stockSnap, sessionSnap] = await Promise.all([tx.get(stockRef), tx.get(sessionRef)]);
-    const stock = stockSnap.data();
-    const session = sessionSnap.data();
-    if (!stock || !session) throw new Error("Stock or session not found");
-
-    const totalAvailable = stock.tubeCount * stock.shuttlesPerTube + stock.looseShuttles;
-    if (input.shuttlesUsedAfterGame > totalAvailable) throw new Error("Used shuttles exceed available stock");
-
-    const remaining = totalAvailable - input.shuttlesUsedAfterGame;
-    const remainingFullTubes = Math.floor(remaining / stock.shuttlesPerTube);
-    const remainingLooseShuttles = remaining % stock.shuttlesPerTube;
-
-    tx.update(stockRef, {
-      tubeCount: remainingFullTubes,
-      looseShuttles: remainingLooseShuttles,
-      updatedAt: FieldValue.serverTimestamp()
+    const ref = db.collection("inventory").doc(flightId);
+    await db.runTransaction(async transaction => {
+      const current = await transaction.get(ref);
+      if (!current.exists) throw new Error("Create inventory configuration before adjusting stock.");
+      const stock = current.data()!;
+      const availableTubes = Number(stock.availableTubes || 0) + (direction === "ADD" ? tubeChange : -tubeChange);
+      const looseShuttles = Number(stock.looseShuttles || 0) + (direction === "ADD" ? looseChange : -looseChange);
+      if (availableTubes < 0 || looseShuttles < 0) throw new Error("Stock cannot become negative.");
+      transaction.update(ref, {
+        availableTubes,
+        looseShuttles,
+        totalAvailableShuttles: availableTubes * Number(stock.shuttlesPerTube) + looseShuttles,
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: request.member!.uid
+      });
     });
 
-    tx.update(sessionRef, {
-      shuttlesUsedAfterGame: input.shuttlesUsedAfterGame,
-      totalShuttlesBeforeGame: totalAvailable,
-      remainingShuttles: remaining,
-      stockRecordedBy: req.member!.uid,
-      stockRecordedAt: FieldValue.serverTimestamp()
-    });
-
-    tx.create(db.collection("inventoryLedger").doc(), {
-      flightId: input.flightId,
-      sessionId: input.sessionId,
-      movement: "GAME_SHUTTLES_USED",
-      shuttleCount: -input.shuttlesUsedAfterGame,
-      remainingShuttles: remaining,
-      recordedBy: req.member!.uid,
+    await db.collection("inventoryAudit").add({
+      flightId,
+      action: "MANUAL_STOCK_ADJUSTMENT",
+      direction,
+      tubeChange,
+      looseChange,
+      reason,
+      actionBy: request.member!.uid,
+      actionRole: request.member!.role,
       createdAt: FieldValue.serverTimestamp()
     });
-  });
 
-  res.json({ ok: true });
+    response.json({ success: true });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not adjust stock." });
+  }
 });
 
-inventoryRouter.get("/:flightId", requireAuth, async (req, res) => {
-  requireSameFlight(req.params.flightId, req);
-  const stock = await db.collection("flightStock").doc(req.params.flightId).get();
-  if (!stock.exists) return res.json(null);
-
-  const data = stock.data()!;
-  const totalShuttles = data.tubeCount * data.shuttlesPerTube + data.looseShuttles;
-  res.json({
-    ...data,
-    totalShuttles,
-    lowStock: data.tubeCount <= data.lowStockTubeThreshold
-  });
-});
+export default router;
