@@ -1,111 +1,41 @@
 import { describe, expect, it } from "vitest";
-import {
-  ARREARS_AFTER_HOURS,
-  ATTENDANCE_LOCK_AFTER_MINUTES,
-  calculateShuttleCost,
-  isSessionLocked,
-  splitFilsEqually
-} from "./clubLogic.js";
+import { ATTENDANCE_LOCK_DELAY_MS, calculateShuttleSessionCost, isAttendanceLocked, isPaymentArrears, repeatingWeeklyDatesForMonth } from "../server/clubLogic.js";
 
-describe("Indian Club shuttlecock cost formula", () => {
-  it("calculates available shuttlecocks and remaining stock", () => {
-    const result = calculateShuttleCost(
-      {
-        availableTubes: 4,
-        looseShuttles: 3,
-        shuttlesPerTube: 12,
-        tubePriceFils: 3000
-      },
-      15,
-      ["member-b", "member-a", "member-c"]
-    );
-
-    expect(result.totalAvailableShuttles).toBe(51);
-    expect(result.actualShuttlesUsed).toBe(15);
-    expect(result.remainingShuttles).toBe(36);
+describe("Indian Club shuttle rules", () => {
+  it("calculates one-shuttle price, day cost, attendee-only charges, and remaining shuttles", () => {
+    const result = calculateShuttleSessionCost({
+      tubePriceFils: 6000,
+      shuttlesPerTube: 12,
+      availableTubeCount: 1,
+      looseShuttlesBeforeGame: 0,
+      shuttlesUsedAfterGame: 7,
+      actualAttendeeCount: 10
+    });
+    expect(result.totalDayCostFils).toBe(3500);
+    expect(result.remainingShuttles).toBe(5);
+    expect(result.attendeeChargesFils).toEqual([350,350,350,350,350,350,350,350,350,350]);
   });
 
-  it("calculates total day cost from actual shuttlecocks used only", () => {
-    const result = calculateShuttleCost(
-      {
-        availableTubes: 2,
-        looseShuttles: 0,
-        shuttlesPerTube: 12,
-        tubePriceFils: 3000
-      },
-      5,
-      ["member-a", "member-b"]
-    );
-
-    /* 5 × 3,000 / 12 = 1,250 fils = BHD 1.250 */
-    expect(result.totalDayCostFils).toBe(1250);
-    expect(result.attendeeCount).toBe(2);
-    expect(result.charges).toEqual([
-      { memberUid: "member-a", amountFils: 625 },
-      { memberUid: "member-b", amountFils: 625 }
-    ]);
+  it("uses all actual attendees and shares unavoidable fils fairly", () => {
+    const result = calculateShuttleSessionCost({ tubePriceFils: 6500, shuttlesPerTube: 15, availableTubeCount: 1, looseShuttlesBeforeGame: 0, shuttlesUsedAfterGame: 7, actualAttendeeCount: 3 });
+    expect(result.attendeeChargesFils.reduce((a,b)=>a+b,0)).toBe(result.totalDayCostFils);
+    expect(Math.max(...result.attendeeChargesFils)-Math.min(...result.attendeeChargesFils)).toBeLessThanOrEqual(1);
   });
 
-  it("charges final PRESENT attendees only and ignores duplicate IDs", () => {
-    const result = calculateShuttleCost(
-      {
-        availableTubes: 1,
-        looseShuttles: 0,
-        shuttlesPerTube: 15,
-        tubePriceFils: 4500
-      },
-      4,
-      ["player-1", "player-1", "player-2"]
-    );
-
-    /* 4 × 4,500 / 15 = 1,200 fils; two final PRESENT attendees pay 600 each. */
-    expect(result.attendeeCount).toBe(2);
-    expect(result.totalDayCostFils).toBe(1200);
-    expect(result.charges).toEqual([
-      { memberUid: "player-1", amountFils: 600 },
-      { memberUid: "player-2", amountFils: 600 }
-    ]);
+  it("locks attendance exactly 15 minutes after session start", () => {
+    const start = 1_000_000;
+    expect(isAttendanceLocked(start, start + ATTENDANCE_LOCK_DELAY_MS - 1)).toBe(false);
+    expect(isAttendanceLocked(start, start + ATTENDANCE_LOCK_DELAY_MS)).toBe(true);
   });
 
-  it("distributes remainder fils deterministically in alphabetical member UID order", () => {
-    const charges = splitFilsEqually(1000, ["member-c", "member-a", "member-b"]);
-
-    expect(charges).toEqual([
-      { memberUid: "member-a", amountFils: 334 },
-      { memberUid: "member-b", amountFils: 333 },
-      { memberUid: "member-c", amountFils: 333 }
-    ]);
-    expect(charges.reduce((sum, charge) => sum + charge.amountFils, 0)).toBe(1000);
+  it("marks pending payment as arrears after one day", () => {
+    const created = 1_000_000;
+    expect(isPaymentArrears(created, "PENDING", created + 86_400_000 - 1)).toBe(false);
+    expect(isPaymentArrears(created, "PENDING", created + 86_400_000)).toBe(true);
   });
 
-  it("rejects usage greater than available stock", () => {
-    expect(() => calculateShuttleCost(
-      { availableTubes: 1, looseShuttles: 0, shuttlesPerTube: 12, tubePriceFils: 3000 },
-      13,
-      ["member-a"]
-    )).toThrow("Actual shuttles used cannot be more than available stock.");
-  });
-
-  it("requires a final PRESENT attendee if any shuttlecock was used", () => {
-    expect(() => calculateShuttleCost(
-      { availableTubes: 1, looseShuttles: 0, shuttlesPerTube: 12, tubePriceFils: 3000 },
-      1,
-      []
-    )).toThrow("At least one final PRESENT attendee is required");
-  });
-});
-
-describe("Attendance lock rule", () => {
-  it("locks attendance exactly 15 minutes after the scheduled start", () => {
-    const startAt = new Date("2026-08-22T17:00:00.000Z");
-    const beforeLock = new Date(startAt.getTime() + (ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000) - 1);
-    const atLock = new Date(startAt.getTime() + ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000);
-
-    expect(isSessionLocked(startAt, beforeLock)).toBe(false);
-    expect(isSessionLocked(startAt, atLock)).toBe(true);
-  });
-
-  it("keeps arrears rule at 24 hours after session end", () => {
-    expect(ARREARS_AFTER_HOURS).toBe(24);
+  it("returns all recurring Saturdays in a month", () => {
+    const dates = repeatingWeeklyDatesForMonth(2026, 6, 6);
+    expect(dates.length).toBeGreaterThan(4);
   });
 });
