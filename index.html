@@ -227,7 +227,8 @@ Powered by <b>Nuzan AI Studio</b></footer>
     import { login, logout, api, submitPublicBusiness } from "./js/modules/auth.js";
     import { state, navigate, startSignedInApp, setLanguage } from "./js/router.js";
     import { playerDashboard, playerTimetable, attendanceView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
-    import { superAdminTimetableView, financeAdminView, bindFinanceAdmin } from "./js/modules/adminViews.js";
+    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, bindAdminViews } from "./js/modules/adminViews.js";
+
 
     const $ = id => document.getElementById(id);
     const isGitHubPagesPreview = window.location.hostname.endsWith("github.io");
@@ -288,6 +289,7 @@ Powered by <b>Nuzan AI Studio</b></footer>
         }
         else if (state.page === "bazaar") html = await publicIndiMart();
         else if (state.page === "master") html = await superAdminTimetableView();
+        else if (state.page === "flights") html = await activitiesAndFlightsView();
         else if (state.page === "finance") html = await financeAdminView();
         else if (state.page === "wallet") html = "<section class='card'><h2>Wallet & Payments</h2><p class='note'>Your wallet entries and pending payments load from the protected Finance module.</p></section>";
         else if (state.page === "profile") html = "<section class='card'><h2>Update Credentials</h2><p class='note'>Password updates are available after the protected server is connected.</p></section>";
@@ -295,7 +297,7 @@ Powered by <b>Nuzan AI Studio</b></footer>
 
         $("view").innerHTML = html;
         bindBusinessSubmission();
-        bindFinanceAdmin();
+        bindAdminViews();
       } catch (error) {
         $("view").innerHTML = `<section class="card"><h2>Unable to load this page</h2><p class="note">${error.message || "Please try again later."}</p></section>`;
       }
