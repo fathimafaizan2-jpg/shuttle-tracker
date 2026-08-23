@@ -18,6 +18,10 @@ function sessionStart(session: FirebaseFirestore.DocumentData): Date {
   return new Date(value);
 }
 
+function hasGameStarted(session: FirebaseFirestore.DocumentData): boolean {
+  return Date.now() >= sessionStart(session).getTime();
+}
+
 function attendanceRef(sessionId: string, memberUid: string) {
   return db.collection("attendance").doc(`${sessionId}_${memberUid}`);
 }
@@ -53,7 +57,7 @@ router.get("/session/:sessionId", requireAuth, async (request, response) => {
       startAt: sessionStart(session).toISOString(),
       locked,
       canRespond: !locked && request.member!.role !== "SUPER_ADMIN",
-      canCorrect: locked && ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(request.member!.role),
+      canCorrect: hasGameStarted(session) && ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(request.member!.role),
       myAttendance: statusByMember.get(request.member!.uid) || "NO_RESPONSE",
       roster: members.docs
         .filter(doc => doc.data().active === true)
@@ -126,8 +130,8 @@ router.post("/session/:sessionId/correct", requireAuth, requireRole("LEVEL_ADMIN
     if (!requireFlightAccess(session.flightId, request.member!)) {
       return response.status(403).json({ message: "Only the assigned Flight Admin may correct this flight." });
     }
-    if (!isSessionLocked(sessionStart(session))) {
-      return response.status(409).json({ message: "Attendance is still open. Players must update their own response before the lock time." });
+    if (!hasGameStarted(session)) {
+      return response.status(409).json({ message: "Flight Admin corrections become available after the scheduled game start time." });
     }
 
     const targetMember = await db.collection("members").doc(targetMemberUid).get();
