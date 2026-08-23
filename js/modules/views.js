@@ -1,4 +1,4 @@
-import { api, submitBusinessUpdateRequest } from "./auth.js";
+import { api, submitBusinessUpdateRequest, updateMyCredentials } from "./auth.js";
 import { state } from "../router.js";
 
 const escapeHtml = value => String(value ?? "")
@@ -17,6 +17,10 @@ function attendanceBadge(status) {
   const safe = String(status || "NO_RESPONSE").toUpperCase();
   const classes = safe === "PRESENT" ? "blue" : safe === "ABSENT" ? "red" : "amber";
   return `<span class="tag ${classes}">${escapeHtml(safe.replaceAll("_", " "))}</span>`;
+}
+
+function notify(message) {
+  window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: message }));
 }
 
 export async function playerDashboard(member = state.member) {
@@ -59,9 +63,28 @@ export async function attendanceView(sessionId) {
     </section>`;
 }
 
+/* This page is available to Player, Flight Admin, and Super Admin after sign-in. */
+export async function credentialsView() {
+  const member = await api("/members/me");
+  return `
+    <div class="page-head"><div><span class="tag blue">MY ACCOUNT</span><h2>Update Credentials</h2><p>Keep your Member ID and phone number current. You may also update your email or password securely.</p></div></div>
+    <section class="card">
+      <div class="grid two">
+        <div class="field"><label for="credentialMemberId">Member ID</label><input id="credentialMemberId" value="${escapeHtml(member.memberId || "")}" placeholder="ICB-PL-001" /></div>
+        <div class="field"><label for="credentialPhone">Phone number</label><input id="credentialPhone" type="tel" autocomplete="tel" value="${escapeHtml(member.phone || "")}" placeholder="+973 …" /></div>
+        <div class="field"><label for="credentialEmail">Email address</label><input id="credentialEmail" type="email" autocomplete="email" value="${escapeHtml(member.email || "")}" /></div>
+        <div class="field"><label for="credentialCurrentPassword">Current password <small>(required only to change email or password)</small></label><input id="credentialCurrentPassword" type="password" autocomplete="current-password" /></div>
+        <div class="field"><label for="credentialNewPassword">New password <small>(leave blank to keep your current password)</small></label><input id="credentialNewPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /></div>
+        <div class="field"><label for="credentialConfirmPassword">Confirm new password</label><input id="credentialConfirmPassword" type="password" autocomplete="new-password" /></div>
+      </div>
+      <div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div>
+      <p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p>
+    </section>
+  `;
+}
+
 export async function publicIndiMart() {
-  const response = await fetch("http://localhost:3000/api/business/public/directory" );
-  const businesses = await response.json();
+  const businesses = await api("/business/public/directory");
   return `<div class="page-head"><div><h2>Indi Mart</h2><p>Approved Indian community businesses in Bahrain.</p></div></div>
     <section class="card"><button id="showPublicBusinessForm" class="primary">List your business</button><button id="showBusinessUpdate" class="pill" style="margin-left:8px">Update existing advertisement</button></section>
     <section class="grid">${businesses.map(b => `<article class="card"><h3>${escapeHtml(b.businessName)}</h3><p class="note">${escapeHtml(b.category)}</p><p>${escapeHtml(b.description)}</p><p><b>Contact:</b> ${escapeHtml(b.phone)}</p>${b.website ? `<a href="${escapeHtml(b.website)}" target="_blank" rel="noopener">Visit website</a>` : ""}</article>`).join("") || "<article class='card'><p class='note'>No approved listings currently.</p></article>"}</section>`;
@@ -79,10 +102,29 @@ export function bindBusinessSubmission() {
   document.querySelectorAll("[data-attendance]").forEach(button => button.onclick = async () => {
     try {
       await api("/attendance/respond", { method: "POST", body: { sessionId: button.dataset.sessionId, status: button.dataset.attendance } });
-      window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: "Attendance updated." }));
+      notify("Attendance updated.");
       window.dispatchEvent(new CustomEvent("indianclub:render"));
-    } catch (error) { window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: error.message })); }
+    } catch (error) { notify(error.message); }
   });
+
+  const saveCredentials = document.getElementById("saveCredentials");
+  if (saveCredentials) saveCredentials.onclick = async () => {
+    try {
+      const newPassword = document.getElementById("credentialNewPassword").value;
+      const confirmation = document.getElementById("credentialConfirmPassword").value;
+      if (newPassword !== confirmation) throw new Error("The new password and confirmation do not match.");
+
+      await updateMyCredentials({
+        memberId: document.getElementById("credentialMemberId").value.trim(),
+        phone: document.getElementById("credentialPhone").value.trim(),
+        email: document.getElementById("credentialEmail").value.trim(),
+        currentPassword: document.getElementById("credentialCurrentPassword").value,
+        newPassword
+      });
+      notify("Your credentials have been updated.");
+      window.dispatchEvent(new CustomEvent("indianclub:render"));
+    } catch (error) { notify(error.message); }
+  };
 
   const update = document.getElementById("showBusinessUpdate");
   if (update) update.onclick = async () => {
