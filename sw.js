@@ -1,4 +1,4 @@
-const CACHE_NAME = "indian-club-shell-v1";
+const CACHE_NAME = "indian-club-shell-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -31,28 +31,26 @@ self.addEventListener("fetch", event => {
   const request = event.request;
   const url = new URL(request.url);
 
-  /* Never cache API data, Firebase authentication, or payment/attendance requests. */
   if (
     request.method !== "GET" ||
-    url.pathname.startsWith("/api/") ||
+    url.pathname.includes("/api/") ||
     url.hostname.includes("googleapis.com") ||
     url.hostname.includes("firebase")
   ) {
     return;
   }
 
+  /* Network first prevents GitHub Pages users from being stuck on an old
+     cached index.html, CSS, or JavaScript file after a GitHub commit. */
   event.respondWith(
-    caches.match(request).then(cached => {
-      const network = fetch(request)
-        .then(response => {
-          if (response.ok && url.origin === self.location.origin) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
+    fetch(request)
+      .then(response => {
+        if (response.ok && url.origin === self.location.origin) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        }
+        return response;
+      })
+      .catch(() => caches.match(request))
   );
 });
