@@ -4,7 +4,6 @@ import { requireAuth, requireRole } from "../auth.js";
 
 const router = Router();
 const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
-
 type Weekday = typeof weekdays[number];
 
 const asText = (value: unknown, label: string) => {
@@ -50,7 +49,7 @@ async function getActivityFlights() {
   })).then(rows => rows.sort((a, b) => String(a.name).localeCompare(String(b.name))));
 }
 
-/* Player and Flight Admin see only their assigned flight sessions. */
+/* Used by private attendance, dashboard and Flight Admin tools. */
 router.get("/mine", requireAuth, async (request, response) => {
   try {
     const member = request.member!;
@@ -86,7 +85,34 @@ router.get("/mine", requireAuth, async (request, response) => {
   }
 });
 
-/* Super Admin reads master weekly pattern and dynamic flights. */
+/* Every signed-in member sees this same club timetable. It contains schedule data only. */
+router.get("/club", requireAuth, async (_request, response) => {
+  try {
+    const snapshot = await db.collection("sessions").get();
+
+    response.json(snapshot.docs
+      .map(doc => {
+        const session = doc.data();
+        return {
+          id: doc.id,
+          activityId: session.activityId,
+          activityName: session.activityName,
+          flightId: session.flightId,
+          flightName: session.flightName,
+          month: session.month,
+          startAt: timestampToIso(session.startAt),
+          endAt: timestampToIso(session.endAt),
+          courtCount: 2,
+          status: session.status || "SCHEDULED"
+        };
+      })
+      .sort((a, b) => timestampValue(a.startAt) - timestampValue(b.startAt))
+    );
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not load the club timetable." });
+  }
+});
+
 router.get("/master", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
   try {
     const month = request.query.month ? monthValue(request.query.month) : new Date().toISOString().slice(0, 7);
@@ -108,7 +134,6 @@ router.get("/master", requireAuth, requireRole("SUPER_ADMIN"), async (request, r
   }
 });
 
-/* Exactly two courts are stored by the server. Client courtCount is never trusted. */
 router.post("/master/slot", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
   try {
     const weekday = asText(request.body.weekday, "Day") as Weekday;
@@ -153,12 +178,15 @@ router.post("/master/slot", requireAuth, requireRole("SUPER_ADMIN"), async (requ
 });
 
 router.delete("/master/slot/:slotId", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
-  const slotId = asText(request.params.slotId, "Slot ID");
-  await db.collection("weeklyTimetable").doc(slotId).delete();
-  response.json({ success: true });
+  try {
+    const slotId = asText(request.params.slotId, "Slot ID");
+    await db.collection("weeklyTimetable").doc(slotId).delete();
+    response.json({ success: true });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not remove weekly slot." });
+  }
 });
 
-/* Materialize one month from its repeating weekly pattern. Existing generated sessions are not overwritten. */
 router.post("/master/publish-month", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
   try {
     const month = monthValue(request.body.month);
@@ -174,16 +202,18 @@ router.post("/master/publish-month", requireAuth, requireRole("SUPER_ADMIN"), as
     for (let day = 1; day <= daysInMonth; day += 1) {
       const date = new Date(Date.UTC(year, monthNumber - 1, day));
       const weekdayIndex = date.getUTCDay();
+
       for (const patternDoc of patterns.docs) {
         const pattern = patternDoc.data();
         if (pattern.weekdayIndex !== weekdayIndex) continue;
+
         const [startHour, startMinute] = String(pattern.startTime).split(":").map(Number);
         const [endHour, endMinute] = String(pattern.endTime).split(":").map(Number);
         const startAt = new Date(Date.UTC(year, monthNumber - 1, day, startHour, startMinute));
         const endAt = new Date(Date.UTC(year, monthNumber - 1, day, endHour, endMinute));
         const key = `${month}_${String(day).padStart(2, "0")}_${patternDoc.id}`;
-        const ref = db.collection("sessions").doc(key);
-        batch.set(ref, {
+
+        batch.set(db.collection("sessions").doc(key), {
           activityId: pattern.activityId,
           activityName: pattern.activityName,
           flightId: pattern.flightId,
