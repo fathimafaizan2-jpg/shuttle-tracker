@@ -30,37 +30,60 @@ function timestampToIso(value: unknown) {
   return value ? new Date(value as string).toISOString() : null;
 }
 
+function timestampValue(value: unknown) {
+  if (value && typeof (value as Timestamp).toDate === "function") return (value as Timestamp).toDate().getTime();
+  const result = value ? new Date(value as string).getTime() : 0;
+  return Number.isFinite(result) ? result : 0;
+}
+
 async function getActivityFlights() {
-  const activities = await db.collection("activities").where("active", "==", true).orderBy("name").get();
+  const activities = await db.collection("activities").where("active", "==", true).get();
   return Promise.all(activities.docs.map(async activity => {
-    const flights = await activity.ref.collection("flights").where("active", "==", true).orderBy("sortOrder").get();
+    const flights = await activity.ref.collection("flights").where("active", "==", true).get();
     return {
       id: activity.id,
       name: activity.data().name,
-      flights: flights.docs.map(f => ({ id: f.id, ...f.data() }))
+      flights: flights.docs
+        .map(f => ({ id: f.id, ...f.data() }))
+        .sort((a, b) => Number(a.sortOrder ?? 999) - Number(b.sortOrder ?? 999) || String(a.name).localeCompare(String(b.name)))
     };
-  }));
+  })).then(rows => rows.sort((a, b) => String(a.name).localeCompare(String(b.name))));
 }
 
 /* Player and Flight Admin see only their assigned flight sessions. */
 router.get("/mine", requireAuth, async (request, response) => {
-  const member = request.member!;
-  if (!member.flightId && member.role !== "SUPER_ADMIN") return response.json([]);
+  try {
+    const member = request.member!;
+    if (!member.flightId && member.role !== "SUPER_ADMIN") return response.json([]);
 
-  let query: FirebaseFirestore.Query = db.collection("sessions").orderBy("startAt");
-  if (member.role !== "SUPER_ADMIN") query = query.where("flightId", "==", member.flightId);
+    const snapshot = member.role === "SUPER_ADMIN"
+      ? await db.collection("sessions").get()
+      : await db.collection("sessions").where("flightId", "==", member.flightId).get();
 
-  const snapshot = await query.get();
-  response.json(snapshot.docs.map(doc => {
-    const session = doc.data();
-    return {
-      id: doc.id,
-      ...session,
-      startAt: timestampToIso(session.startAt),
-      endAt: timestampToIso(session.endAt),
-      courtCount: 2
-    };
-  }));
+    const attendanceRows = member.role === "SUPER_ADMIN"
+      ? []
+      : await Promise.all(snapshot.docs.map(doc => db.collection("attendance").doc(`${doc.id}_${member.uid}`).get()));
+    const attendanceBySession = new Map(
+      attendanceRows.filter(row => row.exists).map(row => [String(row.data()!.sessionId), row.data()!.status])
+    );
+
+    response.json(snapshot.docs
+      .map(doc => {
+        const session = doc.data();
+        return {
+          id: doc.id,
+          ...session,
+          startAt: timestampToIso(session.startAt),
+          endAt: timestampToIso(session.endAt),
+          myAttendance: attendanceBySession.get(doc.id) || "NO_RESPONSE",
+          courtCount: 2
+        };
+      })
+      .sort((a, b) => timestampValue(a.startAt) - timestampValue(b.startAt))
+    );
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not load your timetable." });
+  }
 });
 
 /* Super Admin reads master weekly pattern and dynamic flights. */
@@ -69,14 +92,16 @@ router.get("/master", requireAuth, requireRole("SUPER_ADMIN"), async (request, r
     const month = request.query.month ? monthValue(request.query.month) : new Date().toISOString().slice(0, 7);
     const activities = await getActivityFlights();
     const activityId = String(request.query.activityId || activities[0]?.id || "");
-    const slots = await db.collection("weeklyTimetable").where("activityId", "==", activityId).orderBy("weekdayIndex").orderBy("startTime").get();
+    const slots = await db.collection("weeklyTimetable").where("activityId", "==", activityId).get();
 
     response.json({
       month,
       activityId,
       activities,
       flights: activities.find(a => a.id === activityId)?.flights || [],
-      weeklyPattern: slots.docs.map(doc => ({ id: doc.id, ...doc.data(), courtCount: 2 }))
+      weeklyPattern: slots.docs
+        .map(doc => ({ id: doc.id, ...doc.data(), courtCount: 2 }))
+        .sort((a, b) => Number(a.weekdayIndex) - Number(b.weekdayIndex) || String(a.startTime).localeCompare(String(b.startTime)))
     });
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not load master timetable." });
@@ -100,14 +125,12 @@ router.post("/master/slot", requireAuth, requireRole("SUPER_ADMIN"), async (requ
     if (!owner || !flight) throw new Error("Selected flight does not exist or is inactive.");
 
     const weekdayIndex = weekdays.indexOf(weekday);
-    const conflict = await db.collection("weeklyTimetable")
-      .where("activityId", "==", owner.id)
-      .where("flightId", "==", flightId)
-      .where("weekdayIndex", "==", weekdayIndex)
-      .where("startTime", "==", startTime)
-      .limit(1)
-      .get();
-    if (!conflict.empty) return response.status(409).json({ message: "This weekly flight slot already exists." });
+    const existingSlots = await db.collection("weeklyTimetable").where("activityId", "==", owner.id).get();
+    const conflict = existingSlots.docs.some(doc => {
+      const row = doc.data();
+      return row.flightId === flightId && row.weekdayIndex === weekdayIndex && row.startTime === startTime;
+    });
+    if (conflict) return response.status(409).json({ message: "This weekly flight slot already exists." });
 
     const created = await db.collection("weeklyTimetable").add({
       activityId: owner.id,
