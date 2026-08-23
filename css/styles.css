@@ -113,6 +113,11 @@ a { color: var(--blue); }
   background: #ffffff;
 }
 .field textarea { min-height: 105px; resize: vertical; }
+.phone-field, .password-field { display: flex; min-width: 0; }
+.phone-field select { width: min(48%, 175px); flex: 0 0 auto; border-radius: 11px 0 0 11px; }
+.phone-field input { min-width: 0; border-left: 0; border-radius: 0 11px 11px 0; }
+.password-field input { min-width: 0; border-radius: 11px 0 0 11px; }
+.password-toggle { min-width: 62px; border: 1px solid #cbd5e1; border-left: 0; border-radius: 0 11px 11px 0; color: #1d4ed8; font-size: 12px; font-weight: 900; background: #eff6ff; }
 
 .tag {
   display: inline-block;
@@ -292,6 +297,26 @@ th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; 
 th { color: var(--muted); font-size: 11px; text-transform: uppercase; }
 .schedule { min-width: 760px; }
 .schedule th, .schedule td { border: 1px solid var(--line); text-align: center; }
+.timetable-card { overflow: hidden; padding: 0; }
+.player-timetable { min-width: 820px; table-layout: fixed; }
+.player-timetable th, .player-timetable td { border: 1px solid #cbd5e1; text-align: center; }
+.player-timetable thead th { min-width: 150px; padding: 14px 10px; color: #ffffff; font-size: 12px; background: linear-gradient(135deg, #0f172a, #172554); }
+.player-timetable thead th:first-child { min-width: 105px; }
+.player-timetable thead small { display: block; margin-top: 5px; color: #cbd5e1; font-size: 10px; }
+.timetable-day { width: 105px; color: #172554; font-size: 11px; letter-spacing: .08em; writing-mode: vertical-rl; transform: rotate(180deg); background: #e2e8f0; }
+.timetable-cell { min-height: 114px; padding: 14px 8px; vertical-align: middle; }
+.timetable-cell b, .timetable-cell small, .timetable-cell span { display: block; }
+.timetable-cell b { color: #172554; font-size: 15px; text-transform: uppercase; }
+.timetable-cell small { margin-top: 7px; color: #334155; font-size: 11px; }
+.timetable-cell > span:not(.tag) { margin-top: 5px; color: #475569; font-size: 10px; font-weight: 800; }
+.timetable-cell .tag { margin-top: 8px; }
+.timetable-empty { color: #94a3b8; background: #f8fafc; }
+.tone-saffron { background: #fed7aa; }
+.tone-sun { background: #fef08a; }
+.tone-rose { background: #fecaca; }
+.tone-lavender { background: #ddd6fe; }
+.tone-leaf { background: #d9f99d; }
+.tone-sky { background: #bae6fd; }
 .footer { padding: 26px 16px; color: #64748b; text-align: center; font-size: 12px; }
 .footer b { color: #5b21b6; }
 .toast { position: fixed; z-index: 900; right: 18px; bottom: 18px; max-width: min(420px, calc(100vw - 36px)); padding: 13px 16px; border-radius: 12px; color: #ffffff; font-size: 13px; background: #172554; box-shadow: 0 16px 34px #0f172a50; }
@@ -310,11 +335,10 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; }
   .login-flag-strip { margin: -26px -20px 25px; }
   .role-card { min-height: 94px; }
   .topbar { padding: 0 14px; }
-  .menu-btn { display: grid; place-items: center; }
   .topbar .user-dot > span { display: none; }
   .layout { display: block; padding: 14px; }
-  .side { position: fixed; z-index: 300; top: 0; bottom: 0; left: 0; width: 280px; overflow: auto; border-radius: 0; transform: translateX(-105%); transition: transform 220ms ease; }
-  .side.open { transform: translateX(0); }
+  .side { position: static; width: auto; max-height: none; margin-bottom: 14px; overflow: visible; border-radius: var(--radius); transform: none; }
+  .player-timetable { min-width: 690px; }
 }
 
 @media (max-width: 440px) {
