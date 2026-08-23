@@ -30,6 +30,12 @@ function toIso(value: unknown) {
   return value ? new Date(value as string).toISOString() : null;
 }
 
+function timeValue(value: unknown) {
+  if (value && typeof (value as Timestamp).toDate === "function") return (value as Timestamp).toDate().getTime();
+  const result = value ? new Date(value as string).getTime() : 0;
+  return Number.isFinite(result) ? result : 0;
+}
+
 function inviteCode() {
   return randomBytes(6).toString("hex").toUpperCase().match(/.{1,4}/g)!.join("-");
 }
@@ -128,18 +134,21 @@ router.post("/me/validate-email", requireAuth, async (request, response) => {
 router.get("/dashboard", requireAuth, async (request, response) => {
   try {
     const member = request.member!;
-    const [wallet, ledger, attendance, charges] = await Promise.all([
+    const [wallet, ledger, attendance, charges, sessions] = await Promise.all([
       db.collection("wallets").doc(member.uid).get(),
-      db.collection("walletLedger").where("memberUid", "==", member.uid).orderBy("createdAt", "desc").limit(8).get(),
-      db.collection("attendance").where("memberUid", "==", member.uid).where("status", "==", "PRESENT").get(),
-      db.collection("sessionCharges").where("memberUid", "==", member.uid).get()
+      db.collection("walletLedger").where("memberUid", "==", member.uid).get(),
+      db.collection("attendance").where("memberUid", "==", member.uid).get(),
+      db.collection("sessionCharges").where("memberUid", "==", member.uid).get(),
+      member.flightId ? db.collection("sessions").where("flightId", "==", member.flightId).get() : Promise.resolve(null)
     ]);
 
     let nextSession: Record<string, unknown> | null = null;
-    if (member.flightId) {
-      const sessions = await db.collection("sessions").where("flightId", "==", member.flightId).where("status", "==", "SCHEDULED").orderBy("startAt").limit(1).get();
-      if (!sessions.empty) {
-        const session = sessions.docs[0];
+    if (sessions) {
+      const next = sessions.docs
+        .filter(doc => doc.data().status === "SCHEDULED" && timeValue(doc.data().startAt) >= Date.now())
+        .sort((a, b) => timeValue(a.data().startAt) - timeValue(b.data().startAt))[0];
+      if (next) {
+        const session = next;
         const attendanceRow = await db.collection("attendance").doc(`${session.id}_${member.uid}`).get();
         nextSession = {
           id: session.id,
@@ -160,11 +169,14 @@ router.get("/dashboard", requireAuth, async (request, response) => {
 
     response.json({
       walletFils: wallet.exists ? Number(wallet.data()!.balanceFils || 0) : 0,
-      attendedCount: attendance.size,
+      attendedCount: attendance.docs.filter(doc => doc.data().status === "PRESENT").length,
       pendingFils: due.reduce((sum, row) => sum + Number(row.amountDueFils || 0), 0),
       arrearsFils: due.filter(row => dueAt(row) <= now).reduce((sum, row) => sum + Number(row.amountDueFils || 0), 0),
       nextSession,
-      recentLedger: ledger.docs.map(doc => ({ ...doc.data(), id: doc.id, createdAt: toIso(doc.data().createdAt) }))
+      recentLedger: ledger.docs
+        .sort((a, b) => timeValue(b.data().createdAt) - timeValue(a.data().createdAt))
+        .slice(0, 8)
+        .map(doc => ({ ...doc.data(), id: doc.id, createdAt: toIso(doc.data().createdAt) }))
     });
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not load dashboard." });
