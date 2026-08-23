@@ -49,7 +49,6 @@ async function getActivityFlights() {
   })).then(rows => rows.sort((a, b) => String(a.name).localeCompare(String(b.name))));
 }
 
-/* Used by private attendance, dashboard and Flight Admin tools. */
 router.get("/mine", requireAuth, async (request, response) => {
   try {
     const member = request.member!;
@@ -85,28 +84,28 @@ router.get("/mine", requireAuth, async (request, response) => {
   }
 });
 
-/* Every signed-in member sees this same club timetable. It contains schedule data only. */
+/* Same weekly club timetable for every signed-in Player, Flight Admin and Super Admin. */
 router.get("/club", requireAuth, async (_request, response) => {
   try {
-    const snapshot = await db.collection("sessions").get();
+    const snapshot = await db.collection("weeklyTimetable").get();
 
     response.json(snapshot.docs
       .map(doc => {
-        const session = doc.data();
+        const slot = doc.data();
         return {
           id: doc.id,
-          activityId: session.activityId,
-          activityName: session.activityName,
-          flightId: session.flightId,
-          flightName: session.flightName,
-          month: session.month,
-          startAt: timestampToIso(session.startAt),
-          endAt: timestampToIso(session.endAt),
-          courtCount: 2,
-          status: session.status || "SCHEDULED"
+          activityId: slot.activityId,
+          activityName: slot.activityName,
+          flightId: slot.flightId,
+          flightName: slot.flightName,
+          weekday: slot.weekday,
+          weekdayIndex: Number(slot.weekdayIndex),
+          startTime: String(slot.startTime),
+          endTime: String(slot.endTime),
+          courtCount: 2
         };
       })
-      .sort((a, b) => timestampValue(a.startAt) - timestampValue(b.startAt))
+      .sort((a, b) => a.weekdayIndex - b.weekdayIndex || a.startTime.localeCompare(b.startTime) || a.flightName.localeCompare(b.flightName))
     );
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not load the club timetable." });
@@ -187,6 +186,7 @@ router.delete("/master/slot/:slotId", requireAuth, requireRole("SUPER_ADMIN"), a
   }
 });
 
+/* Publishing creates dated monthly sessions only for Attendance, stock and finance. */
 router.post("/master/publish-month", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
   try {
     const month = monthValue(request.body.month);
@@ -202,7 +202,6 @@ router.post("/master/publish-month", requireAuth, requireRole("SUPER_ADMIN"), as
     for (let day = 1; day <= daysInMonth; day += 1) {
       const date = new Date(Date.UTC(year, monthNumber - 1, day));
       const weekdayIndex = date.getUTCDay();
-
       for (const patternDoc of patterns.docs) {
         const pattern = patternDoc.data();
         if (pattern.weekdayIndex !== weekdayIndex) continue;
