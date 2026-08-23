@@ -82,7 +82,7 @@
       </div>
       <div class="login-form-panel">
         <div class="field"><label for="loginEmail">Registered email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="name@example.com" /></div>
-        <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" /></div>
+        <div class="field"><label for="loginPassword">Password</label><div class="password-field"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" /><button type="button" class="password-toggle" data-toggle-password="loginPassword">Show</button></div></div>
         <div class="login-form-footer">
           <div class="field language-field"><label for="languageSelector">Language</label><select id="languageSelector"><option value="en">English</option><option value="ml">മലയാളം</option><option value="hi">हिंदी</option><option value="ta">தமிழ்</option></select></div>
           <button id="signIn" class="login-submit">Sign in securely <span>→</span></button>
@@ -104,9 +104,9 @@
         <div class="field"><label for="signupInviteCode">One-time join code</label><input id="signupInviteCode" autocomplete="one-time-code" placeholder="ABCD-1234-EFGH" /></div>
         <div class="field"><label for="signupMemberId">Member ID</label><input id="signupMemberId" placeholder="ICB-PL-001" /></div>
         <div class="field"><label for="signupEmail">Your email address</label><input id="signupEmail" type="email" autocomplete="email" placeholder="name@example.com" /></div>
-        <div class="field"><label for="signupPhone">Phone number</label><input id="signupPhone" type="tel" autocomplete="tel" placeholder="+973 …" /></div>
-        <div class="field"><label for="signupPassword">Create password</label><input id="signupPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /></div>
-        <div class="field"><label for="signupPasswordConfirm">Confirm password</label><input id="signupPasswordConfirm" type="password" autocomplete="new-password" /></div>
+        <div class="field"><label for="signupPhone">Phone number</label><div class="phone-field"><select id="signupCountryCode" aria-label="Country code"><option value="+973">Bahrain (+973)</option><option value="+91">India (+91)</option><option value="+971">UAE (+971)</option><option value="+966">Saudi Arabia (+966)</option><option value="+974">Qatar (+974)</option><option value="+968">Oman (+968)</option><option value="+965">Kuwait (+965)</option><option value="+44">United Kingdom (+44)</option><option value="+1">USA / Canada (+1)</option></select><input id="signupPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Phone number" /></div></div>
+        <div class="field"><label for="signupPassword">Create password</label><div class="password-field"><input id="signupPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /><button type="button" class="password-toggle" data-toggle-password="signupPassword">Show</button></div></div>
+        <div class="field"><label for="signupPasswordConfirm">Confirm password</label><div class="password-field"><input id="signupPasswordConfirm" type="password" autocomplete="new-password" /><button type="button" class="password-toggle" data-toggle-password="signupPasswordConfirm">Show</button></div></div>
         <div class="actions"><button id="activateMember" class="primary">Activate my account</button><button id="backToLogin" class="pill" type="button">Back to login</button></div>
       </div>
     </div>
@@ -114,8 +114,8 @@
 
   <main id="app" class="hidden">
     <header class="topbar">
-      <div class="brand"><button id="menu" class="menu-btn" aria-label="Open navigation">☰</button><div class="brand-mark">IC</div><div><h1>Indian Club</h1><small>Powered by Nuzan AI Studio</small></div></div>
-      <div class="user-dot"><span id="roleLabel"></span><div id="avatar" class="avatar">IC</div><div><button id="logout" class="tag red">Logout</button><button id="openCredentialUpdate" class="tag blue">Update Credentials</button></div></div>
+      <div class="brand"><div class="brand-mark">IC</div><div><h1>Indian Club</h1><small>Powered by Nuzan AI Studio</small></div></div>
+      <div class="user-dot"><span id="roleLabel"></span><div id="avatar" class="avatar">IC</div><button id="logout" class="tag red">Logout</button></div>
     </header>
     <div class="ticker"><div id="tickerTrack" class="ticker-track">Indian Club Bahrain · Powered by Nuzan AI Studio</div></div>
     <div class="layout">
@@ -153,9 +153,9 @@
     import { playerDashboard, playerTimetable, attendanceView, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
     import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, bindAdminViews } from "./js/modules/adminViews.js";
 
-    const $ = id => document.getElementById(id);
+    const $ = id => document.getElementById(id );
     const isGitHubPagesPreview = window.location.hostname.endsWith("github.io");
-    const publicApiBase = window.INDIAN_CLUB_API_URL || (isGitHubPagesPreview ? null : "http://localhost:3000/api");
+    const publicApiBase = window.INDIAN_CLUB_API_URL || (isGitHubPagesPreview ? null : "http://localhost:3000/api" );
 
     function toast(message) { const box = $("toast"); box.textContent = message; box.classList.remove("hidden"); window.setTimeout(() => box.classList.add("hidden"), 3000); }
     function hidePublicPanels() { ["businessForm", "publicDirectory"].forEach(id => $(id).classList.add("hidden")); }
@@ -207,7 +207,7 @@
         const sponsors = await sponsorResponse.json();
         if (notices[0]) { $("publicNoticeTitle").textContent = notices[0].title; $("publicNoticeBody").textContent = notices[0].body; $("tickerTrack").textContent = notices.map(notice => notice.title).join(" • "); }
         if (sponsors.length) $("publicSponsorCarousel").innerHTML = sponsors.map(sponsor => `<article class="ad-card">${sponsor.flyerUrl ? `<img src="${sponsor.flyerUrl}" alt="${sponsor.businessName}">` : ""}<h3>${sponsor.businessName}</h3><p>${sponsor.discountText || "Approved sponsor"}</p></article>`).join("");
-      } catch { /* Public pages remain usable if a free service is starting. */ }
+      } catch { }
     }
 
     $("openLogin").onclick = openLoginOverlay;
@@ -235,7 +235,7 @@
       try {
         const password = $("signupPassword").value;
         if (password !== $("signupPasswordConfirm").value) throw new Error("The password and confirmation do not match.");
-        const result = await activateMemberAccount({ inviteCode: $("signupInviteCode").value.trim(), fullName: $("signupFullName").value.trim(), memberId: $("signupMemberId").value.trim(), email: $("signupEmail").value.trim(), phone: $("signupPhone").value.trim(), password });
+        const result = await activateMemberAccount({ inviteCode: $("signupInviteCode").value.trim(), fullName: $("signupFullName").value.trim(), memberId: $("signupMemberId").value.trim(), email: $("signupEmail").value.trim(), phone: `${$("signupCountryCode").value} ${$("signupPhone").value.trim()}`.trim(), password });
         $("loginEmail").value = result.email; $("loginPassword").value = ""; closeSignupOverlay(); openLoginOverlay(); toast("Account activated. Sign in with your new email and password.");
       } catch (error) { toast(error.message || "Could not activate your account."); }
     };
@@ -251,9 +251,15 @@
     };
 
     $("logout").onclick = async () => { await logout(); $("app").classList.add("hidden"); $("publicLanding").classList.remove("hidden"); hidePublicPanels(); toast("Signed out"); };
-    $("openCredentialUpdate").onclick = () => navigate("profile");
-    $("menu").onclick = () => $("side").classList.toggle("open");
     document.querySelectorAll(".nav[data-page]").forEach(button => { button.onclick = () => navigate(button.dataset.page); });
+    document.querySelectorAll("[data-toggle-password]").forEach(button => {
+      button.onclick = () => {
+        const input = $(button.dataset.togglePassword);
+        const reveal = input.type === "password";
+        input.type = reveal ? "text" : "password";
+        button.textContent = reveal ? "Hide" : "Show";
+      };
+    });
     window.addEventListener("indianclub:render", renderPage);
     window.addEventListener("indianclub:toast", event => toast(event.detail));
     window.addEventListener("indianclub:navigate", event => { if (!state.member) return; if (navigate(event.detail.page)) renderPage(); });
