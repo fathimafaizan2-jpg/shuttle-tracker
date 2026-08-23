@@ -26,16 +26,29 @@ function notify(message) {
   window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: message }));
 }
 
+function flightOptions(activities) {
+  return activities.map(activity => `
+    <optgroup label="${escapeHtml(activity.name)}">
+      ${(activity.flights || []).map(flight => `<option value="${escapeHtml(flight.id)}">${escapeHtml(flight.name)}</option>`).join("")}
+    </optgroup>
+  `).join("");
+}
+
 export async function activitiesAndFlightsView() {
   requireSuperAdmin();
-  const activities = await api("/activities");
+  const [activities, allMembers] = await Promise.all([
+    api("/activities"),
+    api("/members")
+  ]);
+  const memberAccounts = allMembers.filter(member => ["PLAYER", "LEVEL_ADMIN"].includes(member.role));
+  const hasFlights = activities.some(activity => (activity.flights || []).length > 0);
 
   return `
     <div class="page-head">
       <div>
         <span class="tag blue">SUPER ADMIN</span>
-        <h2>Activities & Flights</h2>
-        <p>Create Badminton now and future sports later. Flights stay fully dynamic.</p>
+        <h2>Activities, Flights & Members</h2>
+        <p>Create sports and flights, then assign each approved Player or Flight Admin to exactly one flight.</p>
       </div>
     </div>
 
@@ -78,6 +91,45 @@ export async function activitiesAndFlightsView() {
           </div>
         </article>
       `).join("") || "<section class='card'><h3>No activity created yet</h3><p class='note'>Create Badminton first, then add Premier and your club flights.</p></section>"}
+    </section>
+
+    <section class="card" id="memberManagement">
+      <div class="page-head">
+        <div>
+          <span class="tag blue">MEMBER ACCESS</span>
+          <h3>Create and assign a club member</h3>
+          <p class="note">This creates the secure sign-in and assigns the account to the selected flight. Business advertisers use only the public Indi Mart form and never receive a dashboard account.</p>
+        </div>
+      </div>
+      <div class="grid two">
+        <div class="field"><label for="memberFullName">Full name</label><input id="memberFullName" autocomplete="name" placeholder="Member full name" /></div>
+        <div class="field"><label for="memberId">Member ID</label><input id="memberId" placeholder="ICB-PL-001" /></div>
+        <div class="field"><label for="memberEmail">Email address</label><input id="memberEmail" type="email" autocomplete="email" placeholder="member@email.com" /></div>
+        <div class="field"><label for="memberPhone">Phone number <small>(optional)</small></label><input id="memberPhone" type="tel" autocomplete="tel" placeholder="+973 …" /></div>
+        <div class="field"><label for="memberRole">Account role</label><select id="memberRole"><option value="PLAYER">Player</option><option value="LEVEL_ADMIN">Flight Admin</option></select></div>
+        <div class="field"><label for="memberFlight">Badminton flight</label><select id="memberFlight" ${hasFlights ? "" : "disabled"}><option value="">Choose a flight</option>${flightOptions(activities)}</select></div>
+        <div class="field"><label for="memberTemporaryPassword">Temporary password</label><input id="memberTemporaryPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /></div>
+        <div class="field"><label>&nbsp;</label><button id="createMember" class="primary" ${hasFlights ? "" : "disabled"}>Create member account</button></div>
+      </div>
+      ${hasFlights ? "" : "<p class='note'>Create at least one active flight before creating an account.</p>"}
+    </section>
+
+    <section class="card table-wrap">
+      <div class="page-head"><div><h3>Assigned club accounts</h3><p class="note">A Player sees only their own flight. A Flight Admin may manage attendance only for their assigned flight after the session locks.</p></div></div>
+      <table class="schedule">
+        <thead><tr><th>Member</th><th>Role</th><th>Activity / Flight</th><th>Access</th><th>Action</th></tr></thead>
+        <tbody>
+          ${memberAccounts.map(member => `
+            <tr>
+              <td><b>${escapeHtml(member.fullName)}</b><br><small>${escapeHtml(member.memberId)} · ${escapeHtml(member.email)}</small></td>
+              <td>${member.role === "LEVEL_ADMIN" ? "Flight Admin" : "Player"}</td>
+              <td>${escapeHtml(member.activityName || "—")} / ${escapeHtml(member.flightName || "—")}</td>
+              <td><span class="tag ${member.active ? "blue" : "red"}">${member.active ? "ACTIVE" : "INACTIVE"}</span></td>
+              <td><button class="pill" data-toggle-member="${escapeHtml(member.uid)}" data-active="${member.active}">${member.active ? "Deactivate" : "Activate"}</button></td>
+            </tr>
+          `).join("") || "<tr><td colspan='5'>No Player or Flight Admin account created yet.</td></tr>"}
+        </tbody>
+      </table>
     </section>
   `;
 }
@@ -194,6 +246,43 @@ export function bindAdminViews() {
     button.onclick = async () => {
       try {
         await api(`/activities/${encodeURIComponent(button.dataset.activityId)}/flights/${encodeURIComponent(button.dataset.toggleFlight)}`, { method: "PATCH", body: { active: button.dataset.active !== "true" } });
+        refresh();
+      } catch (error) { notify(error.message); }
+    };
+  });
+
+  const createMember = document.getElementById("createMember");
+  if (createMember) createMember.onclick = async () => {
+    try {
+      const flightId = document.getElementById("memberFlight").value;
+      if (!flightId) throw new Error("Choose the member's flight before creating the account.");
+
+      const created = await api("/members", {
+        method: "POST",
+        body: {
+          fullName: document.getElementById("memberFullName").value.trim(),
+          memberId: document.getElementById("memberId").value.trim(),
+          email: document.getElementById("memberEmail").value.trim(),
+          phone: document.getElementById("memberPhone").value.trim(),
+          role: document.getElementById("memberRole").value,
+          flightId,
+          temporaryPassword: document.getElementById("memberTemporaryPassword").value
+        }
+      });
+
+      notify(`${created.fullName} has been created and assigned to the selected flight.`);
+      refresh();
+    } catch (error) { notify(error.message); }
+  };
+
+  document.querySelectorAll("[data-toggle-member]").forEach(button => {
+    button.onclick = async () => {
+      try {
+        await api(`/members/${encodeURIComponent(button.dataset.toggleMember)}`, {
+          method: "PATCH",
+          body: { active: button.dataset.active !== "true" }
+        });
+        notify(button.dataset.active === "true" ? "Member account deactivated." : "Member account activated.");
         refresh();
       } catch (error) { notify(error.message); }
     };
