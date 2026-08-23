@@ -134,16 +134,23 @@ export async function playerTimetable() {
 }
 
 export async function attendanceView(sessionId) {
-  const session = await api(`/attendance/session/${encodeURIComponent(sessionId)}`);
-  const editable = Boolean(session.canRespond);
-  return `<div class="page-head"><div><h2>Attendance</h2><p>${escapeHtml(session.flightName)} · ${dateTime(session.startAt)}</p></div>${session.locked ? "<span class='tag red'>LOCKED</span>" : "<span class='tag blue'>OPEN</span>"}</div>
-    <section class="card"><p class="note">Attendance locks automatically 15 minutes after the scheduled start. Players can update only their own response while open. Flight Admin corrections after lock require an audit reason.</p>
-      ${editable ? `<div class="actions"><button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I am coming</button><button class="action" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">I am not coming</button></div>` : ""}
-      <h3>My response</h3>${attendanceBadge(session.myAttendance)}
+  const sessions = (await api("/timetable/mine")).filter(session => Number.isFinite(new Date(session.startAt).getTime()));
+  if (!sessions.length) return `<div class="page-head"><div><h2>Attendance</h2><p>Attendance is available after Super Admin publishes the month.</p></div></div><section class="card"><p class="note">No dated session has been published for your assigned flight yet.</p></section>`;
+
+  const savedId = window.sessionStorage.getItem("indianClubAttendanceSessionId");
+  const selected = sessions.find(item => item.id === sessionId || item.id === savedId) || sessions[0];
+  const session = await api(`/attendance/session/${encodeURIComponent(selected.id)}`);
+  const audit = session.canCorrect ? await api(`/attendance/session/${encodeURIComponent(selected.id)}/audit`) : [];
+
+  return `<div class="page-head"><div><h2>Attendance</h2><p>Only your assigned flight roster is visible here.</p></div>${session.locked ? "<span class='tag red'>LOCKED</span>" : "<span class='tag blue'>OPEN</span>"}</div>
+    <section class="card"><div class="field"><label for="attendanceSessionSelect">Choose your flight session</label><select id="attendanceSessionSelect">${sessions.map(item => `<option value="${escapeHtml(item.id)}" ${item.id === selected.id ? "selected" : ""}>${escapeHtml(item.flightName)} · ${escapeHtml(dateTime(item.startAt))}</option>`).join("")}</select></div>
+      <h3>${escapeHtml(session.flightName)} · ${escapeHtml(dateTime(session.startAt))}</h3>
+      <p class="note">Players update only their own response before the automatic lock. The lock occurs 15 minutes after start. After lock, only the assigned Flight Admin or Super Admin can correct attendance with a reason.</p>
+      <div class="session"><div class="grow"><b>My attendance</b></div>${attendanceBadge(session.myAttendance)}</div>
+      ${session.canRespond ? `<div class="actions"><button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I am coming</button><button class="pill" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">I am not coming</button></div>` : ""}
     </section>
-    <section class="card"><h3>${escapeHtml(session.flightName)} roster</h3>
-      ${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}</div>`).join("") || "<p class='note'>No roster data.</p>"}
-    </section>`;
+    <section class="card"><h3>${escapeHtml(session.flightName)} roster</h3>${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(word => word[0]).join("").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}${session.canCorrect ? `<div class="actions"><button class="pill" data-attendance-correct="PRESENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Present</button><button class="pill" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No active members are assigned to this flight.</p>"}</section>
+    ${session.canCorrect ? `<section class="card"><h3>Attendance correction audit</h3>${audit.map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.previousStatus)} → ${escapeHtml(item.newStatus)}</b><p>${escapeHtml(item.reason)} · ${escapeHtml(dateTime(item.createdAt))}</p></div></div>`).join("") || "<p class='note'>No corrections have been recorded for this session.</p>"}</section>` : ""}`;
 }
 
 export async function credentialsView() {
@@ -178,13 +185,33 @@ export function businessSubmissionForm() {
 
 export function bindBusinessSubmission() {
   document.querySelectorAll("[data-open-attendance]").forEach(button => button.onclick = () => {
+    window.sessionStorage.setItem("indianClubAttendanceSessionId", button.dataset.openAttendance);
     window.dispatchEvent(new CustomEvent("indianclub:navigate", { detail: { page: "attendance", sessionId: button.dataset.openAttendance } }));
   });
+
+  const attendanceSessionSelect = document.getElementById("attendanceSessionSelect");
+  if (attendanceSessionSelect) attendanceSessionSelect.onchange = () => {
+    window.sessionStorage.setItem("indianClubAttendanceSessionId", attendanceSessionSelect.value);
+    window.dispatchEvent(new CustomEvent("indianclub:render"));
+  };
 
   document.querySelectorAll("[data-attendance]").forEach(button => button.onclick = async () => {
     try {
       await api("/attendance/respond", { method: "POST", body: { sessionId: button.dataset.sessionId, status: button.dataset.attendance } });
       notify("Attendance updated.");
+      window.dispatchEvent(new CustomEvent("indianclub:render"));
+    } catch (error) { notify(error.message); }
+  });
+
+  document.querySelectorAll("[data-attendance-correct]").forEach(button => button.onclick = async () => {
+    const reason = window.prompt("Enter the required reason for this locked attendance correction:");
+    if (!reason || !reason.trim()) return;
+    try {
+      await api(`/attendance/session/${encodeURIComponent(button.dataset.sessionId)}/correct`, {
+        method: "POST",
+        body: { memberUid: button.dataset.memberUid, status: button.dataset.attendanceCorrect, reason: reason.trim() }
+      });
+      notify("Attendance correction saved and audit-logged.");
       window.dispatchEvent(new CustomEvent("indianclub:render"));
     } catch (error) { notify(error.message); }
   });
