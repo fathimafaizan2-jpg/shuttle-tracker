@@ -11,6 +11,7 @@ const escapeHtml = value => String(value ?? "")
 const bhd = fils => `BHD ${(Number(fils || 0) / 1000).toFixed(3)}`;
 let selectedMasterMonth = new Date().toISOString().slice(0, 7);
 let selectedMasterActivityId = "";
+let latestInvitation = null;
 
 function requireSuperAdmin() {
   if (state.member?.role !== "SUPER_ADMIN") {
@@ -36,9 +37,10 @@ function flightOptions(activities) {
 
 export async function activitiesAndFlightsView() {
   requireSuperAdmin();
-  const [activities, allMembers] = await Promise.all([
+  const [activities, allMembers, invitations] = await Promise.all([
     api("/activities"),
-    api("/members")
+    api("/members"),
+    api("/members/invitations")
   ]);
   const memberAccounts = allMembers.filter(member => ["PLAYER", "LEVEL_ADMIN"].includes(member.role));
   const hasFlights = activities.some(activity => (activity.flights || []).length > 0);
@@ -97,21 +99,45 @@ export async function activitiesAndFlightsView() {
       <div class="page-head">
         <div>
           <span class="tag blue">MEMBER ACCESS</span>
-          <h3>Create and assign a club member</h3>
-          <p class="note">This creates the secure sign-in and assigns the account to the selected flight. Business advertisers use only the public Indi Mart form and never receive a dashboard account.</p>
+          <h3>Invite and assign a club member</h3>
+          <p class="note">Enter only the name, account role, and flight. The member completes their own ID, phone number, email address, and password during sign-up. Business advertisers use only the public Indi Mart form and never receive a dashboard account.</p>
         </div>
       </div>
       <div class="grid two">
         <div class="field"><label for="memberFullName">Full name</label><input id="memberFullName" autocomplete="name" placeholder="Member full name" /></div>
-        <div class="field"><label for="memberId">Member ID</label><input id="memberId" placeholder="ICB-PL-001" /></div>
-        <div class="field"><label for="memberEmail">Email address</label><input id="memberEmail" type="email" autocomplete="email" placeholder="member@email.com" /></div>
-        <div class="field"><label for="memberPhone">Phone number <small>(optional)</small></label><input id="memberPhone" type="tel" autocomplete="tel" placeholder="+973 …" /></div>
         <div class="field"><label for="memberRole">Account role</label><select id="memberRole"><option value="PLAYER">Player</option><option value="LEVEL_ADMIN">Flight Admin</option></select></div>
         <div class="field"><label for="memberFlight">Badminton flight</label><select id="memberFlight" ${hasFlights ? "" : "disabled"}><option value="">Choose a flight</option>${flightOptions(activities)}</select></div>
-        <div class="field"><label for="memberTemporaryPassword">Temporary password</label><input id="memberTemporaryPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /></div>
-        <div class="field"><label>&nbsp;</label><button id="createMember" class="primary" ${hasFlights ? "" : "disabled"}>Create member account</button></div>
+        <div class="field"><label>&nbsp;</label><button id="createMember" class="primary" ${hasFlights ? "" : "disabled"}>Create invitation</button></div>
       </div>
       ${hasFlights ? "" : "<p class='note'>Create at least one active flight before creating an account.</p>"}
+    </section>
+
+    ${latestInvitation ? `
+      <section class="card">
+        <span class="tag amber">ONE-TIME JOIN CODE</span>
+        <h3>Share this code privately with ${escapeHtml(latestInvitation.fullName)}</h3>
+        <p class="note">They use this code with their own name to sign up. The code expires in ${Number(latestInvitation.expiresInDays || 14)} days and is not shown again after this screen is refreshed.</p>
+        <p><strong>${escapeHtml(latestInvitation.inviteCode)}</strong></p>
+        <button id="hideLatestInvitation" class="pill">I have copied the code</button>
+      </section>
+    ` : ""}
+
+    <section class="card table-wrap">
+      <div class="page-head"><div><h3>Pending member sign-ups</h3><p class="note">These people have been assigned to a flight but have not yet created their own account.</p></div></div>
+      <table class="schedule">
+        <thead><tr><th>Name</th><th>Role</th><th>Activity / Flight</th><th>Code expiry</th><th>Action</th></tr></thead>
+        <tbody>
+          ${invitations.map(invitation => `
+            <tr>
+              <td><b>${escapeHtml(invitation.fullName)}</b></td>
+              <td>${invitation.role === "LEVEL_ADMIN" ? "Flight Admin" : "Player"}</td>
+              <td>${escapeHtml(invitation.activityName || "—")} / ${escapeHtml(invitation.flightName || "—")}</td>
+              <td>${invitation.expiresAt ? new Date(invitation.expiresAt).toLocaleDateString("en-BH") : "—"}</td>
+              <td><button class="pill" data-regenerate-invitation="${escapeHtml(invitation.id)}">New code</button></td>
+            </tr>
+          `).join("") || "<tr><td colspan='5'>No member sign-up is pending.</td></tr>"}
+        </tbody>
+      </table>
     </section>
 
     <section class="card table-wrap">
@@ -255,25 +281,37 @@ export function bindAdminViews() {
   if (createMember) createMember.onclick = async () => {
     try {
       const flightId = document.getElementById("memberFlight").value;
-      if (!flightId) throw new Error("Choose the member's flight before creating the account.");
+      if (!flightId) throw new Error("Choose the member's flight before creating the invitation.");
 
-      const created = await api("/members", {
+      latestInvitation = await api("/members/invitations", {
         method: "POST",
         body: {
           fullName: document.getElementById("memberFullName").value.trim(),
-          memberId: document.getElementById("memberId").value.trim(),
-          email: document.getElementById("memberEmail").value.trim(),
-          phone: document.getElementById("memberPhone").value.trim(),
           role: document.getElementById("memberRole").value,
-          flightId,
-          temporaryPassword: document.getElementById("memberTemporaryPassword").value
+          flightId
         }
       });
 
-      notify(`${created.fullName} has been created and assigned to the selected flight.`);
+      notify(`Invitation created for ${latestInvitation.fullName}. Copy the one-time join code.`);
       refresh();
     } catch (error) { notify(error.message); }
   };
+
+  const hideLatestInvitation = document.getElementById("hideLatestInvitation");
+  if (hideLatestInvitation) hideLatestInvitation.onclick = () => {
+    latestInvitation = null;
+    refresh();
+  };
+
+  document.querySelectorAll("[data-regenerate-invitation]").forEach(button => {
+    button.onclick = async () => {
+      try {
+        latestInvitation = await api(`/members/invitations/${encodeURIComponent(button.dataset.regenerateInvitation)}/regenerate`, { method: "POST" });
+        notify(`New one-time join code created for ${latestInvitation.fullName}.`);
+        refresh();
+      } catch (error) { notify(error.message); }
+    };
+  });
 
   document.querySelectorAll("[data-toggle-member]").forEach(button => {
     button.onclick = async () => {
