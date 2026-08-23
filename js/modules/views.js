@@ -13,6 +13,40 @@ const dateTime = value => value ? new Date(value).toLocaleString("en-BH", {
   dateStyle: "medium", timeStyle: "short"
 }) : "Not scheduled";
 
+const countryCodes = [
+  ["+973", "Bahrain (+973)"],
+  ["+91", "India (+91)"],
+  ["+971", "UAE (+971)"],
+  ["+966", "Saudi Arabia (+966)"],
+  ["+974", "Qatar (+974)"],
+  ["+968", "Oman (+968)"],
+  ["+965", "Kuwait (+965)"],
+  ["+44", "United Kingdom (+44)"],
+  ["+1", "USA / Canada (+1)"]
+];
+
+function countryCodeOptions(selectedPhone = "") {
+  const selected = countryCodes.find(([code]) => String(selectedPhone).startsWith(code))?.[0] || "+973";
+  return countryCodes.map(([code, label]) => `<option value="${code}" ${code === selected ? "selected" : ""}>${label}</option>`).join("");
+}
+
+function localPhoneNumber(phone = "") {
+  const code = countryCodes.find(([value]) => String(phone).startsWith(value))?.[0] || "+973";
+  return String(phone).replace(code, "").trim();
+}
+
+function timetableTone(flightName = "") {
+  const tones = ["saffron", "sun", "rose", "lavender", "leaf", "sky"];
+  const total = [...String(flightName)].reduce((sum, character) => sum + character.charCodeAt(0), 0);
+  return tones[total % tones.length];
+}
+
+function timeRange(session) {
+  const start = new Date(session.startAt);
+  const end = new Date(session.endAt);
+  return `${start.toLocaleTimeString("en-BH", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("en-BH", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
 function attendanceBadge(status) {
   const safe = String(status || "NO_RESPONSE").toUpperCase();
   const classes = safe === "PRESENT" ? "blue" : safe === "ABSENT" ? "red" : "amber";
@@ -46,8 +80,24 @@ export async function playerDashboard(member = state.member) {
 
 export async function playerTimetable() {
   const sessions = await api("/timetable/mine");
-  return `<div class="page-head"><div><h2>My Timetable</h2><p>Weekly pattern repeats for the selected month. Every slot uses two courts.</p></div></div>
-    <section class="card">${sessions.map(session => `<div class="session"><div class="datebox">${new Date(session.startAt).getDate()}<small>${new Date(session.startAt).toLocaleString("en", { month: "short" })}</small></div><div class="grow"><b>${escapeHtml(session.flightName)}</b><p>${dateTime(session.startAt)} → ${new Date(session.endAt).toLocaleTimeString("en-BH", { hour: "2-digit", minute: "2-digit" })} · Courts 1 & 2</p></div>${attendanceBadge(session.myAttendance)}</div>`).join("") || "<p class='note'>No timetable sessions are available for your assigned flight.</p>"}</section>`;
+  if (!sessions.length) {
+    return `<div class="page-head"><div><h2>My Timetable</h2><p>Your published Flight timetable will appear here.</p></div></div><section class="card"><p class="note">No monthly session has been published for your assigned flight yet.</p></section>`;
+  }
+
+  const timeColumns = [...new Map(sessions.map(session => [timeRange(session), session])).entries()];
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const rows = dayNames.map((dayName, dayIndex) => {
+    const daySessions = sessions.filter(session => new Date(session.startAt).getDay() === dayIndex);
+    if (!daySessions.length) return "";
+    return `<tr><th scope="row" class="timetable-day">${dayName}</th>${timeColumns.map(([range]) => {
+      const session = daySessions.find(item => timeRange(item) === range);
+      if (!session) return "<td class='timetable-empty'>—</td>";
+      return `<td class="timetable-cell tone-${timetableTone(session.flightName)}"><b>${escapeHtml(session.flightName)}</b><small>${new Date(session.startAt).toLocaleDateString("en-BH", { day: "2-digit", month: "short" })}</small><span>Courts 1 & 2</span>${attendanceBadge(session.myAttendance)}</td>`;
+    }).join("")}</tr>`;
+  }).filter(Boolean).join("");
+
+  return `<div class="page-head"><div><h2>My Timetable</h2><p>Your scheduled Flight sessions. Every slot has exactly two courts.</p></div></div>
+    <section class="card timetable-card"><div class="table-wrap"><table class="player-timetable"><thead><tr><th>Day</th>${timeColumns.map(([range]) => `<th>${escapeHtml(range)}<small>2 courts</small></th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 export async function attendanceView(sessionId) {
@@ -71,11 +121,11 @@ export async function credentialsView() {
     <section class="card">
       <div class="grid two">
         <div class="field"><label for="credentialMemberId">Member ID</label><input id="credentialMemberId" value="${escapeHtml(member.memberId || "")}" placeholder="ICB-PL-001" /></div>
-        <div class="field"><label for="credentialPhone">Phone number</label><input id="credentialPhone" type="tel" autocomplete="tel" value="${escapeHtml(member.phone || "")}" placeholder="+973 …" /></div>
+        <div class="field"><label for="credentialPhone">Phone number</label><div class="phone-field"><select id="credentialCountryCode" aria-label="Country code">${countryCodeOptions(member.phone)}</select><input id="credentialPhone" type="tel" inputmode="tel" autocomplete="tel" value="${escapeHtml(localPhoneNumber(member.phone))}" placeholder="Phone number" /></div></div>
         <div class="field"><label for="credentialEmail">Email address</label><input id="credentialEmail" type="email" autocomplete="email" value="${escapeHtml(member.email || "")}" /></div>
-        <div class="field"><label for="credentialCurrentPassword">Current password <small>(required only to change email or password)</small></label><input id="credentialCurrentPassword" type="password" autocomplete="current-password" /></div>
-        <div class="field"><label for="credentialNewPassword">New password <small>(leave blank to keep your current password)</small></label><input id="credentialNewPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /></div>
-        <div class="field"><label for="credentialConfirmPassword">Confirm new password</label><input id="credentialConfirmPassword" type="password" autocomplete="new-password" /></div>
+        <div class="field"><label for="credentialCurrentPassword">Current password <small>(required only to change email or password)</small></label><div class="password-field"><input id="credentialCurrentPassword" type="password" autocomplete="current-password" /><button type="button" class="password-toggle" data-toggle-password="credentialCurrentPassword">Show</button></div></div>
+        <div class="field"><label for="credentialNewPassword">New password <small>(leave blank to keep your current password)</small></label><div class="password-field"><input id="credentialNewPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /><button type="button" class="password-toggle" data-toggle-password="credentialNewPassword">Show</button></div></div>
+        <div class="field"><label for="credentialConfirmPassword">Confirm new password</label><div class="password-field"><input id="credentialConfirmPassword" type="password" autocomplete="new-password" /><button type="button" class="password-toggle" data-toggle-password="credentialConfirmPassword">Show</button></div></div>
       </div>
       <div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div>
       <p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p>
@@ -116,7 +166,7 @@ export function bindBusinessSubmission() {
 
       await updateMyCredentials({
         memberId: document.getElementById("credentialMemberId").value.trim(),
-        phone: document.getElementById("credentialPhone").value.trim(),
+        phone: `${document.getElementById("credentialCountryCode").value} ${document.getElementById("credentialPhone").value.trim()}`.trim(),
         email: document.getElementById("credentialEmail").value.trim(),
         currentPassword: document.getElementById("credentialCurrentPassword").value,
         newPassword
@@ -136,4 +186,14 @@ export function bindBusinessSubmission() {
       alert("Your update request was sent to Super Admin for approval.");
     } catch (error) { alert(error.message); }
   };
+
+  document.querySelectorAll("[data-toggle-password]").forEach(button => {
+    button.onclick = () => {
+      const input = document.getElementById(button.dataset.togglePassword);
+      if (!input) return;
+      const reveal = input.type === "password";
+      input.type = reveal ? "text" : "password";
+      button.textContent = reveal ? "Hide" : "Show";
+    };
+  });
 }
