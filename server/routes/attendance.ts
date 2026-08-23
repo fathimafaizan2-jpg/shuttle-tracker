@@ -53,6 +53,7 @@ router.get("/session/:sessionId", requireAuth, async (request, response) => {
       startAt: sessionStart(session).toISOString(),
       locked,
       canRespond: !locked && request.member!.role !== "SUPER_ADMIN",
+      canCorrect: locked && ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(request.member!.role),
       myAttendance: statusByMember.get(request.member!.uid) || "NO_RESPONSE",
       roster: members.docs
         .filter(doc => doc.data().active === true)
@@ -125,6 +126,9 @@ router.post("/session/:sessionId/correct", requireAuth, requireRole("LEVEL_ADMIN
     if (!requireFlightAccess(session.flightId, request.member!)) {
       return response.status(403).json({ message: "Only the assigned Flight Admin may correct this flight." });
     }
+    if (!isSessionLocked(session.startAt)) {
+      return response.status(409).json({ message: "Attendance is still open. Players must update their own response before the lock time." });
+    }
 
     const targetMember = await db.collection("members").doc(targetMemberUid).get();
     if (!targetMember.exists || targetMember.data()!.flightId !== session.flightId) {
@@ -169,8 +173,11 @@ router.get("/session/:sessionId/audit", requireAuth, requireRole("LEVEL_ADMIN", 
     const session = await loadSessionWithAccess(sessionId, request.member);
     if (!requireFlightAccess(session.flightId, request.member!)) return response.status(403).json({ message: "No access." });
 
-    const audit = await db.collection("attendanceAudit").where("sessionId", "==", sessionId).orderBy("createdAt", "desc").get();
-    response.json(audit.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: (doc.data().createdAt as Timestamp)?.toDate?.().toISOString() || null })));
+    const audit = await db.collection("attendanceAudit").where("sessionId", "==", sessionId).get();
+    response.json(audit.docs
+      .map(doc => ({ id: doc.id, ...doc.data(), createdAt: (doc.data().createdAt as Timestamp)?.toDate?.().toISOString() || null }))
+      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+    );
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not load attendance audit." });
   }
