@@ -79,43 +79,58 @@ export async function playerDashboard(member = state.member) {
 }
 
 export async function playerTimetable() {
-  const sessions = await api("/timetable/mine");
-  if (!sessions.length) {
-    return `<div class="page-head"><div><h2>My Timetable</h2><p>Your published Flight timetable will appear here.</p></div></div><section class="card"><p class="note">No monthly session has been published for your assigned flight yet.</p></section>`;
+  const slots = await api("/timetable/club");
+
+  if (!slots.length) {
+    return `<div class="page-head"><div><h2>Club Timetable</h2><p>The weekly club timetable will appear after Super Admin saves the first slot.</p></div></div><section class="card"><p class="note">No weekly club timetable has been saved yet.</p></section>`;
   }
 
-  const timeColumns = [...new Map(sessions.map(session => [timeRange(session), session])).entries()];
+  const timeRange = slot => `${slot.startTime} – ${slot.endTime}`;
+  const timeColumns = [...new Map(slots.map(slot => [timeRange(slot), slot])).entries()];
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const tones = ["saffron", "sun", "rose", "lavender", "leaf", "sky"];
+  const toneFor = flightName => {
+    const total = [...String(flightName || "")].reduce((sum, character) => sum + character.charCodeAt(0), 0);
+    return tones[total % tones.length];
+  };
+
   const rows = dayNames.map((dayName, dayIndex) => {
-    const daySessions = sessions.filter(session => new Date(session.startAt).getDay() === dayIndex);
-    if (!daySessions.length) return "";
-    return `<tr><th scope="row" class="timetable-day">${dayName}</th>${timeColumns.map(([range]) => {
-      const session = daySessions.find(item => timeRange(item) === range);
-      if (!session) return "<td class='timetable-empty'>—</td>";
-      return `<td class="timetable-cell tone-${timetableTone(session.flightName)}"><b>${escapeHtml(session.flightName)}</b><small>${new Date(session.startAt).toLocaleDateString("en-BH", { day: "2-digit", month: "short" })}</small><span>Courts 1 & 2</span>${attendanceBadge(session.myAttendance)}</td>`;
-    }).join("")}</tr>`;
+    const daySlots = slots.filter(slot => Number(slot.weekdayIndex) === dayIndex);
+    if (!daySlots.length) return "";
+
+    return `<tr>
+      <th scope="row" class="club-timetable-day">${dayName}</th>
+      ${timeColumns.map(([range]) => {
+        const slot = daySlots.find(item => timeRange(item) === range);
+        if (!slot) return "<td class='club-timetable-empty'>—</td>";
+        return `<td class="club-timetable-cell tone-${toneFor(slot.flightName)}"><b>${escapeHtml(slot.flightName)}</b><span>2 COURTS</span></td>`;
+      }).join("")}
+    </tr>`;
   }).filter(Boolean).join("");
 
   return `<style>
-    .timetable-card { overflow: hidden; padding: 0; }
-    .player-timetable { width: 100%; min-width: 820px; table-layout: fixed; border-collapse: collapse; }
-    .player-timetable th, .player-timetable td { border: 1px solid #cbd5e1; text-align: center; }
-    .player-timetable thead th { min-width: 150px; padding: 14px 10px; color: #fff; font-size: 12px; background: linear-gradient(135deg, #0f172a, #172554); }
-    .player-timetable thead th:first-child { min-width: 105px; }
-    .player-timetable thead small { display: block; margin-top: 5px; color: #cbd5e1; font-size: 10px; }
-    .timetable-day { width: 105px; color: #172554; font-size: 11px; letter-spacing: .08em; writing-mode: vertical-rl; transform: rotate(180deg); background: #e2e8f0; }
-    .timetable-cell { min-height: 114px; padding: 14px 8px; vertical-align: middle; }
-    .timetable-cell b, .timetable-cell small, .timetable-cell span { display: block; }
-    .timetable-cell b { color: #172554; font-size: 15px; text-transform: uppercase; }
-    .timetable-cell small { margin-top: 7px; color: #334155; font-size: 11px; }
-    .timetable-cell > span:not(.tag) { margin-top: 5px; color: #475569; font-size: 10px; font-weight: 800; }
-    .timetable-cell .tag { margin-top: 8px; }
-    .timetable-empty { color: #94a3b8; background: #f8fafc; }
-    .tone-saffron { background: #fed7aa; } .tone-sun { background: #fef08a; } .tone-rose { background: #fecaca; }
-    .tone-lavender { background: #ddd6fe; } .tone-leaf { background: #d9f99d; } .tone-sky { background: #bae6fd; }
-    @media (max-width: 700px) { .player-timetable { min-width: 690px; } }
-  </style><div class="page-head"><div><h2>My Timetable</h2><p>Your scheduled Flight sessions. Every slot has exactly two courts.</p></div></div>
-    <section class="card timetable-card"><div class="table-wrap"><table class="player-timetable"><thead><tr><th>Day</th>${timeColumns.map(([range]) => `<th>${escapeHtml(range)}<small>2 courts</small></th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    .club-timetable-card { overflow: hidden; padding: 0; }
+    .club-timetable { width: 100%; min-width: 840px; table-layout: fixed; border-collapse: collapse; }
+    .club-timetable th, .club-timetable td { border: 1px solid #334155; text-align: center; }
+    .club-timetable thead th { min-width: 150px; padding: 14px 10px; color: #ffffff; font-size: 12px; background: #111827; }
+    .club-timetable thead th:first-child { min-width: 95px; }
+    .club-timetable thead small { display: block; margin-top: 5px; color: #e2e8f0; font-size: 10px; }
+    .club-timetable-day { width: 95px; color: #111827; font-size: 11px; letter-spacing: .08em; writing-mode: vertical-rl; transform: rotate(180deg); background: #d1d5db; }
+    .club-timetable-cell { min-height: 112px; padding: 14px 8px; vertical-align: middle; }
+    .club-timetable-cell b { display: block; color: #172554; font-size: 16px; text-transform: uppercase; }
+    .club-timetable-cell span { display: block; margin-top: 9px; color: #334155; font-size: 10px; font-weight: 900; }
+    .club-timetable-empty { color: #94a3b8; background: #f8fafc; }
+    .tone-saffron { background: #fdba74; }
+    .tone-sun { background: #fef08a; }
+    .tone-rose { background: #ff1717; }
+    .tone-rose b { color: #ffffff; }
+    .tone-lavender { background: #c4b5d5; }
+    .tone-leaf { background: #c4df9b; }
+    .tone-sky { background: #bae6fd; }
+    @media (max-width: 700px) { .club-timetable { min-width: 680px; } }
+  </style>
+  <div class="page-head"><div><h2>Club Timetable</h2><p>Weekly group timings for Premier through Flight 4B. Every slot has exactly two courts.</p></div></div>
+  <section class="card club-timetable-card"><div class="table-wrap"><table class="club-timetable"><thead><tr><th>DAY</th>${timeColumns.map(([range]) => `<th>${escapeHtml(range)}<small>2 COURTS</small></th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 export async function attendanceView(sessionId) {
