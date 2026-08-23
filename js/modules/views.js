@@ -96,7 +96,25 @@ export async function playerTimetable() {
     }).join("")}</tr>`;
   }).filter(Boolean).join("");
 
-  return `<div class="page-head"><div><h2>My Timetable</h2><p>Your scheduled Flight sessions. Every slot has exactly two courts.</p></div></div>
+  return `<style>
+    .timetable-card { overflow: hidden; padding: 0; }
+    .player-timetable { width: 100%; min-width: 820px; table-layout: fixed; border-collapse: collapse; }
+    .player-timetable th, .player-timetable td { border: 1px solid #cbd5e1; text-align: center; }
+    .player-timetable thead th { min-width: 150px; padding: 14px 10px; color: #fff; font-size: 12px; background: linear-gradient(135deg, #0f172a, #172554); }
+    .player-timetable thead th:first-child { min-width: 105px; }
+    .player-timetable thead small { display: block; margin-top: 5px; color: #cbd5e1; font-size: 10px; }
+    .timetable-day { width: 105px; color: #172554; font-size: 11px; letter-spacing: .08em; writing-mode: vertical-rl; transform: rotate(180deg); background: #e2e8f0; }
+    .timetable-cell { min-height: 114px; padding: 14px 8px; vertical-align: middle; }
+    .timetable-cell b, .timetable-cell small, .timetable-cell span { display: block; }
+    .timetable-cell b { color: #172554; font-size: 15px; text-transform: uppercase; }
+    .timetable-cell small { margin-top: 7px; color: #334155; font-size: 11px; }
+    .timetable-cell > span:not(.tag) { margin-top: 5px; color: #475569; font-size: 10px; font-weight: 800; }
+    .timetable-cell .tag { margin-top: 8px; }
+    .timetable-empty { color: #94a3b8; background: #f8fafc; }
+    .tone-saffron { background: #fed7aa; } .tone-sun { background: #fef08a; } .tone-rose { background: #fecaca; }
+    .tone-lavender { background: #ddd6fe; } .tone-leaf { background: #d9f99d; } .tone-sky { background: #bae6fd; }
+    @media (max-width: 700px) { .player-timetable { min-width: 690px; } }
+  </style><div class="page-head"><div><h2>My Timetable</h2><p>Your scheduled Flight sessions. Every slot has exactly two courts.</p></div></div>
     <section class="card timetable-card"><div class="table-wrap"><table class="player-timetable"><thead><tr><th>Day</th>${timeColumns.map(([range]) => `<th>${escapeHtml(range)}<small>2 courts</small></th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
@@ -113,7 +131,6 @@ export async function attendanceView(sessionId) {
     </section>`;
 }
 
-/* This page is available to Player, Flight Admin, and Super Admin after sign-in. */
 export async function credentialsView() {
   const member = await api("/members/me");
   return `
