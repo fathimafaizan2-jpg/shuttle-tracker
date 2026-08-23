@@ -4,24 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#172554" />
-  <meta name="description" content="Indian Club Bahrain badminton, community and Indi Mart platform" />
+  <meta name="description" content="Indian Club Bahrain shuttle tracker, club operations and Indi Mart community directory" />
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="css/styles.css" />
   <title>Indian Club Bahrain | Powered by Nuzan AI Studio</title>
 </head>
 <body>
-  <!-- SPLASH: only visible briefly while the public landing page loads -->
   <section id="splash" class="splash" aria-label="Loading Indian Club Bahrain">
-    <div>
+    <div class="splash-content">
       <div class="splash-mark">🏸</div>
       <h1>Indian Club Bahrain</h1>
       <p>Shuttle Tracker · Powered by Nuzan AI Studio</p>
     </div>
   </section>
 
-  <!-- PUBLIC AREA: always separate from Player/Admin dashboard -->
-  <main id="publicLanding" class="login hidden">
-    <header class="card indian-club-logo">
+  <!-- PUBLIC AREA: Business visitors never enter the member dashboard. -->
+  <main id="publicLanding" class="public-shell hidden">
+    <header class="public-brand card">
       <svg viewBox="0 0 100 100" role="img" aria-label="Indian Club Bahrain logo">
         <rect width="100" height="100" rx="18" fill="#172554" />
         <path d="M0 0H100V32L0 45Z" fill="#ff9933" />
@@ -37,32 +36,44 @@
       </div>
     </header>
 
-    <section id="publicNotice" class="card">
+    <section id="publicNotice" class="card public-notice">
       <span class="tag red">OFFICIAL NOTICE</span>
       <h3 id="publicNoticeTitle">Welcome to Indian Club Bahrain</h3>
       <p id="publicNoticeBody" class="note">Club notices, approved sponsor offers, and Indi Mart listings will appear here.</p>
     </section>
 
-    <section class="card">
+    <section class="card sponsor-section">
       <h3>Featured sponsors and offers</h3>
       <div id="publicSponsorCarousel" class="ad-carousel">
         <p class="note">Approved sponsor offers will appear here after the secure club server is connected.</p>
       </div>
     </section>
 
-    <section class="actions">
-      <button id="openLogin" class="primary">Member / Admin Login</button>
-      <button id="openDirectory" class="action">
-        Community Directory
-        <span>View approved Indi Mart businesses</span>
+    <section class="public-entry-grid">
+      <button id="openLogin" class="entry-card entry-card-login">
+        <span class="entry-icon">IC</span>
+        <span>
+          <strong>Member / Admin Login</strong>
+          <small>Secure club member access</small>
+        </span>
+        <b>→</b>
       </button>
-      <button id="openBusiness" class="action">
-        List Your Business
-        <span>Submit a public Indi Mart request</span>
+
+      <button id="openDirectory" class="entry-card entry-card-directory">
+        <span class="entry-icon">IM</span>
+        <span>
+          <strong>Community Directory</strong>
+          <small>Discover approved Indi Mart businesses</small>
+        </span>
+        <b>→</b>
       </button>
     </section>
 
-    <!-- PUBLIC DIRECTORY: never enters Player/Admin dashboard -->
+    <div class="business-mini-row">
+      <span>Are you a local Indian business in Bahrain?</span>
+      <button id="openBusiness" class="business-mini-button">List your business</button>
+    </div>
+
     <section id="publicDirectory" class="card hidden" aria-live="polite">
       <div class="page-head">
         <div>
@@ -79,7 +90,6 @@
       </div>
     </section>
 
-    <!-- PUBLIC BUSINESS FORM: does not create a club account or dashboard access -->
     <section id="businessForm" class="card hidden">
       <div class="page-head">
         <div>
@@ -98,35 +108,72 @@
       <button id="submitBusiness" class="primary">Submit to Super Admin</button>
     </section>
 
-    <!-- LOGIN: only approved Firebase Player/Admin accounts can use this later -->
-    <section id="login" class="login-card hidden">
-      <div class="brand">
-        <div class="brand-mark">IC</div>
-        <div>
-          <h1>Member Login</h1>
-          <small>Only Super Admin-created Player and Admin accounts may sign in.</small>
-        </div>
-      </div>
-      <div class="field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="email" /></div>
-      <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" /></div>
-      <div class="field">
-        <label for="languageSelector">Language</label>
-        <select id="languageSelector">
-          <option value="en">English</option>
-          <option value="ml">മലയാളം</option>
-          <option value="hi">हिंदी</option>
-          <option value="ta">தமிழ்</option>
-        </select>
-      </div>
-      <button id="signIn" class="primary">Sign in to Indian Club</button>
-      <button id="closeLogin" class="pill" style="width:100%;margin-top:8px">Back to public page</button>
-    </section>
-
     <footer class="footer"><b>Indian Club Bahrain</b>  
 Powered by <b>Nuzan AI Studio</b></footer>
   </main>
 
-  <!-- AUTHENTICATED AREA: never shown to public business visitors -->
+  <!-- FOCUSED MEMBER LOGIN OVERLAY -->
+  <section id="login" class="login-overlay hidden" aria-modal="true" role="dialog" aria-labelledby="loginTitle">
+    <div class="login-backdrop"></div>
+    <div class="login-stage">
+      <button id="closeLogin" class="login-close" aria-label="Close member login">×</button>
+      <div class="login-flag-strip" aria-hidden="true"><span></span><span></span><span></span></div>
+
+      <div class="login-brand">
+        <div class="login-crest">IC</div>
+        <div>
+          <p>INDIAN CLUB BAHRAIN</p>
+          <h1 id="loginTitle">Member Portal</h1>
+          <small>Secure access for approved club members</small>
+        </div>
+      </div>
+
+      <div class="role-cards" aria-label="Account access roles">
+        <article class="role-card role-player">
+          <span>PLAYER</span>
+          <strong>My games</strong>
+          <small>Attendance, wallet and payment status</small>
+        </article>
+        <article class="role-card role-admin">
+          <span>FLIGHT ADMIN</span>
+          <strong>My flight</strong>
+          <small>Attendance, stock and session records</small>
+        </article>
+        <article class="role-card role-super">
+          <span>SUPER ADMIN</span>
+          <strong>Club control</strong>
+          <small>Members, timetable, approvals and audit</small>
+        </article>
+      </div>
+
+      <div class="login-form-panel">
+        <div class="field">
+          <label for="loginEmail">Registered email</label>
+          <input id="loginEmail" type="email" autocomplete="email" placeholder="name@example.com" />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" />
+        </div>
+        <div class="login-form-footer">
+          <div class="field language-field">
+            <label for="languageSelector">Language</label>
+            <select id="languageSelector">
+              <option value="en">English</option>
+              <option value="ml">മലയാളം</option>
+              <option value="hi">हिंदी</option>
+              <option value="ta">தமிழ்</option>
+            </select>
+          </div>
+          <button id="signIn" class="login-submit">Sign in securely <span>→</span></button>
+        </div>
+      </div>
+
+      <p class="login-help">Accounts are created only by Super Admin. Business advertisers use the public Indi Mart form and do not receive member dashboard access.</p>
+    </div>
+  </section>
+
+  <!-- AUTHENTICATED MEMBER AREA: shown only after real approved login -->
   <main id="app" class="hidden">
     <header class="topbar">
       <div class="brand">
@@ -191,7 +238,19 @@ Powered by <b>Nuzan AI Studio</b></footer>
     }
 
     function hidePublicPanels() {
-      ["login", "businessForm", "publicDirectory"].forEach(id => $(id).classList.add("hidden"));
+      ["businessForm", "publicDirectory"].forEach(id => $(id).classList.add("hidden"));
+    }
+
+    function closeLoginOverlay() {
+      $("login").classList.add("hidden");
+      document.body.classList.remove("login-active");
+    }
+
+    function openLoginOverlay() {
+      hidePublicPanels();
+      $("login").classList.remove("hidden");
+      document.body.classList.add("login-active");
+      window.setTimeout(() => $("loginEmail").focus(), 140);
     }
 
     function showPublicSection(sectionId) {
@@ -242,19 +301,20 @@ Powered by <b>Nuzan AI Studio</b></footer>
     async function loadPublicHub() {
       if (!publicApiBase) return;
       try {
-        const [noticesResponse, sponsorsResponse] = await Promise.all([
+        const [noticeResponse, sponsorResponse] = await Promise.all([
           fetch(`${publicApiBase}/business/public/notices`),
           fetch(`${publicApiBase}/business/public/sponsors`)
         ]);
-        if (!noticesResponse.ok || !sponsorsResponse.ok) return;
+        if (!noticeResponse.ok || !sponsorResponse.ok) return;
+        const notices = await noticeResponse.json();
+        const sponsors = await sponsorResponse.json();
 
-        const notices = await noticesResponse.json();
-        const sponsors = await sponsorsResponse.json();
         if (notices[0]) {
           $("publicNoticeTitle").textContent = notices[0].title;
           $("publicNoticeBody").textContent = notices[0].body;
           $("tickerTrack").textContent = notices.map(notice => notice.title).join(" • ");
         }
+
         if (sponsors.length) {
           $("publicSponsorCarousel").innerHTML = sponsors.map(sponsor => `
             <article class="ad-card">
@@ -265,20 +325,21 @@ Powered by <b>Nuzan AI Studio</b></footer>
           `).join("");
         }
       } catch {
-        /* A public static GitHub Pages view remains usable without the server. */
+        /* GitHub Pages remains usable as a public visual preview without an API. */
       }
     }
 
-    $("openLogin").onclick = () => {
-      showPublicSection("login");
-      $("loginEmail").focus();
-    };
-    $("closeLogin").onclick = () => $("login").classList.add("hidden");
+    $("openLogin").onclick = openLoginOverlay;
+    $("closeLogin").onclick = closeLoginOverlay;
     $("openDirectory").onclick = () => showPublicSection("publicDirectory");
     $("closeDirectory").onclick = () => $("publicDirectory").classList.add("hidden");
     $("openBusiness").onclick = () => showPublicSection("businessForm");
     $("directoryBusinessButton").onclick = () => showPublicSection("businessForm");
     $("closeBusinessForm").onclick = () => $("businessForm").classList.add("hidden");
+
+    $("login").onclick = event => {
+      if (event.target.classList.contains("login-backdrop")) closeLoginOverlay();
+    };
 
     $("languageSelector").onchange = event => setLanguage(event.target.value);
 
@@ -304,13 +365,16 @@ Powered by <b>Nuzan AI Studio</b></footer>
     };
 
     $("signIn").onclick = async () => {
-      if (isGitHubPagesPreview) {
-        toast("Member login will activate after the secure Indian Club server is connected. The public Indi Mart pages are available now.");
+      /* Do not call an unavailable private API from static GitHub Pages. */
+      if (!publicApiBase) {
+        toast("Member sign-in will activate after the secure Indian Club server is connected. Please use the public Indi Mart pages for now.");
         return;
       }
+
       try {
         await login($("loginEmail").value.trim(), $("loginPassword").value);
         await startSignedInApp();
+        closeLoginOverlay();
         $("publicLanding").classList.add("hidden");
         $("app").classList.remove("hidden");
         await renderPage();
