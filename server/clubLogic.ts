@@ -45,7 +45,7 @@ export function toBhd(fils: number): number {
 export function isSessionLocked(startAt: Date | string | number, now = new Date()): boolean {
   const start = new Date(startAt).getTime();
   if (Number.isNaN(start)) throw new Error("Invalid session start time.");
-  return now.getTime() >= start + ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000;
+  return now.getTime() >= start - ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000;
 }
 
 export function arrearsDueAt(sessionEndAt: Date | string | number): Date {
