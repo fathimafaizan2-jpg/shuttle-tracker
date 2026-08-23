@@ -41,7 +41,7 @@ router.get("/session/:sessionId", requireAuth, async (request, response) => {
     const locked = isSessionLocked(session.startAt);
 
     const [members, attendanceRows] = await Promise.all([
-      db.collection("members").where("flightId", "==", session.flightId).where("active", "==", true).get(),
+      db.collection("members").where("flightId", "==", session.flightId).get(),
       db.collection("attendance").where("sessionId", "==", sessionId).get()
     ]);
     const statusByMember = new Map(attendanceRows.docs.map(doc => [doc.data().memberUid, doc.data().status]));
@@ -55,6 +55,7 @@ router.get("/session/:sessionId", requireAuth, async (request, response) => {
       canRespond: !locked && request.member!.role !== "SUPER_ADMIN",
       myAttendance: statusByMember.get(request.member!.uid) || "NO_RESPONSE",
       roster: members.docs
+        .filter(doc => doc.data().active === true)
         .map(doc => ({
           uid: doc.id,
           fullName: doc.data().fullName,
