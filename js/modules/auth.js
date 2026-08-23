@@ -6,9 +6,24 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseAuth } from "../config.js";
 
-const API_BASE_URL = "http://localhost:3000/api";
+/*
+  GitHub Pages uses the live Render API.
+  Local development still uses http://localhost:3000/api when no live URL exists.
+*/
+function resolveApiBaseUrl( ) {
+  const configured = window.INDIAN_CLUB_API_URL;
+  if (configured) return configured.replace(/\/+$/, "");
 
-function messageFromResponse(data, fallback ) {
+  if (window.location.hostname.endsWith("github.io")) {
+    return "https://indian-club-api.onrender.com/api";
+  }
+
+  return "http://localhost:3000/api";
+}
+
+const API_BASE_URL = resolveApiBaseUrl( );
+
+function messageFromResponse(data, fallback) {
   return data?.message || data?.error || fallback;
 }
 
@@ -18,10 +33,7 @@ export async function getIdToken() {
   return user.getIdToken();
 }
 
-/*
-  All Player/Admin business data is read or changed through Express.
-  The browser does not write protected Firestore data directly.
-*/
+/* All protected club actions go through Render API with a Firebase ID token. */
 export async function api(path, options = {}) {
   const token = await getIdToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -39,7 +51,7 @@ export async function api(path, options = {}) {
   return data;
 }
 
-/* Public business request: intentionally no login token. */
+/* Public business requests never require a Player/Admin Firebase account. */
 export async function submitPublicBusiness(payload) {
   const response = await fetch(`${API_BASE_URL}/business/public/submit`, {
     method: "POST",
@@ -64,13 +76,14 @@ export async function submitBusinessUpdateRequest(payload) {
 
 export async function login(email, password) {
   if (!email || !password) throw new Error("Enter both email and password.");
+
   await signInWithEmailAndPassword(firebaseAuth, email, password);
 
   try {
     const member = await api("/members/me");
     if (!member || !["PLAYER", "LEVEL_ADMIN", "SUPER_ADMIN"].includes(member.role)) {
       await signOut(firebaseAuth);
-      throw new Error("This account is not an Indian Club Player or Admin account.");
+      throw new Error("This account is not an approved Indian Club Player or Admin account.");
     }
     return member;
   } catch (error) {
@@ -95,4 +108,4 @@ export function observeAuth(callback) {
   return onAuthStateChanged(firebaseAuth, callback);
 }
 
-export { firebaseAuth };
+export { firebaseAuth, API_BASE_URL };
