@@ -38,7 +38,7 @@ router.get("/session/:sessionId", requireAuth, async (request, response) => {
   try {
     const sessionId = asText(request.params.sessionId, "Session ID");
     const session = await loadSessionWithAccess(sessionId, request.member);
-    const locked = isSessionLocked(session.startAt);
+    const locked = isSessionLocked(sessionStart(session));
 
     const [members, attendanceRows] = await Promise.all([
       db.collection("members").where("flightId", "==", session.flightId).get(),
@@ -79,7 +79,7 @@ router.post("/respond", requireAuth, async (request, response) => {
     if (!allowedStatuses.has(status)) throw new Error("Attendance must be PRESENT or ABSENT.");
 
     const session = await loadSessionWithAccess(sessionId, request.member);
-    if (isSessionLocked(session.startAt)) {
+    if (isSessionLocked(sessionStart(session))) {
       return response.status(423).json({ message: "Attendance is locked. Contact your assigned Flight Admin for a correction." });
     }
 
@@ -126,7 +126,7 @@ router.post("/session/:sessionId/correct", requireAuth, requireRole("LEVEL_ADMIN
     if (!requireFlightAccess(session.flightId, request.member!)) {
       return response.status(403).json({ message: "Only the assigned Flight Admin may correct this flight." });
     }
-    if (!isSessionLocked(session.startAt)) {
+    if (!isSessionLocked(sessionStart(session))) {
       return response.status(409).json({ message: "Attendance is still open. Players must update their own response before the lock time." });
     }
 
@@ -147,7 +147,7 @@ router.post("/session/:sessionId/correct", requireAuth, requireRole("LEVEL_ADMIN
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: request.member!.uid,
       correctionReason: reason,
-      correctedAfterLock: isSessionLocked(session.startAt)
+      correctedAfterLock: isSessionLocked(sessionStart(session))
     }, { merge: true });
 
     await db.collection("attendanceAudit").add({
