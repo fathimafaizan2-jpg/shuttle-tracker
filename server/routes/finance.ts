@@ -259,6 +259,40 @@ router.post("/payments/:paymentId/verify", requireAuth, requireRole("LEVEL_ADMIN
   }
 });
 
+/* Player sees only their own wallet, charges, payment claims and unpaid dues. */
+router.get("/mine", requireAuth, async (request, response) => {
+  try {
+    const memberUid = request.member!.uid;
+    const [wallet, ledger, charges, payments] = await Promise.all([
+      walletRef(memberUid).get(),
+      db.collection("walletLedger").where("memberUid", "==", memberUid).get(),
+      db.collection("sessionCharges").where("memberUid", "==", memberUid).get(),
+      db.collection("payments").where("memberUid", "==", memberUid).get()
+    ]);
+
+    const iso = (value: unknown) => {
+      const date = asDate(value);
+      return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+    };
+    const byNewest = (a: Record<string, unknown>, b: Record<string, unknown>) => asDate(b.createdAt || b.submittedAt || b.dueAt).getTime() - asDate(a.createdAt || a.submittedAt || a.dueAt).getTime();
+    const chargeRows = charges.docs.map(doc => ({ id: doc.id, ...doc.data(), dueAt: iso(doc.data().dueAt), createdAt: iso(doc.data().createdAt), paidAt: iso(doc.data().paidAt) }));
+    const paymentRows = payments.docs.map(doc => ({ id: doc.id, ...doc.data(), submittedAt: iso(doc.data().submittedAt), verifiedAt: iso(doc.data().verifiedAt) }));
+    const ledgerRows = ledger.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: iso(doc.data().createdAt) }));
+    const now = Date.now();
+
+    response.json({
+      balanceFils: wallet.exists ? Number(wallet.data()!.balanceFils || 0) : 0,
+      ledger: ledgerRows.sort(byNewest),
+      charges: chargeRows.sort(byNewest),
+      payments: paymentRows.sort(byNewest),
+      unpaidFils: chargeRows.filter(row => Number(row.amountDueFils || 0) > 0).reduce((sum, row) => sum + Number(row.amountDueFils || 0), 0),
+      arrearsFils: chargeRows.filter(row => Number(row.amountDueFils || 0) > 0 && row.dueAt && new Date(row.dueAt).getTime() <= now).reduce((sum, row) => sum + Number(row.amountDueFils || 0), 0)
+    });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not load your wallet." });
+  }
+});
+
 router.get("/overview", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), async (request, response) => {
   try {
     const flightId = request.member!.role === "LEVEL_ADMIN" ? request.member!.flightId : undefined;
