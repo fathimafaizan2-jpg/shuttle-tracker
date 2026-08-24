@@ -72,7 +72,7 @@ export async function playerDashboard(member = state.member) {
       <article class="card"><h3>Next session</h3>${next ? `
         <div class="session"><div class="datebox">${new Date(next.startAt).getDate()}<small>${new Date(next.startAt).toLocaleString("en", { month: "short" })}</small></div>
         <div class="grow"><b>${escapeHtml(next.flightName)}</b><p>${dateTime(next.startAt)} · 2 courts</p></div>${attendanceBadge(next.myAttendance)}</div>
-        <button class="primary" data-open-attendance="${escapeHtml(next.id)}">Update my attendance</button>` : "<p class='note'>No future session has been published for your flight.</p>"}</article>
+        <span class="tag blue">Use the Attendance tab to respond</span>` : "<p class='note'>No future session has been published for your flight.</p>"}</article>
       <article class="card wallet"><span>Credit rule</span><div class="balance">${bhd(data.walletFils)}</div><p>Only final PRESENT attendees are charged after Flight Admin records actual shuttlecocks used.</p></article>
     </div>
     <section class="card"><h3>Recent ledger</h3>${(data.recentLedger || []).map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.description)}</b><p>${dateTime(item.createdAt)}</p></div><strong>${item.direction === "CREDIT" ? "+" : "−"}${bhd(item.amountFils)}</strong></div>`).join("") || "<p class='note'>No wallet entries yet.</p>"}</section>`;
@@ -134,23 +134,28 @@ export async function playerTimetable() {
 }
 
 export async function attendanceView(sessionId) {
-  const sessions = (await api("/timetable/mine")).filter(session => Number.isFinite(new Date(session.startAt).getTime()));
-  if (!sessions.length) return `<div class="page-head"><div><h2>Attendance</h2><p>Attendance is available after Super Admin publishes the month.</p></div></div><section class="card"><p class="note">No dated session has been published for your assigned flight yet.</p></section>`;
-
-  const savedId = window.sessionStorage.getItem("indianClubAttendanceSessionId");
-  const selected = sessions.find(item => item.id === sessionId || item.id === savedId) || sessions[0];
-  const session = await api(`/attendance/session/${encodeURIComponent(selected.id)}`);
-  const audit = session.canCorrect ? await api(`/attendance/session/${encodeURIComponent(selected.id)}/audit`) : [];
-
-  return `<div class="page-head"><div><h2>Attendance</h2><p>Only your assigned flight roster is visible here.</p></div>${session.locked ? "<span class='tag red'>LOCKED</span>" : "<span class='tag blue'>OPEN</span>"}</div>
-    <section class="card"><div class="field"><label for="attendanceSessionSelect">Choose your flight session</label><select id="attendanceSessionSelect">${sessions.map(item => `<option value="${escapeHtml(item.id)}" ${item.id === selected.id ? "selected" : ""}>${escapeHtml(item.flightName)} · ${escapeHtml(dateTime(item.startAt))}</option>`).join("")}</select></div>
+  const session = await api(`/attendance/session/${encodeURIComponent(sessionId)}`);
+  const audit = session.canCorrect ? await api(`/attendance/session/${encodeURIComponent(sessionId)}/audit`) : [];
+  return `<div class="page-head"><div><h2>Attendance</h2><p>Your response is fixed to the next game day for your flight in the club timetable.</p></div>${session.locked ? "<span class='tag red'>PLAYER RESPONSES LOCKED</span>" : "<span class='tag blue'>RESPONSES OPEN</span>"}</div>
+    <section class="card">
       <h3>${escapeHtml(session.flightName)} · ${escapeHtml(dateTime(session.startAt))}</h3>
-      <p class="note">Players update only their own response before the automatic lock. The lock occurs 15 minutes after start. After lock, only the assigned Flight Admin or Super Admin can correct attendance with a reason.</p>
+      <p class="note">You can update only your own response until 15 minutes before game start. After the game begins, your Flight Admin can correct actual attendance with an audit reason.</p>
       <div class="session"><div class="grow"><b>My attendance</b></div>${attendanceBadge(session.myAttendance)}</div>
       ${session.canRespond ? `<div class="actions"><button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I am coming</button><button class="pill" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">I am not coming</button></div>` : ""}
     </section>
     <section class="card"><h3>${escapeHtml(session.flightName)} roster</h3>${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(word => word[0]).join("").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}${session.canCorrect ? `<div class="actions"><button class="pill" data-attendance-correct="PRESENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Present</button><button class="pill" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No active members are assigned to this flight.</p>"}</section>
     ${session.canCorrect ? `<section class="card"><h3>Attendance correction audit</h3>${audit.map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.previousStatus)} → ${escapeHtml(item.newStatus)}</b><p>${escapeHtml(item.reason)} · ${escapeHtml(dateTime(item.createdAt))}</p></div></div>`).join("") || "<p class='note'>No corrections have been recorded for this session.</p>"}</section>` : ""}`;
+}
+
+export async function playerActivityLog() {
+  const log = await api("/members/activity-log");
+  const day = value => value ? new Date(value).toLocaleDateString("en-BH", { dateStyle: "medium" }) : "Date unavailable";
+  return `<div class="page-head"><div><h2>My Activity Log</h2><p>Your private game-day, attendance, payment, due and credential history.</p></div></div>
+  <section class="card"><h3>Club-announced game days</h3>${log.gameDays.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName)}</b><p>${escapeHtml(dateTime(row.startAt))}</p></div><span class="tag blue">${escapeHtml(row.status)}</span></div>`).join("") || "<p class='note'>No game days announced.</p>"}</section>
+  <section class="card"><h3>Attendance history</h3>${log.attendance.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName)}</b><p>${escapeHtml(day(row.startAt))}</p></div>${attendanceBadge(row.status)}</div>`).join("") || "<p class='note'>No attendance history.</p>"}</section>
+  <section class="card"><h3>Shuttlecock charges and unpaid dues</h3>${log.charges.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName)}</b><p>${escapeHtml(day(row.startAt))} · ${bhd(row.totalChargeFils)}</p></div><div><b>${bhd(row.amountDueFils)}</b><br>${row.amountDueFils > 0 ? "<span class='tag red'>UNPAID DUE</span>" : "<span class='tag blue'>PAID</span>"}</div></div>`).join("") || "<p class='note'>No shuttlecock charges.</p>"}</section>
+  <section class="card"><h3>Payment history</h3>${log.payments.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.kind)} · ${escapeHtml(row.method)}</b><p>${escapeHtml(day(row.submittedAt))}</p></div><b>${bhd(row.amountFils)}</b><span class="tag amber">${escapeHtml(row.status)}</span></div>`).join("") || "<p class='note'>No payments.</p>"}</section>
+  <section class="card"><h3>Credential update history</h3>${log.credentialUpdates.map(row => `<div class="session"><div class="grow"><b>Credentials updated</b><p>${escapeHtml((row.changedFields || []).join(", ") || "Profile details")} · ${escapeHtml(day(row.createdAt))}</p></div></div>`).join("") || "<p class='note'>No credential updates.</p>"}</section>`;
 }
 
 export async function credentialsView() {
