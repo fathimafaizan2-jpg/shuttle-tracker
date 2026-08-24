@@ -103,27 +103,9 @@ router.post("/session/:sessionId/complete", requireAuth, requireRole("LEVEL_ADMI
       for (const charge of result.charges) {
         const walletDocument = await transaction.get(walletRef(charge.memberUid));
         const walletBeforeFils = walletDocument.exists ? Number(walletDocument.data()!.balanceFils || 0) : 0;
-        const coveredByCreditFils = Math.min(walletBeforeFils, charge.amountFils);
-        const amountDueFils = charge.amountFils - coveredByCreditFils;
-        const walletAfterFils = walletBeforeFils - coveredByCreditFils;
-        const status = amountDueFils === 0 ? "PAID_BY_CREDIT" : "DUE";
-
-        transaction.set(walletRef(charge.memberUid), {
-          memberUid: charge.memberUid,
-          balanceFils: walletAfterFils,
-          updatedAt: FieldValue.serverTimestamp()
-        }, { merge: true });
-
-        transaction.set(db.collection("walletLedger").doc(`${sessionId}_${charge.memberUid}_debit`), {
-          memberUid: charge.memberUid,
-          flightId: session.flightId,
-          sessionId,
-          direction: "DEBIT",
-          amountFils: coveredByCreditFils,
-          description: `Shuttle cost for ${session.flightName}`,
-          createdAt: FieldValue.serverTimestamp(),
-          createdBy: request.member!.uid
-        });
+        const coveredByCreditFils = 0;
+        const amountDueFils = charge.amountFils;
+        const status = "DUE";
 
         transaction.set(chargeRef(sessionId, charge.memberUid), {
           sessionId,
@@ -157,6 +139,48 @@ router.post("/session/:sessionId/complete", requireAuth, requireRole("LEVEL_ADMI
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not complete game finance." });
   }
+});
+
+/* Player chooses to settle a completed shuttlecock charge from available credit. */
+router.post("/charges/:chargeId/pay-with-credit", requireAuth, async (request, response) => {
+  try {
+    const chargeId = asText(request.params.chargeId, "Charge ID");
+    const charge = await db.collection("sessionCharges").doc(chargeId).get();
+    if (!charge.exists) return response.status(404).json({ message: "Charge not found." });
+    if (charge.data()!.memberUid !== request.member!.uid) return response.status(403).json({ message: "You may pay only your own charge." });
+
+    await db.runTransaction(async transaction => {
+      const liveCharge = await transaction.get(charge.ref);
+      if (!liveCharge.exists || liveCharge.data()!.status !== "DUE") throw new Error("This charge is not available for credit payment.");
+      const due = Number(liveCharge.data()!.amountDueFils || 0);
+      const wallet = walletRef(request.member!.uid);
+      const liveWallet = await transaction.get(wallet);
+      const balance = liveWallet.exists ? Number(liveWallet.data()!.balanceFils || 0) : 0;
+      if (balance < due) throw new Error("Your wallet credit is too low. Please top up or submit Cash/Benefit payment.");
+      transaction.set(wallet, { memberUid: request.member!.uid, balanceFils: balance - due, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      transaction.update(charge.ref, { amountDueFils: 0, coveredByCreditFils: Number(liveCharge.data()!.coveredByCreditFils || 0) + due, status: "PAID_BY_CREDIT", paidAt: FieldValue.serverTimestamp() });
+      transaction.set(db.collection("walletLedger").doc(`credit_payment_${chargeId}`), { memberUid: request.member!.uid, flightId: liveCharge.data()!.flightId, sessionId: liveCharge.data()!.sessionId, direction: "DEBIT", amountFils: due, description: `Credit payment for ${liveCharge.data()!.flightName}`, createdAt: FieldValue.serverTimestamp(), createdBy: request.member!.uid });
+    });
+    response.json({ success: true, message: "Shuttlecock charge paid using wallet credit." });
+  } catch (error) { response.status(400).json({ message: error instanceof Error ? error.message : "Could not pay using credit." }); }
+});
+
+/* Flight Admin credits only their flight; Super Admin may credit any member. */
+router.post("/admin/wallet-credit", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), async (request, response) => {
+  try {
+    const memberUid = asText(request.body.memberUid, "Member");
+    const amountFils = asWholeNumber(request.body.amountFils, "Credit amount", 1);
+    const note = asText(request.body.note || "Verified club credit", "Credit note");
+    const target = await db.collection("members").doc(memberUid).get();
+    if (!target.exists) throw new Error("Player not found.");
+    if (!requireFlightAccess(target.data()!.flightId, request.member!)) throw new Error("You may credit only your assigned flight.");
+    await db.runTransaction(async transaction => {
+      const wallet = walletRef(memberUid); const current = await transaction.get(wallet); const before = current.exists ? Number(current.data()!.balanceFils || 0) : 0;
+      transaction.set(wallet, { memberUid, balanceFils: before + amountFils, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      transaction.set(db.collection("walletLedger").doc(`admin_credit_${Date.now()}_${memberUid}`), { memberUid, flightId: target.data()!.flightId || null, direction: "CREDIT", amountFils, description: note, createdAt: FieldValue.serverTimestamp(), createdBy: request.member!.uid });
+    });
+    response.json({ success: true });
+  } catch (error) { response.status(400).json({ message: error instanceof Error ? error.message : "Could not add wallet credit." }); }
 });
 
 /* Player submits Cash or Benefit payment proof; this remains pending until admin verification. */
