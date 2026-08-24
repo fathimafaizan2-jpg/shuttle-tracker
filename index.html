@@ -125,6 +125,7 @@
         <button class="nav active" data-page="home">Home</button>
         <button class="nav" data-page="timetable">My Timetable</button>
         <button class="nav" data-page="attendance">Attendance</button>
+        <button class="nav" data-page="logs">My Activity Log</button>
         <button class="nav" data-page="wallet">Wallet & Payments</button>
         <button class="nav" data-page="profile">Update Credentials</button>
         <div class="nav-group admin-nav">FLIGHT ADMIN</div>
@@ -150,7 +151,7 @@
   <script type="module">
     import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness } from "./js/modules/auth.js";
     import { state, navigate, startSignedInApp, setLanguage } from "./js/router.js";
-    import { playerDashboard, playerTimetable, attendanceView, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
+    import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
     import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, bindAdminViews } from "./js/modules/adminViews.js";
 
     const $ = id => document.getElementById(id );
@@ -184,7 +185,8 @@
         let html = "";
         if (state.page === "home") html = await playerDashboard(state.member);
         else if (state.page === "timetable") html = await playerTimetable();
-        else if (state.page === "attendance") { const sessions = await api("/timetable/mine"); html = sessions.length ? await attendanceView(sessions[0].id) : "<section class='card'><h2>Attendance</h2><p class='note'>No session is available for your assigned flight.</p></section>"; }
+        else if (state.page === "attendance") { const sessions = await api("/timetable/mine"); const next = sessions.filter(s => new Date(s.startAt).getTime() >= Date.now()).sort((a,b) => new Date(a.startAt) - new Date(b.startAt))[0]; html = next ? await attendanceView(next.id) : "<section class='card'><h2>Attendance</h2><p class='note'>No upcoming session is published for your flight.</p></section>"; }
+        else if (state.page === "logs") html = await playerActivityLog();
         else if (state.page === "bazaar") html = await publicIndiMart();
         else if (state.page === "master") html = await superAdminTimetableView();
         else if (state.page === "flights") html = await activitiesAndFlightsView();
