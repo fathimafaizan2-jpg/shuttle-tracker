@@ -35,18 +35,6 @@ function localPhoneNumber(phone = "") {
   return String(phone).replace(code, "").trim();
 }
 
-function timetableTone(flightName = "") {
-  const tones = ["saffron", "sun", "rose", "lavender", "leaf", "sky"];
-  const total = [...String(flightName)].reduce((sum, character) => sum + character.charCodeAt(0), 0);
-  return tones[total % tones.length];
-}
-
-function timeRange(session) {
-  const start = new Date(session.startAt);
-  const end = new Date(session.endAt);
-  return `${start.toLocaleTimeString("en-BH", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("en-BH", { hour: "2-digit", minute: "2-digit" })}`;
-}
-
 function attendanceBadge(status) {
   const safe = String(status || "NO_RESPONSE").toUpperCase();
   const classes = safe === "PRESENT" ? "blue" : safe === "ABSENT" ? "red" : "amber";
@@ -60,22 +48,47 @@ function notify(message) {
 export async function playerDashboard(member = state.member) {
   const data = await api("/members/dashboard");
   const next = data.nextSession;
+
   return `
-    <div class="page-head"><div><h2>Welcome, ${escapeHtml(member.fullName)}</h2><p>${escapeHtml(member.flightName || "Your flight will be assigned by Super Admin.")}</p></div>${attendanceBadge(next?.myAttendance)}</div>
+    <div class="page-head">
+      <div>
+        <h2>Welcome, ${escapeHtml(member.fullName)}</h2>
+        <p>${escapeHtml(member.flightName || "Your flight will be assigned by Super Admin.")}</p>
+      </div>
+      ${attendanceBadge(next?.myAttendance)}
+    </div>
+
     <div class="grid metrics">
-      <article class="card metric"><span>Wallet credit</span><b>${bhd(data.walletFils)}</b><i>Available credit</i></article>
+      <article class="card metric"><span>Wallet credit</span><b>${bhd(data.walletFils)}</b><i>Available verified credit</i></article>
       <article class="card metric"><span>Sessions attended</span><b>${Number(data.attendedCount || 0)}</b><i>All recorded sessions</i></article>
       <article class="card metric"><span>Pending amount</span><b>${bhd(data.pendingFils)}</b><i>Cash / Benefit pending</i></article>
       <article class="card metric"><span>Arrears</span><b>${bhd(data.arrearsFils)}</b><i>Due after 24 hours</i></article>
     </div>
+
     <div class="grid two">
-      <article class="card"><h3>Next session</h3>${next ? `
-        <div class="session"><div class="datebox">${new Date(next.startAt).getDate()}<small>${new Date(next.startAt).toLocaleString("en", { month: "short" })}</small></div>
-        <div class="grow"><b>${escapeHtml(next.flightName)}</b><p>${dateTime(next.startAt)} · 2 courts</p></div>${attendanceBadge(next.myAttendance)}</div>
-        <span class="tag blue">Use the Attendance tab to respond</span>` : "<p class='note'>No future session has been published for your flight.</p>"}</article>
-      <article class="card wallet"><span>Credit rule</span><div class="balance">${bhd(data.walletFils)}</div><p>Only final PRESENT attendees are charged after Flight Admin records actual shuttlecocks used.</p></article>
+      <article class="card">
+        <h3>Next session</h3>
+        ${next ? `
+          <div class="session">
+            <div class="datebox">${new Date(next.startAt).getDate()}<small>${new Date(next.startAt).toLocaleString("en", { month: "short" })}</small></div>
+            <div class="grow"><b>${escapeHtml(next.flightName)}</b><p>${dateTime(next.startAt)} · 2 courts</p></div>
+            ${attendanceBadge(next.myAttendance)}
+          </div>
+          <span class="tag blue">Use the Attendance tab to respond</span>
+        ` : "<p class='note'>No future session has been published for your flight.</p>"}
+      </article>
+      <article class="card wallet">
+        <span>Credit rule</span>
+        <div class="balance">${bhd(data.walletFils)}</div>
+        <p>Only final PRESENT attendees are charged after Flight Admin records actual shuttlecocks used.</p>
+      </article>
     </div>
-    <section class="card"><h3>Recent ledger</h3>${(data.recentLedger || []).map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.description)}</b><p>${dateTime(item.createdAt)}</p></div><strong>${item.direction === "CREDIT" ? "+" : "−"}${bhd(item.amountFils)}</strong></div>`).join("") || "<p class='note'>No wallet entries yet.</p>"}</section>`;
+
+    <section class="card">
+      <h3>Recent ledger</h3>
+      ${(data.recentLedger || []).map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.description)}</b><p>${dateTime(item.createdAt)}</p></div><strong>${item.direction === "CREDIT" ? "+" : "−"}${bhd(item.amountFils)}</strong></div>`).join("") || "<p class='note'>No wallet entries yet.</p>"}
+    </section>
+  `;
 }
 
 export async function playerTimetable() {
@@ -85,8 +98,8 @@ export async function playerTimetable() {
     return `<div class="page-head"><div><h2>Club Timetable</h2><p>The weekly club timetable will appear after Super Admin saves the first slot.</p></div></div><section class="card"><p class="note">No weekly club timetable has been saved yet.</p></section>`;
   }
 
-  const timeRange = slot => `${slot.startTime} – ${slot.endTime}`;
-  const timeColumns = [...new Map(slots.map(slot => [timeRange(slot), slot])).entries()];
+  const slotTime = slot => `${slot.startTime} – ${slot.endTime}`;
+  const timeColumns = [...new Map(slots.map(slot => [slotTime(slot), slot])).entries()];
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const tones = ["saffron", "sun", "rose", "lavender", "leaf", "sky"];
   const toneFor = flightName => {
@@ -101,7 +114,7 @@ export async function playerTimetable() {
     return `<tr>
       <th scope="row" class="club-timetable-day">${dayName}</th>
       ${timeColumns.map(([range]) => {
-        const slot = daySlots.find(item => timeRange(item) === range);
+        const slot = daySlots.find(item => slotTime(item) === range);
         if (!slot) return "<td class='club-timetable-empty'>—</td>";
         return `<td class="club-timetable-cell tone-${toneFor(slot.flightName)}"><b>${escapeHtml(slot.flightName)}</b><span>2 COURTS</span></td>`;
       }).join("")}
@@ -120,13 +133,7 @@ export async function playerTimetable() {
     .club-timetable-cell b { display: block; color: #172554; font-size: 16px; text-transform: uppercase; }
     .club-timetable-cell span { display: block; margin-top: 9px; color: #334155; font-size: 10px; font-weight: 900; }
     .club-timetable-empty { color: #94a3b8; background: #f8fafc; }
-    .tone-saffron { background: #fdba74; }
-    .tone-sun { background: #fef08a; }
-    .tone-rose { background: #ff1717; }
-    .tone-rose b { color: #ffffff; }
-    .tone-lavender { background: #c4b5d5; }
-    .tone-leaf { background: #c4df9b; }
-    .tone-sky { background: #bae6fd; }
+    .tone-saffron { background: #fdba74; }.tone-sun { background: #fef08a; }.tone-rose { background: #ff1717; }.tone-rose b { color: #ffffff; }.tone-lavender { background: #c4b5d5; }.tone-leaf { background: #c4df9b; }.tone-sky { background: #bae6fd; }
     @media (max-width: 700px) { .club-timetable { min-width: 680px; } }
   </style>
   <div class="page-head"><div><h2>Club Timetable</h2><p>Weekly group timings for Premier through Flight 4B. Every slot has exactly two courts.</p></div></div>
@@ -136,6 +143,7 @@ export async function playerTimetable() {
 export async function attendanceView(sessionId) {
   const session = await api(`/attendance/session/${encodeURIComponent(sessionId)}`);
   const audit = session.canCorrect ? await api(`/attendance/session/${encodeURIComponent(sessionId)}/audit`) : [];
+
   return `<div class="page-head"><div><h2>Attendance</h2><p>Your response is fixed to the next game day for your flight in the club timetable.</p></div>${session.locked ? "<span class='tag red'>PLAYER RESPONSES LOCKED</span>" : "<span class='tag blue'>RESPONSES OPEN</span>"}</div>
     <section class="card">
       <h3>${escapeHtml(session.flightName)} · ${escapeHtml(dateTime(session.startAt))}</h3>
@@ -167,38 +175,76 @@ export async function walletView() {
   const data = await api("/finance/mine");
   const paymentRows = data.payments || [];
   const chargeRows = data.charges || [];
-  return `<div class="page-head"><div><h2>Wallet & Payments</h2><p>Use verified credit, or submit Cash / Benefit for Flight Admin verification.</p></div></div>
-    <div class="grid metrics"><article class="card metric"><span>Wallet credit</span><b>${bhd(data.balanceFils)}</b><i>Verified available credit</i></article><article class="card metric"><span>Payable amount</span><b>${bhd(data.unpaidFils)}</b><i>Completed-game charges</i></article><article class="card metric"><span>Unpaid arrears</span><b>${bhd(data.arrearsFils)}</b><i>Due for more than 24 hours</i></article></div>
-    <section class="card"><h3>Wallet top-up</h3><div class="grid two"><div class="field"><label for="topupAmount">Amount in BHD</label><input id="topupAmount" type="number" min="0.001" step="0.001" placeholder="1.000" /></div><div class="field"><label for="topupMethod">Method</label><select id="topupMethod"><option value="BENEFIT">Benefit</option><option value="CASH">Cash</option></select></div></div><div class="field"><label for="topupReference">Benefit reference / cash note</label><input id="topupReference" /></div><button id="submitTopup" class="primary">Submit top-up claim</button></section>
-    <section class="card"><h3>Shuttlecock charges</h3>${chargeRows.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName || "Club game")}</b><p>Total ${bhd(row.totalChargeFils)} · Amount payable ${bhd(row.amountDueFils)}</p></div>${Number(row.amountDueFils) > 0 ? `<div class="actions"><button class="primary" data-credit-charge="${escapeHtml(row.id)}">Pay with credit</button><button class="pill" data-manual-charge="${escapeHtml(row.id)}">Cash / Benefit</button></div>` : "<span class='tag blue'>PAID</span>"}</div>`).join("") || "<p class='note'>No completed-game shuttlecock charges yet.</p>"}</section>
-    <section class="card"><h3>Payment status</h3>${paymentRows.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.kind)} · ${escapeHtml(row.method)}</b><p>${escapeHtml(row.reference || "")}</p></div><b>${bhd(row.amountFils)}</b><span class="tag ${row.status === "VERIFIED" ? "blue" : "amber"}">${escapeHtml(row.status)}</span></div>`).join("") || "<p class='note'>No submitted payment claims.</p>"}</section>
-    <section class="card"><h3>Wallet history</h3>${(data.ledger || []).map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.description)}</b><p>${escapeHtml(dateTime(row.createdAt))}</p></div><b>${row.direction === "CREDIT" ? "+" : "−"}${bhd(row.amountFils)}</b></div>`).join("") || "<p class='note'>No wallet movements yet.</p>"}</section>`;
-}
+  const pendingChargeIds = new Set(
+    paymentRows
+      .filter(row => row.kind === "SESSION_SETTLEMENT" && row.status === "PENDING")
+      .map(row => row.chargeId)
+  );
+  const paymentKind = row => row.kind === "CREDIT_TOPUP" ? "Wallet refill request" : "Game charge settlement";
 
-export async function credentialsView() {
-  const member = await api("/members/me");
   return `
-    <div class="page-head"><div><span class="tag blue">MY ACCOUNT</span><h2>Update Credentials</h2><p>Keep your Member ID and phone number current. You may also update your email or password securely.</p></div></div>
-    <section class="card">
-      <div class="grid two">
-        <div class="field"><label for="credentialMemberId">Member ID</label><input id="credentialMemberId" value="${escapeHtml(member.memberId || "")}" placeholder="ICB-PL-001" /></div>
-        <div class="field"><label for="credentialPhone">Phone number</label><div class="phone-field"><select id="credentialCountryCode" aria-label="Country code">${countryCodeOptions(member.phone)}</select><input id="credentialPhone" type="tel" inputmode="tel" autocomplete="tel" value="${escapeHtml(localPhoneNumber(member.phone))}" placeholder="Phone number" /></div></div>
-        <div class="field"><label for="credentialEmail">Email address</label><input id="credentialEmail" type="email" autocomplete="email" value="${escapeHtml(member.email || "")}" /></div>
-        <div class="field"><label for="credentialCurrentPassword">Current password <small>(required only to change email or password)</small></label><div class="password-field"><input id="credentialCurrentPassword" type="password" autocomplete="current-password" /><button type="button" class="password-toggle" data-toggle-password="credentialCurrentPassword">Show</button></div></div>
-        <div class="field"><label for="credentialNewPassword">New password <small>(leave blank to keep your current password)</small></label><div class="password-field"><input id="credentialNewPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /><button type="button" class="password-toggle" data-toggle-password="credentialNewPassword">Show</button></div></div>
-        <div class="field"><label for="credentialConfirmPassword">Confirm new password</label><div class="password-field"><input id="credentialConfirmPassword" type="password" autocomplete="new-password" /><button type="button" class="password-toggle" data-toggle-password="credentialConfirmPassword">Show</button></div></div>
+    <div class="page-head">
+      <div>
+        <h2>Wallet & Payments</h2>
+        <p>Only Super Admin adds verified wallet credit. Use credit only after a completed game charge is shown below.</p>
       </div>
-      <div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div>
-      <p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p>
+    </div>
+
+    <div class="grid metrics">
+      <article class="card metric"><span>Wallet credit</span><b>${bhd(data.balanceFils)}</b><i>Verified Super Admin credit available now</i></article>
+      <article class="card metric"><span>Payable amount</span><b>${bhd(data.unpaidFils)}</b><i>Completed-game shuttlecock charges</i></article>
+      <article class="card metric"><span>Unpaid arrears</span><b>${bhd(data.arrearsFils)}</b><i>Charges past their due time</i></article>
+    </div>
+
+    <section class="card">
+      <h3>Request wallet refill</h3>
+      <p class="note">Submit Cash or Benefit details. Only Super Admin can approve the request and add the verified amount to your wallet credit.</p>
+      <div class="grid two">
+        <div class="field"><label for="topupAmount">Amount in BHD</label><input id="topupAmount" type="number" min="0.001" step="0.001" placeholder="1.000" /></div>
+        <div class="field"><label for="topupMethod">Payment method</label><select id="topupMethod"><option value="BENEFIT">Benefit</option><option value="CASH">Cash</option></select></div>
+      </div>
+      <div class="field"><label for="topupReference">Benefit reference / cash note</label><input id="topupReference" placeholder="Required for confirmation" /></div>
+      <button id="submitTopup" class="primary">Send refill request to Super Admin</button>
+    </section>
+
+    <section class="card">
+      <h3>Shuttlecock charges</h3>
+      <p class="note">A charge appears only after your Flight Admin completes the game using the final PRESENT attendance and actual shuttlecocks used.</p>
+      ${chargeRows.map(row => {
+        const due = Number(row.amountDueFils || 0);
+        const claimPending = pendingChargeIds.has(row.id);
+        return `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName || "Club game")}</b><p>${escapeHtml(dateTime(row.createdAt))} · Total ${bhd(row.totalChargeFils)} · Amount payable ${bhd(due)}</p></div>${due > 0 && !claimPending ? `<div class="actions"><button class="primary" data-credit-charge="${escapeHtml(row.id)}">Pay ${bhd(due)} with credit</button><button class="pill" data-manual-charge="${escapeHtml(row.id)}">Cash / Benefit</button></div>` : claimPending ? "<span class='tag amber'>CASH / BENEFIT PENDING</span>" : `<span class='tag blue'>${escapeHtml(String(row.status || "PAID").replaceAll("_", " "))}</span>`}</div>`;
+      }).join("") || "<p class='note'>No completed-game shuttlecock charges yet.</p>"}
+    </section>
+
+    <section class="card">
+      <h3>Payment request status</h3>
+      ${paymentRows.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(paymentKind(row))} · ${escapeHtml(row.method)}</b><p>${escapeHtml(row.reference || "No reference")} · ${escapeHtml(dateTime(row.submittedAt))}</p></div><b>${bhd(row.amountFils)}</b><span class="tag ${row.status === "VERIFIED" ? "blue" : "amber"}">${escapeHtml(row.status)}</span></div>`).join("") || "<p class='note'>No Cash or Benefit requests have been submitted.</p>"}
+    </section>
+
+    <section class="card">
+      <h3>Wallet history</h3>
+      ${(data.ledger || []).map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.description)}</b><p>${escapeHtml(dateTime(row.createdAt))}</p></div><b>${row.direction === "CREDIT" ? "+" : "−"}${bhd(row.amountFils)}</b></div>`).join("") || "<p class='note'>No verified wallet credit or payment entries yet.</p>"}
     </section>
   `;
 }
 
+export async function credentialsView() {
+  const member = await api("/members/me");
+  return `<div class="page-head"><div><span class="tag blue">MY ACCOUNT</span><h2>Update Credentials</h2><p>Keep your Member ID and phone number current. You may also update your email or password securely.</p></div></div>
+    <section class="card"><div class="grid two">
+      <div class="field"><label for="credentialMemberId">Member ID</label><input id="credentialMemberId" value="${escapeHtml(member.memberId || "")}" placeholder="ICB-PL-001" /></div>
+      <div class="field"><label for="credentialPhone">Phone number</label><div class="phone-field"><select id="credentialCountryCode" aria-label="Country code">${countryCodeOptions(member.phone)}</select><input id="credentialPhone" type="tel" inputmode="tel" autocomplete="tel" value="${escapeHtml(localPhoneNumber(member.phone))}" placeholder="Phone number" /></div></div>
+      <div class="field"><label for="credentialEmail">Email address</label><input id="credentialEmail" type="email" autocomplete="email" value="${escapeHtml(member.email || "")}" /></div>
+      <div class="field"><label for="credentialCurrentPassword">Current password <small>(required only to change email or password)</small></label><div class="password-field"><input id="credentialCurrentPassword" type="password" autocomplete="current-password" /><button type="button" class="password-toggle" data-toggle-password="credentialCurrentPassword">Show</button></div></div>
+      <div class="field"><label for="credentialNewPassword">New password <small>(leave blank to keep your current password)</small></label><div class="password-field"><input id="credentialNewPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /><button type="button" class="password-toggle" data-toggle-password="credentialNewPassword">Show</button></div></div>
+      <div class="field"><label for="credentialConfirmPassword">Confirm new password</label><div class="password-field"><input id="credentialConfirmPassword" type="password" autocomplete="new-password" /><button type="button" class="password-toggle" data-toggle-password="credentialConfirmPassword">Show</button></div></div>
+    </div><div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div><p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p></section>`;
+}
+
 export async function publicIndiMart() {
   const businesses = await api("/business/public/directory");
-  return `<div class="page-head"><div><h2>Indi Mart</h2><p>Approved Indian community businesses in Bahrain.</p></div></div>
-    <section class="card"><button id="showPublicBusinessForm" class="primary">List your business</button><button id="showBusinessUpdate" class="pill" style="margin-left:8px">Update existing advertisement</button></section>
-    <section class="grid">${businesses.map(b => `<article class="card"><h3>${escapeHtml(b.businessName)}</h3><p class="note">${escapeHtml(b.category)}</p><p>${escapeHtml(b.description)}</p><p><b>Contact:</b> ${escapeHtml(b.phone)}</p>${b.website ? `<a href="${escapeHtml(b.website)}" target="_blank" rel="noopener">Visit website</a>` : ""}</article>`).join("") || "<article class='card'><p class='note'>No approved listings currently.</p></article>"}</section>`;
+  return `<div class="page-head"><div><h2>Indi Mart</h2><p>Approved Indian community businesses in Bahrain.</p></div></div><section class="card"><button id="showPublicBusinessForm" class="primary">List your business</button><button id="showBusinessUpdate" class="pill" style="margin-left:8px">Update existing advertisement</button></section><section class="grid">${businesses.map(b => `<article class="card"><h3>${escapeHtml(b.businessName)}</h3><p class="note">${escapeHtml(b.category)}</p><p>${escapeHtml(b.description)}</p><p><b>Contact:</b> ${escapeHtml(b.phone)}</p>${b.website ? `<a href="${escapeHtml(b.website)}" target="_blank" rel="noopener">Visit website</a>` : ""}</article>`).join("") || "<article class='card'><p class='note'>No approved listings currently.</p></article>"}</section>`;
 }
 
 export function businessSubmissionForm() {
@@ -207,9 +253,39 @@ export function businessSubmissionForm() {
 
 export function bindBusinessSubmission() {
   const topupButton = document.getElementById("submitTopup");
-  if (topupButton) topupButton.onclick = async () => { try { await api("/finance/wallet/topup-claim", { method: "POST", body: { amountFils: Math.round(Number(document.getElementById("topupAmount").value) * 1000), method: document.getElementById("topupMethod").value, reference: document.getElementById("topupReference").value.trim() } }); notify("Top-up claim submitted for verification."); window.dispatchEvent(new CustomEvent("indianclub:render")); } catch (error) { notify(error.message); } };
-  document.querySelectorAll("[data-credit-charge]").forEach(button => button.onclick = async () => { try { await api(`/finance/charges/${encodeURIComponent(button.dataset.creditCharge)}/pay-with-credit`, { method: "POST" }); notify("Charge paid with wallet credit."); window.dispatchEvent(new CustomEvent("indianclub:render")); } catch (error) { notify(error.message); } });
-  document.querySelectorAll("[data-manual-charge]").forEach(button => button.onclick = async () => { const method = window.prompt("CASH or BENEFIT", "BENEFIT"); const reference = window.prompt("Benefit reference or cash note"); if (!method || !reference) return; try { await api(`/finance/charges/${encodeURIComponent(button.dataset.manualCharge)}/payment-claim`, { method: "POST", body: { method, reference } }); notify("Payment claim sent for verification."); window.dispatchEvent(new CustomEvent("indianclub:render")); } catch (error) { notify(error.message); } });
+  if (topupButton) topupButton.onclick = async () => {
+    try {
+      const amountFils = Math.round(Number(document.getElementById("topupAmount").value) * 1000);
+      const method = document.getElementById("topupMethod").value;
+      const reference = document.getElementById("topupReference").value.trim();
+      if (!Number.isInteger(amountFils) || amountFils < 1) throw new Error("Enter a valid refill amount.");
+      if (!reference) throw new Error("Enter the Benefit reference or cash note.");
+      await api("/finance/wallet/topup-claim", { method: "POST", body: { amountFils, method, reference } });
+      notify("Wallet refill request sent to Super Admin for verification.");
+      window.dispatchEvent(new CustomEvent("indianclub:render"));
+    } catch (error) { notify(error.message); }
+  };
+
+  document.querySelectorAll("[data-credit-charge]").forEach(button => button.onclick = async () => {
+    try {
+      await api(`/finance/charges/${encodeURIComponent(button.dataset.creditCharge)}/pay-with-credit`, { method: "POST" });
+      notify("Charge paid using your verified wallet credit.");
+      window.dispatchEvent(new CustomEvent("indianclub:render"));
+    } catch (error) { notify(error.message); }
+  });
+
+  document.querySelectorAll("[data-manual-charge]").forEach(button => button.onclick = async () => {
+    const method = String(window.prompt("Enter CASH or BENEFIT", "BENEFIT") || "").trim().toUpperCase();
+    const reference = String(window.prompt("Enter the Benefit reference or cash note") || "").trim();
+    if (!method || !reference) return;
+    if (!["CASH", "BENEFIT"].includes(method)) return notify("Choose CASH or BENEFIT.");
+    try {
+      await api(`/finance/charges/${encodeURIComponent(button.dataset.manualCharge)}/payment-claim`, { method: "POST", body: { method, reference } });
+      notify("Cash / Benefit settlement sent to your Flight Admin for confirmation.");
+      window.dispatchEvent(new CustomEvent("indianclub:render"));
+    } catch (error) { notify(error.message); }
+  });
+
   document.querySelectorAll("[data-log-section]").forEach(button => button.onclick = () => {
     activityLogSection = button.dataset.logSection || "games";
     window.dispatchEvent(new CustomEvent("indianclub:render"));
@@ -238,10 +314,7 @@ export function bindBusinessSubmission() {
     const reason = window.prompt("Enter the required reason for this locked attendance correction:");
     if (!reason || !reason.trim()) return;
     try {
-      await api(`/attendance/session/${encodeURIComponent(button.dataset.sessionId)}/correct`, {
-        method: "POST",
-        body: { memberUid: button.dataset.memberUid, status: button.dataset.attendanceCorrect, reason: reason.trim() }
-      });
+      await api(`/attendance/session/${encodeURIComponent(button.dataset.sessionId)}/correct`, { method: "POST", body: { memberUid: button.dataset.memberUid, status: button.dataset.attendanceCorrect, reason: reason.trim() } });
       notify("Attendance correction saved and audit-logged.");
       window.dispatchEvent(new CustomEvent("indianclub:render"));
     } catch (error) { notify(error.message); }
@@ -253,7 +326,6 @@ export function bindBusinessSubmission() {
       const newPassword = document.getElementById("credentialNewPassword").value;
       const confirmation = document.getElementById("credentialConfirmPassword").value;
       if (newPassword !== confirmation) throw new Error("The new password and confirmation do not match.");
-
       await updateMyCredentials({
         memberId: document.getElementById("credentialMemberId").value.trim(),
         phone: `${document.getElementById("credentialCountryCode").value} ${document.getElementById("credentialPhone").value.trim()}`.trim(),
@@ -287,3 +359,4 @@ export function bindBusinessSubmission() {
     };
   });
 }
+```
