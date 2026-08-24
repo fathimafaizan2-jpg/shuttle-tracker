@@ -163,6 +163,18 @@ export async function playerActivityLog() {
   return `<div class="page-head"><div><h2>My Activity Log</h2><p>Choose the information you need.</p></div></div><section class="card"><div class="actions">${Object.entries(sections).map(([key, section]) => `<button class="${key === activityLogSection ? "primary" : "pill"}" data-log-section="${key}">${section.label}</button>`).join("")}</div></section><section class="card"><h3>${selected.label}</h3>${selected.content}</section>`;
 }
 
+export async function walletView() {
+  const data = await api("/finance/mine");
+  const paymentRows = data.payments || [];
+  const chargeRows = data.charges || [];
+  return `<div class="page-head"><div><h2>Wallet & Payments</h2><p>Use verified credit, or submit Cash / Benefit for Flight Admin verification.</p></div></div>
+    <div class="grid metrics"><article class="card metric"><span>Wallet credit</span><b>${bhd(data.balanceFils)}</b><i>Verified available credit</i></article><article class="card metric"><span>Payable amount</span><b>${bhd(data.unpaidFils)}</b><i>Completed-game charges</i></article><article class="card metric"><span>Unpaid arrears</span><b>${bhd(data.arrearsFils)}</b><i>Due for more than 24 hours</i></article></div>
+    <section class="card"><h3>Wallet top-up</h3><div class="grid two"><div class="field"><label for="topupAmount">Amount in BHD</label><input id="topupAmount" type="number" min="0.001" step="0.001" placeholder="1.000" /></div><div class="field"><label for="topupMethod">Method</label><select id="topupMethod"><option value="BENEFIT">Benefit</option><option value="CASH">Cash</option></select></div></div><div class="field"><label for="topupReference">Benefit reference / cash note</label><input id="topupReference" /></div><button id="submitTopup" class="primary">Submit top-up claim</button></section>
+    <section class="card"><h3>Shuttlecock charges</h3>${chargeRows.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName || "Club game")}</b><p>Total ${bhd(row.totalChargeFils)} · Amount payable ${bhd(row.amountDueFils)}</p></div>${Number(row.amountDueFils) > 0 ? `<div class="actions"><button class="primary" data-credit-charge="${escapeHtml(row.id)}">Pay with credit</button><button class="pill" data-manual-charge="${escapeHtml(row.id)}">Cash / Benefit</button></div>` : "<span class='tag blue'>PAID</span>"}</div>`).join("") || "<p class='note'>No completed-game shuttlecock charges yet.</p>"}</section>
+    <section class="card"><h3>Payment status</h3>${paymentRows.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.kind)} · ${escapeHtml(row.method)}</b><p>${escapeHtml(row.reference || "")}</p></div><b>${bhd(row.amountFils)}</b><span class="tag ${row.status === "VERIFIED" ? "blue" : "amber"}">${escapeHtml(row.status)}</span></div>`).join("") || "<p class='note'>No submitted payment claims.</p>"}</section>
+    <section class="card"><h3>Wallet history</h3>${(data.ledger || []).map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.description)}</b><p>${escapeHtml(dateTime(row.createdAt))}</p></div><b>${row.direction === "CREDIT" ? "+" : "−"}${bhd(row.amountFils)}</b></div>`).join("") || "<p class='note'>No wallet movements yet.</p>"}</section>`;
+}
+
 export async function credentialsView() {
   const member = await api("/members/me");
   return `
@@ -194,6 +206,10 @@ export function businessSubmissionForm() {
 }
 
 export function bindBusinessSubmission() {
+  const topupButton = document.getElementById("submitTopup");
+  if (topupButton) topupButton.onclick = async () => { try { await api("/finance/wallet/topup-claim", { method: "POST", body: { amountFils: Math.round(Number(document.getElementById("topupAmount").value) * 1000), method: document.getElementById("topupMethod").value, reference: document.getElementById("topupReference").value.trim() } }); notify("Top-up claim submitted for verification."); window.dispatchEvent(new CustomEvent("indianclub:render")); } catch (error) { notify(error.message); } };
+  document.querySelectorAll("[data-credit-charge]").forEach(button => button.onclick = async () => { try { await api(`/finance/charges/${encodeURIComponent(button.dataset.creditCharge)}/pay-with-credit`, { method: "POST" }); notify("Charge paid with wallet credit."); window.dispatchEvent(new CustomEvent("indianclub:render")); } catch (error) { notify(error.message); } });
+  document.querySelectorAll("[data-manual-charge]").forEach(button => button.onclick = async () => { const method = window.prompt("CASH or BENEFIT", "BENEFIT"); const reference = window.prompt("Benefit reference or cash note"); if (!method || !reference) return; try { await api(`/finance/charges/${encodeURIComponent(button.dataset.manualCharge)}/payment-claim`, { method: "POST", body: { method, reference } }); notify("Payment claim sent for verification."); window.dispatchEvent(new CustomEvent("indianclub:render")); } catch (error) { notify(error.message); } });
   document.querySelectorAll("[data-log-section]").forEach(button => button.onclick = () => {
     activityLogSection = button.dataset.logSection || "games";
     window.dispatchEvent(new CustomEvent("indianclub:render"));
