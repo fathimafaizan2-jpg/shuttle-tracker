@@ -10,6 +10,7 @@ const playerPages = new Set([
   "home",
   "timetable",
   "attendance",
+  "logs",
   "wallet",
   "profile",
   "bazaar"
