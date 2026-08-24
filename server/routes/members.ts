@@ -183,6 +183,30 @@ router.get("/dashboard", requireAuth, async (request, response) => {
   }
 });
 
+router.get("/activity-log", requireAuth, async (request, response) => {
+  try {
+    const member = request.member!;
+    const [attendance, sessions, charges, payments, audit] = await Promise.all([
+      db.collection("attendance").where("memberUid", "==", member.uid).get(),
+      member.flightId ? db.collection("sessions").where("flightId", "==", member.flightId).get() : Promise.resolve(null),
+      db.collection("sessionCharges").where("memberUid", "==", member.uid).get(),
+      db.collection("payments").where("memberUid", "==", member.uid).get(),
+      db.collection("memberAudit").where("targetMemberUid", "==", member.uid).get()
+    ]);
+    const sessionById = new Map((sessions?.docs || []).map(doc => [doc.id, { id: doc.id, ...doc.data() }]));
+    const date = (value: unknown) => toIso(value);
+    response.json({
+      gameDays: [...sessionById.values()].map((row: any) => ({ id: row.id, flightName: row.flightName, startAt: date(row.startAt), status: row.status || "SCHEDULED" })).sort((a, b) => timeValue(a.startAt) - timeValue(b.startAt)),
+      attendance: attendance.docs.map(doc => { const row = doc.data(); const session: any = sessionById.get(String(row.sessionId)); return { id: doc.id, status: row.status || "NO_RESPONSE", flightName: session?.flightName || member.flightName, startAt: date(session?.startAt) }; }),
+      charges: charges.docs.map(doc => { const row = doc.data(); const session: any = sessionById.get(String(row.sessionId)); return { id: doc.id, flightName: row.flightName || session?.flightName || member.flightName, startAt: date(session?.startAt), totalChargeFils: Number(row.totalChargeFils || 0), amountDueFils: Number(row.amountDueFils || 0), status: row.status }; }),
+      payments: payments.docs.map(doc => ({ id: doc.id, ...doc.data(), submittedAt: date(doc.data().submittedAt) })),
+      credentialUpdates: audit.docs.map(doc => doc.data()).filter(row => row.action === "MEMBER_SELF_UPDATED").map(row => ({ changedFields: row.changedFields || [], createdAt: date(row.createdAt) }))
+    });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not load your activity log." });
+  }
+});
+
 /* A signed-in member manages their own profile. Firebase email changes are checked against the fresh sign-in token. */
 router.patch("/me", requireAuth, async (request, response) => {
   try {
