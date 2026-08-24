@@ -218,7 +218,13 @@ export async function superAdminTimetableView() {
 
 export async function financeAdminView() {
   if (!["LEVEL_ADMIN", "SUPER_ADMIN"].includes(state.member?.role)) throw new Error("Only Flight Admin or Super Admin can access finance.");
-  const data = await api("/finance/overview");
+  const [data, activities, members] = await Promise.all([
+    api("/finance/overview"),
+    api("/activities"),
+    state.member?.role === "SUPER_ADMIN" ? api("/members") : Promise.resolve([])
+  ]);
+  const flightList = activities.flatMap(activity => (activity.flights || []).map(flight => ({ ...flight, activityName: activity.name })));
+  const players = members.filter(member => member.active && ["PLAYER", "LEVEL_ADMIN"].includes(member.role));
 
   return `
     <div class="page-head"><div><span class="tag blue">FINANCE</span><h2>Finance & Arrears</h2><p>Credits carry forward. Cash and Benefit remain pending until verified.</p></div></div>
@@ -228,7 +234,13 @@ export async function financeAdminView() {
       <article class="card metric"><span>Arrears</span><b>${bhd(data.arrearsFils)}</b><i>Older than 24 hours</i></article>
       <article class="card metric"><span>Session costs</span><b>${bhd(data.monthCostFils)}</b><i>Current month</i></article>
     </div>
-    <section class="card"><h3>Pending Cash / Benefit confirmations</h3>${(data.pendingPayments || []).map(payment => `<div class="session"><div class="grow"><b>${escapeHtml(payment.memberName || payment.memberUid)}</b><p>${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-verify-payment="${escapeHtml(payment.id)}">Verify</button></div>`).join("") || "<p class='note'>No payments await verification.</p>"}</section>
+    <section class="card">
+      <h3>Manage by activity and flight</h3>
+      <div class="grid two"><div class="field"><label for="financeActivityFilter">Activity</label><select id="financeActivityFilter"><option value="">All activities</option>${activities.map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`).join("")}</select></div><div class="field"><label for="financeFlightFilter">Flight / Level</label><select id="financeFlightFilter"><option value="">All flights</option>${flightList.map(flight => `<option value="${escapeHtml(flight.id)}">${escapeHtml(flight.activityName)} · ${escapeHtml(flight.name)}</option>`).join("")}</select></div></div>
+    </section>
+    ${state.member?.role === "SUPER_ADMIN" ? `<section class="card"><h3>Add verified player credit</h3><div class="grid two"><div class="field"><label for="financeCreditMember">Player</label><select id="financeCreditMember"><option value="">Choose Player</option>${players.map(player => `<option value="${escapeHtml(player.uid)}">${escapeHtml(player.fullName)} · ${escapeHtml(player.flightName || "No flight")}</option>`).join("")}</select></div><div class="field"><label for="financeCreditAmount">Amount in BHD</label><input id="financeCreditAmount" type="number" min="0.001" step="0.001" placeholder="1.000" /></div></div><div class="field"><label for="financeCreditNote">Note</label><input id="financeCreditNote" value="Verified club credit" /></div><button id="addFinanceCredit" class="primary">Add credit</button></section>` : ""}
+    <section class="card"><div class="page-head"><div><h3>Pending Cash / Benefit confirmations</h3><p class="note">Verify only after receiving Cash or Benefit payment.</p></div><button id="printFinance" class="pill">Print list</button></div>${(data.pendingPayments || []).map(payment => `<div class="session finance-payment-row" data-finance-flight="${escapeHtml(payment.flightId || "")}"><div class="grow"><b>${escapeHtml(payment.memberName || payment.memberUid)}</b><p>${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-verify-payment="${escapeHtml(payment.id)}">Verify</button></div>`).join("") || "<p class='note'>No payments await verification.</p>"}</section>
+    <section class="card"><h3>Unpaid arrears</h3>${(data.arrears || []).map(charge => `<div class="session finance-arrears-row" data-finance-flight="${escapeHtml(charge.flightId || "")}"><div class="grow"><b>${escapeHtml(charge.memberName || charge.memberUid)}</b><p>${escapeHtml(charge.flightName || "Flight")} · ${bhd(charge.amountDueFils)} due</p></div><button class="pill" data-whatsapp-reminder="${escapeHtml(charge.phone || "")}" data-whatsapp-name="${escapeHtml(charge.memberName || "Member")}" data-whatsapp-amount="${escapeHtml(bhd(charge.amountDueFils))}">WhatsApp reminder</button></div>`).join("") || "<p class='note'>No overdue arrears.</p>"}</section>
   `;
 }
 
@@ -377,4 +389,30 @@ export function bindAdminViews() {
       } catch (error) { notify(error.message); }
     };
   });
+
+  const addFinanceCredit = document.getElementById("addFinanceCredit");
+  if (addFinanceCredit) addFinanceCredit.onclick = async () => {
+    try {
+      const memberUid = document.getElementById("financeCreditMember").value;
+      if (!memberUid) throw new Error("Choose a Player.");
+      await api("/finance/admin/wallet-credit", { method: "POST", body: { memberUid, amountFils: Math.round(Number(document.getElementById("financeCreditAmount").value) * 1000), note: document.getElementById("financeCreditNote").value.trim() } });
+      notify("Wallet credit added."); refresh();
+    } catch (error) { notify(error.message); }
+  };
+
+  const financeFlightFilter = document.getElementById("financeFlightFilter");
+  if (financeFlightFilter) financeFlightFilter.onchange = () => {
+    const selected = financeFlightFilter.value;
+    document.querySelectorAll("[data-finance-flight]").forEach(row => row.classList.toggle("hidden", Boolean(selected && row.dataset.financeFlight !== selected)));
+  };
+
+  document.querySelectorAll("[data-whatsapp-reminder]").forEach(button => button.onclick = () => {
+    const phone = String(button.dataset.whatsappReminder || "").replace(/\D/g, "");
+    if (!phone) return notify("This Player has no phone number saved.");
+    const message = encodeURIComponent(`Hello ${button.dataset.whatsappName}, a club shuttlecock amount of ${button.dataset.whatsappAmount} is unpaid. Please pay using wallet credit, Cash, or Benefit. Thank you.`);
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener");
+  });
+
+  const printFinance = document.getElementById("printFinance");
+  if (printFinance) printFinance.onclick = () => window.print();
 }
