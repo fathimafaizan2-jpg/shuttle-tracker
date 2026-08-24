@@ -147,15 +147,20 @@ export async function attendanceView(sessionId) {
     ${session.canCorrect ? `<section class="card"><h3>Attendance correction audit</h3>${audit.map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.previousStatus)} → ${escapeHtml(item.newStatus)}</b><p>${escapeHtml(item.reason)} · ${escapeHtml(dateTime(item.createdAt))}</p></div></div>`).join("") || "<p class='note'>No corrections have been recorded for this session.</p>"}</section>` : ""}`;
 }
 
+let activityLogSection = "games";
+
 export async function playerActivityLog() {
   const log = await api("/members/activity-log");
   const day = value => value ? new Date(value).toLocaleDateString("en-BH", { dateStyle: "medium" }) : "Date unavailable";
-  return `<div class="page-head"><div><h2>My Activity Log</h2><p>Your private game-day, attendance, payment, due and credential history.</p></div></div>
-  <section class="card"><h3>Club-announced game days</h3>${log.gameDays.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName)}</b><p>${escapeHtml(dateTime(row.startAt))}</p></div><span class="tag blue">${escapeHtml(row.status)}</span></div>`).join("") || "<p class='note'>No game days announced.</p>"}</section>
-  <section class="card"><h3>Attendance history</h3>${log.attendance.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName)}</b><p>${escapeHtml(day(row.startAt))}</p></div>${attendanceBadge(row.status)}</div>`).join("") || "<p class='note'>No attendance history.</p>"}</section>
-  <section class="card"><h3>Shuttlecock charges and unpaid dues</h3>${log.charges.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName)}</b><p>${escapeHtml(day(row.startAt))} · ${bhd(row.totalChargeFils)}</p></div><div><b>${bhd(row.amountDueFils)}</b><br>${row.amountDueFils > 0 ? "<span class='tag red'>UNPAID DUE</span>" : "<span class='tag blue'>PAID</span>"}</div></div>`).join("") || "<p class='note'>No shuttlecock charges.</p>"}</section>
-  <section class="card"><h3>Payment history</h3>${log.payments.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.kind)} · ${escapeHtml(row.method)}</b><p>${escapeHtml(day(row.submittedAt))}</p></div><b>${bhd(row.amountFils)}</b><span class="tag amber">${escapeHtml(row.status)}</span></div>`).join("") || "<p class='note'>No payments.</p>"}</section>
-  <section class="card"><h3>Credential update history</h3>${log.credentialUpdates.map(row => `<div class="session"><div class="grow"><b>Credentials updated</b><p>${escapeHtml((row.changedFields || []).join(", ") || "Profile details")} · ${escapeHtml(day(row.createdAt))}</p></div></div>`).join("") || "<p class='note'>No credential updates.</p>"}</section>`;
+  const sections = {
+    games: { label: "Game Days", content: log.gameDays.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName)}</b><p>${escapeHtml(dateTime(row.startAt))}</p></div><span class="tag blue">${escapeHtml(row.status)}</span></div>`).join("") || "<p class='note'>No game days announced.</p>" },
+    attendance: { label: "Attendance", content: log.attendance.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName)}</b><p>${escapeHtml(day(row.startAt))}</p></div>${attendanceBadge(row.status)}</div>`).join("") || "<p class='note'>No attendance history.</p>" },
+    charges: { label: "Shuttlecock Charges", content: log.charges.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName)}</b><p>${escapeHtml(day(row.startAt))} · ${bhd(row.totalChargeFils)}</p></div><div><b>${bhd(row.amountDueFils)}</b><br>${row.amountDueFils > 0 ? "<span class='tag red'>UNPAID DUE</span>" : "<span class='tag blue'>PAID</span>"}</div></div>`).join("") || "<p class='note'>No shuttlecock charges.</p>" },
+    payments: { label: "Payments & Dues", content: log.payments.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.kind)} · ${escapeHtml(row.method)}</b><p>${escapeHtml(day(row.submittedAt))}</p></div><b>${bhd(row.amountFils)}</b><span class="tag amber">${escapeHtml(row.status)}</span></div>`).join("") || "<p class='note'>No payment claims.</p>" },
+    credentials: { label: "Credential Updates", content: log.credentialUpdates.map(row => `<div class="session"><div class="grow"><b>Credentials updated</b><p>${escapeHtml((row.changedFields || []).join(", ") || "Profile details")} · ${escapeHtml(day(row.createdAt))}</p></div></div>`).join("") || "<p class='note'>No credential updates.</p>" }
+  };
+  const selected = sections[activityLogSection] || sections.games;
+  return `<div class="page-head"><div><h2>My Activity Log</h2><p>Choose the information you need.</p></div></div><section class="card"><div class="actions">${Object.entries(sections).map(([key, section]) => `<button class="${key === activityLogSection ? "primary" : "pill"}" data-log-section="${key}">${section.label}</button>`).join("")}</div></section><section class="card"><h3>${selected.label}</h3>${selected.content}</section>`;
 }
 
 export async function credentialsView() {
@@ -189,6 +194,11 @@ export function businessSubmissionForm() {
 }
 
 export function bindBusinessSubmission() {
+  document.querySelectorAll("[data-log-section]").forEach(button => button.onclick = () => {
+    activityLogSection = button.dataset.logSection || "games";
+    window.dispatchEvent(new CustomEvent("indianclub:render"));
+  });
+
   document.querySelectorAll("[data-open-attendance]").forEach(button => button.onclick = () => {
     window.sessionStorage.setItem("indianClubAttendanceSessionId", button.dataset.openAttendance);
     window.dispatchEvent(new CustomEvent("indianclub:navigate", { detail: { page: "attendance", sessionId: button.dataset.openAttendance } }));
