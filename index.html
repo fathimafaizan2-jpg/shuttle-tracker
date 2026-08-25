@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -215,6 +216,7 @@
         <button class="nav" data-page="attendance">Attendance</button>
         <button class="nav" data-page="logs">My Activity Log</button>
         <button class="nav" data-page="wallet">Wallet & Payments</button>
+        <button class="nav" data-page="payments">Payment Methods</button>
         <button class="nav" data-page="profile">Update Credentials</button>
         <div class="nav-group admin-nav">FLIGHT ADMIN</div>
         <button class="nav admin-nav" data-page="sessions">Session Control</button>
@@ -239,11 +241,11 @@
   <script type="module">
     import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness } from "./js/modules/auth.js";
     import { state, navigate, startSignedInApp, setLanguage } from "./js/router.js";
-    import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
+    import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, walletView, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
     import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, bindAdminViews } from "./js/modules/adminViews.js";
     import { flightAdminSessionControlView, flightAdminShuttleStockView, flightAdminReportsView, bindFlightAdminViews } from "./js/modules/flightAdminViews.js";
 
-    const $ = id => document.getElementById(id );
+    const $ = id => document.getElementById(id);
     const publicApiBase = window.INDIAN_CLUB_API_URL;
 
     function toast(message) {
@@ -299,7 +301,7 @@
       try {
         let html = "";
         if (state.page === "home" && state.member.role === "LEVEL_ADMIN") html = `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${state.member.flightName || "Assigned flight"}</span><h2>Admin Home</h2><p>Manage today’s attendance, session control, shuttle stock, and payment records for your assigned flight.</p></div></div><section class="grid metrics"><article class="card"><h3>Today’s operations</h3><p class="note">Open Attendance to review your flight roster. Use Session Control after the game to create the final Player charges.</p><div class="actions"><button class="primary" data-go-page="attendance">Open Attendance</button><button class="pill" data-go-page="sessions">Session Control</button></div></article><article class="card"><h3>Finance and stock</h3><p class="note">Use Shuttle Stock for tube settings and Finance for Cash / Benefit confirmations and unpaid reminders.</p><div class="actions"><button class="pill" data-go-page="stock">Shuttle Stock</button><button class="pill" data-go-page="finance">Finance</button></div></article></section>`;
-        else if (state.page === "home") html = await playerDashboard(state.member);
+        else if (state.page === "home") { try { html = await playerDashboard(state.member); } catch (error) { html = `<div class="page-head"><div><span class="tag blue">INDIAN CLUB BAHRAIN</span><h2>Welcome, ${state.member.fullName || "Member"}</h2><p>Your dashboard is ready. Use the menu to open timetable, attendance, Wallet & Payments, and your activity log.</p></div></div><section class="card"><h3>Dashboard temporarily unavailable</h3><p class="note">Your account is signed in. Open <b>My Timetable</b> or <b>Wallet & Payments</b> from the menu while the dashboard data refreshes.</p></section>`; console.warn("Dashboard load fallback:", error); } }
         else if (state.page === "timetable") html = await playerTimetable();
         else if (state.page === "attendance") {
           const sessions = await api("/timetable/mine");
@@ -307,6 +309,7 @@
           html = next ? await attendanceView(next.id) : "<section class='card'><h2>Attendance</h2><p class='note'>No upcoming session is published for your flight.</p></section>";
         }
         else if (state.page === "logs") html = await playerActivityLog();
+        else if (state.page === "wallet" || state.page === "payments") html = await walletView();
         else if (state.page === "bazaar") html = await publicIndiMart();
         else if (state.page === "master") html = await superAdminTimetableView();
         else if (state.page === "flights") html = await activitiesAndFlightsView();
@@ -461,3 +464,4 @@
   </script>
 </body>
 </html>
+```
