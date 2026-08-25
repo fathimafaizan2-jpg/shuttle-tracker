@@ -338,7 +338,7 @@ router.post("/charges/:chargeId/pay-with-credit", requireAuth, async (request, r
   }
 });
 
-/* Only Super Admin may add verified wallet credit, for a selected Player in any flight. */
+/* Only Super Admin may add verified wallet credit for any active club member participating in an assigned flight. */
 router.post(
   "/admin/wallet-credit",
   requireAuth,
@@ -350,9 +350,10 @@ router.post(
       const note = asText(request.body.note || "Verified club credit", "Credit note");
       const target = await db.collection("members").doc(memberUid).get();
 
-      if (!target.exists) throw new Error("Player not found.");
-      if (target.data()!.role !== "PLAYER") {
-        throw new Error("Wallet credit can be added only to a Player.");
+      if (!target.exists) throw new Error("Member not found.");
+      const targetData = target.data()!;
+      if (targetData.active === false || !targetData.flightId || !["PLAYER", "LEVEL_ADMIN", "SUPER_ADMIN"].includes(String(targetData.role || ""))) {
+        throw new Error("Wallet credit can be added only to an active member assigned to a flight.");
       }
 
       const ledgerRef = db.collection("walletLedger").doc();
@@ -374,7 +375,7 @@ router.post(
 
         transaction.set(ledgerRef, {
           memberUid,
-          flightId: target.data()!.flightId || null,
+          flightId: targetData.flightId,
           direction: "CREDIT",
           creditSource: "SUPER_ADMIN_VERIFIED_CREDIT",
           amountFils,
