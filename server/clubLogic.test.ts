@@ -46,6 +46,31 @@ describe("Indian Club shuttlecock cost formula", () => {
     ]);
   });
 
+  it("uses the club example: BHD 12 tube, 12 shuttlecocks, 9 used, 5 PRESENT", () => {
+    const result = calculateShuttleCost(
+      {
+        availableTubes: 2,
+        looseShuttles: 0,
+        shuttlesPerTube: 12,
+        tubePriceFils: 12000
+      },
+      9,
+      ["member-a", "member-b", "member-c", "member-d", "member-e"]
+    );
+
+    /* BHD 12.000 ÷ 12 = BHD 1.000 per shuttlecock; 9 ÷ 5 = BHD 1.800 per Player. */
+    expect(result.costPerShuttleExactFils).toBe(1000);
+    expect(result.totalDayCostFils).toBe(9000);
+    expect(result.attendeeCount).toBe(5);
+    expect(result.charges).toEqual([
+      { memberUid: "member-a", amountFils: 1800 },
+      { memberUid: "member-b", amountFils: 1800 },
+      { memberUid: "member-c", amountFils: 1800 },
+      { memberUid: "member-d", amountFils: 1800 },
+      { memberUid: "member-e", amountFils: 1800 }
+    ]);
+  });
+
   it("charges final PRESENT attendees only and ignores duplicate IDs", () => {
     const result = calculateShuttleCost(
       {
@@ -96,10 +121,10 @@ describe("Indian Club shuttlecock cost formula", () => {
 });
 
 describe("Attendance lock rule", () => {
-  it("locks attendance exactly 15 minutes after the scheduled start", () => {
+  it("locks attendance exactly 15 minutes before the scheduled start", () => {
     const startAt = new Date("2026-08-22T17:00:00.000Z");
-    const beforeLock = new Date(startAt.getTime() + (ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000) - 1);
-    const atLock = new Date(startAt.getTime() + ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000);
+    const beforeLock = new Date(startAt.getTime() - (ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000) - 1);
+    const atLock = new Date(startAt.getTime() - ATTENDANCE_LOCK_AFTER_MINUTES * 60 * 1000);
 
     expect(isSessionLocked(startAt, beforeLock)).toBe(false);
     expect(isSessionLocked(startAt, atLock)).toBe(true);
