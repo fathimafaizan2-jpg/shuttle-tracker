@@ -22,6 +22,12 @@ function hasGameStarted(session: FirebaseFirestore.DocumentData): boolean {
   return Date.now() >= sessionStart(session).getTime();
 }
 
+function canSelfRespond(member: Express.Request["member"], session: FirebaseFirestore.DocumentData) {
+  if (!member) return false;
+  if (member.role === "SUPER_ADMIN") return Boolean(member.flightId && member.flightId === session.flightId);
+  return member.flightId === session.flightId;
+}
+
 function attendanceRef(sessionId: string, memberUid: string) {
   return db.collection("attendance").doc(`${sessionId}_${memberUid}`);
 }
@@ -50,24 +56,28 @@ router.get("/session/:sessionId", requireAuth, async (request, response) => {
     ]);
     const statusByMember = new Map(attendanceRows.docs.map(doc => [doc.data().memberUid, doc.data().status]));
 
+    const canCorrect = hasGameStarted(session) && ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(request.member!.role) && requireFlightAccess(session.flightId, request.member!);
+    const roster = members.docs
+      .filter(doc => doc.data().active === true)
+      .map(doc => ({
+        uid: doc.id,
+        fullName: doc.data().fullName,
+        memberId: doc.data().memberId,
+        status: statusByMember.get(doc.id) || "NO_RESPONSE"
+      }))
+      .filter(person => canCorrect || person.status === "PRESENT")
+      .sort((a, b) => String(a.fullName).localeCompare(String(b.fullName)));
+
     response.json({
       id: sessionId,
       flightId: session.flightId,
       flightName: session.flightName,
       startAt: sessionStart(session).toISOString(),
       locked,
-      canRespond: !locked && request.member!.role !== "SUPER_ADMIN",
-      canCorrect: hasGameStarted(session) && ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(request.member!.role),
+      canRespond: !locked && canSelfRespond(request.member, session),
+      canCorrect,
       myAttendance: statusByMember.get(request.member!.uid) || "NO_RESPONSE",
-      roster: members.docs
-        .filter(doc => doc.data().active === true)
-        .map(doc => ({
-          uid: doc.id,
-          fullName: doc.data().fullName,
-          memberId: doc.data().memberId,
-          status: statusByMember.get(doc.id) || "NO_RESPONSE"
-        }))
-        .sort((a, b) => String(a.fullName).localeCompare(String(b.fullName)))
+      roster
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not load attendance.";
@@ -83,6 +93,9 @@ router.post("/respond", requireAuth, async (request, response) => {
     if (!allowedStatuses.has(status)) throw new Error("Attendance must be PRESENT or ABSENT.");
 
     const session = await loadSessionWithAccess(sessionId, request.member);
+    if (!canSelfRespond(request.member, session)) {
+      return response.status(403).json({ message: "You may update attendance only for your explicitly assigned flight." });
+    }
     if (isSessionLocked(sessionStart(session))) {
       return response.status(423).json({ message: "Attendance is locked. Contact your assigned Flight Admin for a correction." });
     }
