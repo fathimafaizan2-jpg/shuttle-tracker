@@ -39,6 +39,8 @@ function refresh() {
   window.dispatchEvent(new CustomEvent("indianclub:render"));
 }
 
+function isOperationalAdmin() { return ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(state.member?.role) && Boolean(state.member?.flightId); }
+
 function onlyFlightAdmin(title) {
   return `<section class="card"><span class="tag amber">FLIGHT ADMIN OPERATION</span><h2>${escapeHtml(title)}</h2><p class="note">Only the Flight Admin delegated to a level can operate this page. Super Admin can view the menu only.</p></section>`;
 }
@@ -51,9 +53,10 @@ function rows(items, empty, options = {}) {
 }
 
 export async function flightAdminSessionControlView() {
-  if (state.member?.role !== "LEVEL_ADMIN") return onlyFlightAdmin("Session Control");
+  if (!isOperationalAdmin()) return onlyFlightAdmin("Session Control");
 
-  const [sessions, finance] = await Promise.all([api("/timetable/mine"), api("/finance/overview")]);
+  const financeQuery = state.member.role === "SUPER_ADMIN" && state.member.flightId ? `?flightId=${encodeURIComponent(state.member.flightId)}` : "";
+  const [sessions, finance] = await Promise.all([api("/timetable/mine"), api(`/finance/overview${financeQuery}`)]);
   const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bahrain", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const today = sessions.filter(session => bahrainDateKey(session.startAt) === todayKey).sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   const finished = today.filter(session => new Date(session.endAt || session.startAt).getTime() <= Date.now() && session.status !== "COMPLETED");
@@ -65,13 +68,13 @@ export async function flightAdminSessionControlView() {
 
   return `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${escapeHtml(state.member.flightName || "Assigned flight")}</span><h2>Session Control</h2><p>Today’s scheduled game appears here. Finish it using the actual shuttlecocks used; charges are divided only among final PRESENT attendees.</p></div></div>
   <section class="card"><h3>Today’s game session</h3>${sessionCards}<div id="flightGameResult"></div></section>
-  <section class="card"><h3>Pending Cash / Benefit confirmation</h3>${(finance.pendingPayments || []).map(payment => `<div class="session"><div class="grow"><b>${escapeHtml(payment.memberName || payment.memberUid)}</b><p>${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")} · ${escapeHtml(dateLabel(payment.submittedAt))}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-flight-verify="${escapeHtml(payment.id)}">Verify</button></div>`).join("") || "<p class='note'>No Cash or Benefit settlement is awaiting confirmation for your flight.</p>"}</section>
+  <section class="card"><h3>Payment Methods</h3><p class="note">Players may pay completed shuttlecock charges using verified wallet credit, Cash, or Benefit. Cash and Benefit remain pending until the Flight Admin verifies them.</p><div class="actions"><span class="tag blue">WALLET CREDIT</span><span class="tag amber">CASH</span><span class="tag amber">BENEFIT</span></div></section><section class="card"><h3>Pending Cash / Benefit confirmation</h3>${(finance.pendingPayments || []).map(payment => `<div class="session"><div class="grow"><b>${escapeHtml(payment.memberName || payment.memberUid)}</b><p>${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")} · ${escapeHtml(dateLabel(payment.submittedAt))}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-flight-verify="${escapeHtml(payment.id)}">Verify</button></div>`).join("") || "<p class='note'>No Cash or Benefit settlement is awaiting confirmation for your flight.</p>"}</section>
   <section class="card"><div class="page-head"><div><h3>Paid Players</h3><p class="note">Payment records for your assigned flight.</p></div><button class="pill" data-flight-print>Print paid list</button></div>${rows(finance.paid || [], "No paid Player records.")}</section>
   <section class="card"><div class="page-head"><div><h3>Unpaid Players</h3><p class="note">Send a controlled WhatsApp reminder when appropriate.</p></div><button class="pill" data-flight-print>Print unpaid list</button></div>${rows(finance.unpaid || [], "No unpaid Player records.", { due: true, reminder: true })}</section>`;
 }
 
 export async function flightAdminShuttleStockView() {
-  if (state.member?.role !== "LEVEL_ADMIN") return onlyFlightAdmin("Shuttle Stock");
+  if (!isOperationalAdmin()) return onlyFlightAdmin("Shuttle Stock");
 
   const stockRows = await api("/inventory/mine");
   const stock = stockRows[0] || {};
@@ -82,9 +85,10 @@ export async function flightAdminShuttleStockView() {
 }
 
 export async function flightAdminReportsView() {
-  if (state.member?.role !== "LEVEL_ADMIN") return onlyFlightAdmin("Reports & Sheets Export");
+  if (!isOperationalAdmin()) return onlyFlightAdmin("Reports & Sheets Export");
 
-  const finance = await api("/finance/overview");
+  const financeQuery = state.member.role === "SUPER_ADMIN" && state.member.flightId ? `?flightId=${encodeURIComponent(state.member.flightId)}` : "";
+  const finance = await api(`/finance/overview${financeQuery}`);
   window.__indianClubFlightReportRows = [...(finance.paid || []), ...(finance.unpaid || [])];
 
   return `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${escapeHtml(state.member.flightName || "Assigned flight")}</span><h2>Reports & Sheets Export</h2><p>Print or download only your assigned flight’s records.</p></div></div>
@@ -136,8 +140,7 @@ export function bindFlightAdminViews() {
         body: {
           tubePriceFils: Math.round(Number(document.getElementById("stockTubePrice").value) * 1000),
           shuttlesPerTube: Number(document.getElementById("stockPerTube").value),
-          availableTubes: Number(document.getElementById("stockTubes").value),
-          looseShuttles: Number(document.getElementById("stockLoose").value)
+          availableTubes: Number(document.getElementById("stockTubes").value)
         }
       });
       notify("Shuttle stock configuration saved.");
