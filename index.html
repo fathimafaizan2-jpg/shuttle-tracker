@@ -241,6 +241,7 @@
     import { state, navigate, startSignedInApp, setLanguage } from "./js/router.js";
     import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
     import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, bindAdminViews } from "./js/modules/adminViews.js";
+    import {flightAdminSessionControlView,flightAdminShuttleStockView,flightAdminReportsView,bindFlightAdminViews} from "./js/modules/flightAdminViews.js";
 
     const $ = id => document.getElementById(id );
     const publicApiBase = window.INDIAN_CLUB_API_URL;
@@ -309,11 +310,15 @@
         else if (state.page === "master") html = await superAdminTimetableView();
         else if (state.page === "flights") html = await activitiesAndFlightsView();
         else if (state.page === "finance") html = await financeAdminView();
+        else if (state.page === "sessions") html = await flightAdminSessionControlView();
+        else if (state.page === "stock") html = await flightAdminShuttleStockView();
+        else if (state.page === "reports") html = await flightAdminReportsView();
         else if (state.page === "profile") html = await credentialsView();
         else html = `<section class="card"><h2>${state.page}</h2><p class="note">This module is controlled by its protected server route.</p></section>`;
         $("view").innerHTML = html;
         bindBusinessSubmission();
         bindAdminViews();
+        bindFlightAdminViews();
       } catch (error) {
         $("view").innerHTML = `<section class="card"><h2>Unable to load this page</h2><p class="note">${error.message || "Please try again later."}</p></section>`;
       }
