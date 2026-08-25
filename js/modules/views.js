@@ -55,7 +55,7 @@ export async function playerDashboard(member = state.member) {
         <h2>Welcome, ${escapeHtml(member.fullName)}</h2>
         <p>${escapeHtml(member.flightName || "Your flight will be assigned by Super Admin.")}</p>
       </div>
-      ${attendanceBadge(next?.myAttendance)}
+      ${next ? "<span class='tag blue'>UPCOMING GAME</span>" : ""}
     </div>
 
     <div class="grid metrics">
@@ -67,15 +67,14 @@ export async function playerDashboard(member = state.member) {
 
     <div class="grid two">
       <article class="card">
-        <h3>Next session</h3>
+        <h3>Upcoming game</h3>
         ${next ? `
           <div class="session">
             <div class="datebox">${new Date(next.startAt).getDate()}<small>${new Date(next.startAt).toLocaleString("en", { month: "short" })}</small></div>
-            <div class="grow"><b>${escapeHtml(next.flightName)}</b><p>${dateTime(next.startAt)} · 2 courts</p></div>
-            ${attendanceBadge(next.myAttendance)}
+            <div class="grow"><b>${escapeHtml(next.flightName)}</b><p>${new Date(next.startAt).toLocaleDateString("en-BH", { weekday: "long", dateStyle: "medium" })}</p><p>${dateTime(next.startAt)} · 2 courts</p></div>
+            <span class="tag blue">UPCOMING</span>
           </div>
-          <span class="tag blue">Use the Attendance tab to respond</span>
-        ` : "<p class='note'>No future session has been published for your flight.</p>"}
+        ` : "<p class='note'>No upcoming game has been published for your flight.</p>"}
       </article>
       <article class="card wallet">
         <span>Credit rule</span>
@@ -151,7 +150,7 @@ export async function attendanceView(sessionId) {
       <div class="session"><div class="grow"><b>My attendance</b></div>${attendanceBadge(session.myAttendance)}</div>
       ${session.canRespond ? `<div class="actions"><button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I am coming</button><button class="pill" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">I am not coming</button></div>` : ""}
     </section>
-    <section class="card"><h3>${escapeHtml(session.flightName)} roster</h3>${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(word => word[0]).join("").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}${session.canCorrect ? `<div class="actions"><button class="pill" data-attendance-correct="PRESENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Present</button><button class="pill" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No active members are assigned to this flight.</p>"}</section>
+    <section class="card"><h3>Players coming for this game</h3><p class="note">Only members of ${escapeHtml(session.flightName)} who responded “I am coming” are shown here. Other members’ attendance is not editable from this screen.</p>${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(word => word[0]).join("").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}${session.canCorrect ? `<div class="actions"><button class="pill" data-attendance-correct="PRESENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Present</button><button class="pill" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No members have responded “I am coming” yet.</p>"}</section>
     ${session.canCorrect ? `<section class="card"><h3>Attendance correction audit</h3>${audit.map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.previousStatus)} → ${escapeHtml(item.newStatus)}</b><p>${escapeHtml(item.reason)} · ${escapeHtml(dateTime(item.createdAt))}</p></div></div>`).join("") || "<p class='note'>No corrections have been recorded for this session.</p>"}</section>` : ""}`;
 }
 
