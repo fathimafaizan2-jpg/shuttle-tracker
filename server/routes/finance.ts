@@ -1,4 +1,3 @@
-```ts
 import { Router } from "express";
 import { db, FieldValue, Timestamp } from "../firebaseAdmin.js";
 import { requireAuth, requireFlightAccess, requireRole } from "../auth.js";
@@ -36,6 +35,35 @@ function dateValue(value: unknown) {
   return Number.isFinite(time) ? time : 0;
 }
 
+function iso(value: unknown) {
+  const time = dateValue(value);
+  return time ? new Date(time).toISOString() : null;
+}
+
+function utcTime(value: unknown) {
+  const date = asDate(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  return `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function isCurrentTimetableSession(
+  session: FirebaseFirestore.DocumentData,
+  slot: FirebaseFirestore.DocumentData
+) {
+  const start = asDate(session.startAt);
+  const weekdayIndex = Number(slot.weekdayIndex);
+  return (
+    Number.isFinite(start.getTime()) &&
+    Number.isInteger(weekdayIndex) &&
+    weekdayIndex >= 0 &&
+    weekdayIndex <= 6 &&
+    String(session.activityId || "") === String(slot.activityId || "") &&
+    String(session.flightId || "") === String(slot.flightId || "") &&
+    start.getUTCDay() === weekdayIndex &&
+    utcTime(session.startAt) === String(slot.startTime || "")
+  );
+}
+
 function walletRef(memberUid: string) {
   return db.collection("wallets").doc(memberUid);
 }
@@ -51,6 +79,12 @@ async function loadSessionForAdmin(sessionId: string, member: Express.Request["m
   const session = sessionDoc.data()!;
   if (!requireFlightAccess(session.flightId, member!)) {
     throw new Error("You may manage finance only for your assigned flight.");
+  }
+
+  const weeklySlotId = String(session.weeklySlotId || "");
+  const slotDoc = weeklySlotId ? await db.collection("weeklyTimetable").doc(weeklySlotId).get() : null;
+  if (!slotDoc?.exists || !isCurrentTimetableSession(session, slotDoc.data()!)) {
+    throw new Error("This date is no longer an active Master Timetable session. Republish the timetable month before managing this game.");
   }
 
   return { ref: sessionDoc.ref, id: sessionDoc.id, ...session };
@@ -82,63 +116,65 @@ router.post(
         });
       }
 
-      const [stockDoc, attendance] = await Promise.all([
-        db.collection("inventory").doc(session.flightId).get(),
-        db
-          .collection("attendance")
-          .where("sessionId", "==", sessionId)
-          .where("status", "==", "PRESENT")
-          .get()
-      ]);
-
-      if (!stockDoc.exists) {
-        throw new Error("Set the flight inventory price and stock before completing the game.");
-      }
-
-      const stock = stockDoc.data()!;
-      const presentMemberUids = attendance.docs.map(doc => String(doc.data().memberUid));
-      const result = calculateShuttleCost(
-        {
-          availableTubes: Number(stock.availableTubes),
-          looseShuttles: Number(stock.looseShuttles),
-          shuttlesPerTube: Number(stock.shuttlesPerTube),
-          tubePriceFils: Number(stock.tubePriceFils)
-        },
-        actualShuttlesUsed,
-        presentMemberUids
-      );
       const dueAt = arrearsDueAt(session.endAt);
+      const stockRef = db.collection("inventory").doc(session.flightId);
+      const presentAttendanceQuery = db
+        .collection("attendance")
+        .where("sessionId", "==", sessionId)
+        .where("status", "==", "PRESENT");
+      let completedResult: ReturnType<typeof calculateShuttleCost> | null = null;
+      let remainingTubes = 0;
+      let remainingLooseShuttles = 0;
+      let lowStockThresholdShuttles = 0;
+      let lowStock = false;
+      let costPerPlayerExactFils = 0;
+      let completedTubePriceFils = 0;
+      let completedShuttlesPerTube = 0;
+      const gameDate = iso(session.startAt);
 
       await db.runTransaction(async transaction => {
-        const liveSession = await transaction.get(session.ref);
+        const [liveSession, liveStock, presentAttendance] = await Promise.all([
+          transaction.get(session.ref),
+          transaction.get(stockRef),
+          transaction.get(presentAttendanceQuery)
+        ]);
         if (!liveSession.exists || liveSession.data()!.status === "COMPLETED") {
           throw new Error("This session was already completed.");
         }
-
-        const liveStock = await transaction.get(stockDoc.ref);
         if (!liveStock.exists) throw new Error("Inventory record no longer exists.");
 
         const currentStock = liveStock.data()!;
-        if (
-          Number(currentStock.availableTubes) !== Number(stock.availableTubes) ||
-          Number(currentStock.looseShuttles) !== Number(stock.looseShuttles) ||
-          Number(currentStock.shuttlesPerTube) !== Number(stock.shuttlesPerTube) ||
-          Number(currentStock.tubePriceFils) !== Number(stock.tubePriceFils)
-        ) {
-          throw new Error(
-            "Inventory changed while completing this session. Review the latest stock and submit again."
-          );
-        }
-
-        const remainingTubes = Math.floor(
-          result.remainingShuttles / Number(stock.shuttlesPerTube)
+        const shuttlesPerTube = Number(currentStock.shuttlesPerTube);
+        const tubePriceFils = Number(currentStock.tubePriceFils);
+        completedTubePriceFils = tubePriceFils;
+        completedShuttlesPerTube = shuttlesPerTube;
+        const result = calculateShuttleCost(
+          {
+            availableTubes: Number(currentStock.availableTubes),
+            looseShuttles: Number(currentStock.looseShuttles),
+            shuttlesPerTube,
+            tubePriceFils
+          },
+          actualShuttlesUsed,
+          presentAttendance.docs.map(doc => String(doc.data().memberUid))
         );
-        const remainingLoose = result.remainingShuttles % Number(stock.shuttlesPerTube);
 
-        transaction.update(stockDoc.ref, {
+        remainingTubes = Math.floor(result.remainingShuttles / shuttlesPerTube);
+        remainingLooseShuttles = result.remainingShuttles % shuttlesPerTube;
+        lowStockThresholdShuttles = Number.isInteger(Number(currentStock.lowStockThresholdShuttles))
+          ? Math.max(0, Number(currentStock.lowStockThresholdShuttles))
+          : shuttlesPerTube;
+        lowStock = result.remainingShuttles <= lowStockThresholdShuttles;
+        costPerPlayerExactFils = result.attendeeCount
+          ? result.totalDayCostFils / result.attendeeCount
+          : 0;
+
+        transaction.update(stockRef, {
           availableTubes: remainingTubes,
-          looseShuttles: remainingLoose,
+          looseShuttles: remainingLooseShuttles,
           totalAvailableShuttles: result.remainingShuttles,
+          lowStockThresholdShuttles,
+          lowStock,
           updatedAt: FieldValue.serverTimestamp(),
           updatedBy: request.member!.uid
         });
@@ -149,16 +185,29 @@ router.post(
           completedBy: request.member!.uid,
           actualShuttlesUsed,
           attendeeCount: result.attendeeCount,
+          gameDate,
+          tubePriceFils,
+          shuttlesPerTube,
+          costPerShuttleExactFils: result.costPerShuttleExactFils,
           totalDayCostFils: result.totalDayCostFils,
-          remainingShuttlesAfterGame: result.remainingShuttles
+          perPlayerCostExactFils: costPerPlayerExactFils,
+          remainingShuttlesAfterGame: result.remainingShuttles,
+          remainingTubesAfterGame: remainingTubes,
+          remainingLooseShuttlesAfterGame: remainingLooseShuttles,
+          lowStockThresholdShuttles,
+          lowStock
         });
 
         for (const charge of result.charges) {
           transaction.set(chargeRef(sessionId, charge.memberUid), {
             sessionId,
             memberUid: charge.memberUid,
+            activityId: session.activityId,
+            activityName: session.activityName,
             flightId: session.flightId,
             flightName: session.flightName,
+            sessionStartAt: session.startAt,
+            gameDate,
             totalChargeFils: charge.amountFils,
             coveredByCreditFils: 0,
             amountDueFils: charge.amountFils,
@@ -168,21 +217,45 @@ router.post(
             completedBy: request.member!.uid
           });
         }
+
+        completedResult = result;
       });
+
+      if (!completedResult) throw new Error("Could not calculate the completed game.");
+      const result = completedResult as ReturnType<typeof calculateShuttleCost>;
 
       await db.collection("inventoryAudit").add({
         flightId: session.flightId,
         sessionId,
         action: "GAME_COMPLETED_AND_STOCK_CONSUMED",
         actualShuttlesUsed,
-        remainingShuttles: result.remainingShuttles,
-        totalDayCostFils: result.totalDayCostFils,
+        gameDate,
         attendeeCount: result.attendeeCount,
+        tubePriceFils: completedTubePriceFils,
+        shuttlesPerTube: completedShuttlesPerTube,
+        costPerShuttleExactFils: result.costPerShuttleExactFils,
+        totalDayCostFils: result.totalDayCostFils,
+        perPlayerCostExactFils: costPerPlayerExactFils,
+        remainingShuttles: result.remainingShuttles,
+        remainingTubes,
+        remainingLooseShuttles,
+        lowStockThresholdShuttles,
+        lowStock,
         actionBy: request.member!.uid,
         createdAt: FieldValue.serverTimestamp()
       });
 
-      response.json({ success: true, ...result, dueAt: dueAt.toISOString() });
+      response.json({
+        success: true,
+        ...result,
+        gameDate,
+        dueAt: dueAt.toISOString(),
+        remainingTubes,
+        remainingLooseShuttles,
+        lowStockThresholdShuttles,
+        lowStock,
+        perPlayerCostExactFils: costPerPlayerExactFils
+      });
     } catch (error) {
       response.status(400).json({
         message: error instanceof Error ? error.message : "Could not complete game finance."
@@ -654,7 +727,10 @@ router.get("/overview", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), 
       .filter(row => row.direction === "CREDIT" && memberInScope(String(row.memberUid)))
       .sort(newestFirst);
 
-    const completedSessions = sessions.docs.map(doc => doc.data()).filter(rowInScope);
+    const completedSessions = sessions.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(rowInScope)
+      .sort((a, b) => dateValue(b.startAt || b.completedAt) - dateValue(a.startAt || a.completedAt));
 
     response.json({
       scope: {
@@ -683,7 +759,14 @@ router.get("/overview", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), 
       pendingPayments: pendingPayments.sort(newestFirst),
       paid: paid.sort(newestFirst),
       unpaid: unpaid.sort(newestFirst),
-      arrears: arrears.sort(newestFirst)
+      arrears: arrears.sort(newestFirst),
+      gameLog: completedSessions.map(row => ({
+        ...row,
+        startAt: iso(row.startAt),
+        endAt: iso(row.endAt),
+        completedAt: iso(row.completedAt),
+        gameDate: row.gameDate || iso(row.startAt)
+      }))
     });
   } catch (error) {
     response.status(400).json({
@@ -693,4 +776,3 @@ router.get("/overview", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), 
 });
 
 export default router;
-```
