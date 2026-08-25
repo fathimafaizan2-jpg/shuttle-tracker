@@ -20,6 +20,15 @@ const asTime = (value: unknown, label: string) => {
   return time;
 };
 
+function timeMinutes(value: string) {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function rangesOverlap(startA: string, endA: string, startB: string, endB: string) {
+  return timeMinutes(startA) < timeMinutes(endB) && timeMinutes(startB) < timeMinutes(endA);
+}
+
 function monthValue(input?: unknown) {
   const text = String(input || "").trim();
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(text)) {
@@ -205,11 +214,14 @@ router.post("/master/slot", requireAuth, requireRole("SUPER_ADMIN"), async (requ
 
     const weekdayIndex = weekdays.indexOf(weekday);
     const existingSlots = await db.collection("weeklyTimetable").where("activityId", "==", owner.id).get();
-    const conflict = existingSlots.docs.some(doc => {
+    const conflictingSlot = existingSlots.docs.find(doc => {
       const row = doc.data();
-      return row.flightId === flightId && storedWeekdayIndex(row) === weekdayIndex && row.startTime === startTime;
+      return String(row.flightId || "") === flightId && storedWeekdayIndex(row) === weekdayIndex && rangesOverlap(startTime, endTime, String(row.startTime || ""), String(row.endTime || ""));
     });
-    if (conflict) return response.status(409).json({ message: "This weekly flight slot already exists." });
+    if (conflictingSlot) {
+      const row = conflictingSlot.data();
+      return response.status(409).json({ message: `This flight already has an overlapping ${weekday} slot (${row.startTime}–${row.endTime}). Choose a non-overlapping time.` });
+    }
 
     const created = await db.collection("weeklyTimetable").add({
       activityId: owner.id,
@@ -228,6 +240,62 @@ router.post("/master/slot", requireAuth, requireRole("SUPER_ADMIN"), async (requ
     response.status(201).json({ id: created.id, courtCount: 2 });
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not save weekly slot." });
+  }
+});
+
+router.post("/master/bulk-slots", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
+  try {
+    const activityId = asText(request.body.activityId, "Activity");
+    const rows = Array.isArray(request.body.rows) ? request.body.rows : [];
+    if (!rows.length || rows.length > 100) throw new Error("Bulk import must contain between 1 and 100 rows.");
+
+    const activities = await getActivityFlights();
+    const activity = activities.find(item => item.id === activityId);
+    if (!activity) throw new Error("Selected activity does not exist or is inactive.");
+    const flights = new Map(activity.flights.map(flight => [flight.id, flight]));
+    const normalized = rows.map((input, index) => {
+      const weekday = asText(input?.weekday, `Row ${index + 1} day`) as Weekday;
+      if (!weekdays.includes(weekday)) throw new Error(`Row ${index + 1} has an invalid weekday.`);
+      const flightId = asText(input?.flightId, `Row ${index + 1} flight`);
+      const flight = flights.get(flightId);
+      if (!flight) throw new Error(`Row ${index + 1} flight is not in the selected activity.`);
+      const startTime = asTime(input?.startTime, `Row ${index + 1} start time`);
+      const endTime = asTime(input?.endTime, `Row ${index + 1} end time`);
+      if (timeMinutes(endTime) <= timeMinutes(startTime)) throw new Error(`Row ${index + 1} end time must be later than start time.`);
+      return { weekday, weekdayIndex: weekdays.indexOf(weekday), flightId, flight, startTime, endTime };
+    });
+
+    for (let index = 0; index < normalized.length; index += 1) {
+      const first = normalized[index];
+      for (let next = index + 1; next < normalized.length; next += 1) {
+        const second = normalized[next];
+        if (first.flightId === second.flightId && first.weekdayIndex === second.weekdayIndex && rangesOverlap(first.startTime, first.endTime, second.startTime, second.endTime)) {
+          throw new Error(`Rows ${index + 1} and ${next + 1} overlap for ${first.flight.name} on ${first.weekday}.`);
+        }
+      }
+    }
+
+    const existing = await db.collection("weeklyTimetable").where("activityId", "==", activityId).get();
+    const created = [];
+    const skipped = [];
+    const batch = db.batch();
+    for (const row of normalized) {
+      const conflict = existing.docs.find(doc => {
+        const item = doc.data();
+        return String(item.flightId || "") === row.flightId && storedWeekdayIndex(item) === row.weekdayIndex && rangesOverlap(row.startTime, row.endTime, String(item.startTime || ""), String(item.endTime || ""));
+      });
+      if (conflict) {
+        skipped.push({ flightId: row.flightId, weekday: row.weekday, startTime: row.startTime, reason: "Existing overlapping slot" });
+        continue;
+      }
+      const ref = db.collection("weeklyTimetable").doc();
+      batch.set(ref, { activityId, activityName: activity.name, flightId: row.flightId, flightName: row.flight.name, weekday: row.weekday, weekdayIndex: row.weekdayIndex, startTime: row.startTime, endTime: row.endTime, courtCount: 2, createdAt: FieldValue.serverTimestamp(), createdBy: request.member!.uid });
+      created.push({ id: ref.id, flightName: row.flight.name, weekday: row.weekday, startTime: row.startTime, endTime: row.endTime });
+    }
+    if (created.length) await batch.commit();
+    response.status(201).json({ created, skipped });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not import the weekly timetable." });
   }
 });
 
@@ -268,6 +336,17 @@ router.post("/master/publish-month", requireAuth, requireRole("SUPER_ADMIN"), as
       db.collection("sessions").where("activityId", "==", activityId).get()
     ]);
     if (patterns.empty) return response.status(400).json({ message: "Create at least one weekly timetable slot first." });
+
+    const patternRows = patterns.docs.map(doc => ({ id: doc.id, ...doc.data(), weekdayIndex: storedWeekdayIndex(doc.data()), startTime: String(doc.data().startTime || ""), endTime: String(doc.data().endTime || ""), flightId: String(doc.data().flightId || "") }));
+    for (let index = 0; index < patternRows.length; index += 1) {
+      const first = patternRows[index];
+      for (let next = index + 1; next < patternRows.length; next += 1) {
+        const second = patternRows[next];
+        if (first.flightId === second.flightId && first.weekdayIndex === second.weekdayIndex && rangesOverlap(first.startTime, first.endTime, second.startTime, second.endTime)) {
+          throw new Error(`Overlapping Master Timetable rows exist for ${first.flightName || first.flightId} on ${weekdays[first.weekdayIndex]}: ${first.startTime}–${first.endTime} and ${second.startTime}–${second.endTime}. Remove one before publishing.`);
+        }
+      }
+    }
 
     const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
     const planned = new Map<string, FirebaseFirestore.DocumentData>();
