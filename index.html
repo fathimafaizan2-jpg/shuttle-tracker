@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#172554" />
-  <meta name="description" content="Indian Club Bahrain shuttle tracker, club operations and Indi Mart community directory" />
+  <meta name="description" content="Indian Club Bahrain shuttle tracker" />
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="css/styles.css" />
   <title>Indian Club Bahrain | Powered by Nuzan AI Studio</title>
 </head>
 <body>
-  <section id="splash" class="splash" aria-label="Loading Indian Club Bahrain">
+  <section id="splash" class="splash">
     <div class="splash-content">
       <div class="splash-mark">🏸</div>
       <h1>Indian Club Bahrain</h1>
@@ -20,48 +20,85 @@
 
   <main id="publicLanding" class="public-shell hidden">
     <header class="public-brand card">
-      <svg viewBox="0 0 100 100" role="img" aria-label="Indian Club Bahrain logo">
-        <rect width="100" height="100" rx="18" fill="#172554" />
-        <path d="M0 0H100V32L0 45Z" fill="#ff9933" />
-        <path d="M0 35L100 25V65L0 70Z" fill="#fff" />
-        <path d="M0 60L100 55V100H0Z" fill="#138808" />
-        <circle cx="50" cy="49" r="15" fill="#fff" stroke="#000080" stroke-width="2" />
-        <circle cx="50" cy="49" r="3" fill="#000080" />
-        <path d="M50 34V64M35 49H65M39 38L61 60M61 38L39 60" stroke="#000080" stroke-width="1.4" />
-      </svg>
-      <div><strong>Indian Club Bahrain</strong><small>Shuttle Tracker · Powered by Nuzan AI Studio</small></div>
+      <div class="brand-mark">IC</div>
+      <div>
+        <strong>Indian Club Bahrain</strong>
+        <small>Shuttle Tracker · Powered by Nuzan AI Studio</small>
+      </div>
     </header>
 
     <section id="publicNotice" class="card public-notice">
       <span class="tag red">OFFICIAL NOTICE</span>
       <h3 id="publicNoticeTitle">Welcome to Indian Club Bahrain</h3>
-      <p id="publicNoticeBody" class="note">Club notices, approved sponsor offers, and Indi Mart listings will appear here.</p>
+      <p id="publicNoticeBody" class="note">
+        Club notices, approved sponsor offers, and Indi Mart listings will appear here.
+      </p>
     </section>
 
     <section class="card sponsor-section">
       <h3>Featured sponsors and offers</h3>
-      <div id="publicSponsorCarousel" class="ad-carousel"><p class="note">Approved sponsor offers will appear here after the secure club server is connected.</p></div>
+      <div id="publicSponsorCarousel" class="ad-carousel">
+        <p class="note">Approved sponsor offers will appear here.</p>
+      </div>
     </section>
 
     <section class="public-entry-grid">
-      <button id="openLogin" class="entry-card entry-card-login"><span class="entry-icon">IC</span><span><strong>Member / Admin Login</strong><small>Secure club member access</small></span><b>→</b></button>
-      <button id="openDirectory" class="entry-card entry-card-directory"><span class="entry-icon">IM</span><span><strong>Community Directory</strong><small>Discover approved Indi Mart businesses</small></span><b>→</b></button>
+      <button id="openLogin" class="entry-card entry-card-login">
+        <span class="entry-icon">IC</span>
+        <span>
+          <strong>Member / Admin Login</strong>
+          <small>Secure club member access</small>
+        </span>
+        <b>→</b>
+      </button>
+
+      <button id="openDirectory" class="entry-card entry-card-directory">
+        <span class="entry-icon">IM</span>
+        <span>
+          <strong>Community Directory</strong>
+          <small>Discover approved Indi Mart businesses</small>
+        </span>
+        <b>→</b>
+      </button>
     </section>
 
-    <div class="business-mini-row"><span>Are you a local Indian business in Bahrain?</span><button id="openBusiness" class="business-mini-button">List your business</button></div>
+    <div class="business-mini-row">
+      <span>Are you a local Indian business in Bahrain?</span>
+      <button id="openBusiness" class="business-mini-button">List your business</button>
+    </div>
 
-    <section id="publicDirectory" class="card hidden" aria-live="polite">
-      <div class="page-head"><div><span class="tag blue">PUBLIC INDI MART</span><h2>Indian Community Directory</h2><p>Approved local businesses, offers, and community services in Bahrain.</p></div><button id="closeDirectory" class="pill">Back</button></div>
-      <div id="publicDirectoryList" class="directory-empty"><strong>Indi Mart is being prepared.</strong><p>Businesses can submit a listing for Super Admin approval. Approved listings will appear here after the secure club server is connected.</p><button id="directoryBusinessButton" class="primary">List Your Business</button></div>
+    <section id="publicDirectory" class="card hidden">
+      <div class="page-head">
+        <div>
+          <span class="tag blue">PUBLIC INDI MART</span>
+          <h2>Indian Community Directory</h2>
+          <p>Approved local businesses, offers, and community services in Bahrain.</p>
+        </div>
+        <button id="closeDirectory" class="pill">Back</button>
+      </div>
+      <div id="publicDirectoryList" class="directory-empty">
+        <strong>Indi Mart is being prepared.</strong>
+        <p>Businesses can submit a listing for Super Admin approval.</p>
+        <button id="directoryBusinessButton" class="primary">List Your Business</button>
+      </div>
     </section>
 
     <section id="businessForm" class="card hidden">
-      <div class="page-head"><div><span class="tag amber">PUBLIC SUBMISSION</span><h2>List Your Business</h2><p>Submit your Indi Mart request for Super Admin review.</p></div><button id="closeBusinessForm" class="pill">Back</button></div>
-      <p class="business-lock">This form does not create a Player, Flight Admin, Super Admin, wallet, timetable, attendance, or dashboard account.</p>
-      <div class="field"><label for="bizName">Business name</label><input id="bizName" autocomplete="organization" /></div>
-      <div class="field"><label for="bizOwner">Owner name</label><input id="bizOwner" autocomplete="name" /></div>
-      <div class="field"><label for="bizPhone">Phone / WhatsApp</label><input id="bizPhone" inputmode="tel" autocomplete="tel" /></div>
-      <div class="field"><label for="bizCategory">Category</label><input id="bizCategory" placeholder="Restaurant, Travel, Retail…" /></div>
+      <div class="page-head">
+        <div>
+          <span class="tag amber">PUBLIC SUBMISSION</span>
+          <h2>List Your Business</h2>
+          <p>Submit your Indi Mart request for Super Admin review.</p>
+        </div>
+        <button id="closeBusinessForm" class="pill">Back</button>
+      </div>
+      <p class="business-lock">
+        This form does not create a Player, Flight Admin, Super Admin, wallet, timetable, attendance, or dashboard account.
+      </p>
+      <div class="field"><label for="bizName">Business name</label><input id="bizName" /></div>
+      <div class="field"><label for="bizOwner">Owner name</label><input id="bizOwner" /></div>
+      <div class="field"><label for="bizPhone">Phone / WhatsApp</label><input id="bizPhone" /></div>
+      <div class="field"><label for="bizCategory">Category</label><input id="bizCategory" /></div>
       <div class="field"><label for="bizDescription">Offer / description</label><textarea id="bizDescription" rows="4"></textarea></div>
       <button id="submitBusiness" class="primary">Submit to Super Admin</button>
     </section>
@@ -69,44 +106,95 @@
     <footer class="footer"><b>Indian Club Bahrain</b> Powered by <b>Nuzan AI Studio</b></footer>
   </main>
 
-  <section id="login" class="login-overlay hidden" aria-modal="true" role="dialog" aria-labelledby="loginTitle">
+  <section id="login" class="login-overlay hidden" aria-modal="true" role="dialog">
     <div class="login-backdrop"></div>
     <div class="login-stage">
-      <button id="closeLogin" class="login-close" aria-label="Close member login">×</button>
-      <div class="login-flag-strip" aria-hidden="true"><span></span><span></span><span></span></div>
-      <div class="login-brand"><div class="login-crest">IC</div><div><p>INDIAN CLUB BAHRAIN</p><h1 id="loginTitle">Member Portal</h1><small>Secure access for approved club members</small></div></div>
-      <div class="role-cards" aria-label="Account access roles">
+      <button id="closeLogin" class="login-close">×</button>
+      <div class="login-flag-strip"><span></span><span></span><span></span></div>
+      <div class="login-brand">
+        <div class="login-crest">IC</div>
+        <div>
+          <p>INDIAN CLUB BAHRAIN</p>
+          <h1>Member Portal</h1>
+          <small>Secure access for approved club members</small>
+        </div>
+      </div>
+      <div class="role-cards">
         <article class="role-card role-player"><span>PLAYER</span><strong>My games</strong><small>Attendance, wallet and payment status</small></article>
         <article class="role-card role-admin"><span>FLIGHT ADMIN</span><strong>My flight</strong><small>Attendance, stock and session records</small></article>
         <article class="role-card role-super"><span>SUPER ADMIN</span><strong>Club control</strong><small>Members, timetable, approvals and audit</small></article>
       </div>
       <div class="login-form-panel">
-        <div class="field"><label for="loginEmail">Registered email</label><input id="loginEmail" type="email" autocomplete="email" placeholder="name@example.com" /></div>
-        <div class="field"><label for="loginPassword">Password</label><div class="password-field"><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" /><button type="button" class="password-toggle" data-toggle-password="loginPassword">Show</button></div></div>
+        <div class="field">
+          <label for="loginEmail">Registered email</label>
+          <input id="loginEmail" type="email" autocomplete="email" placeholder="name@example.com" />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <div class="password-field">
+            <input id="loginPassword" type="password" autocomplete="current-password" />
+            <button type="button" class="password-toggle" data-toggle-password="loginPassword">Show</button>
+          </div>
+        </div>
         <div class="login-form-footer">
-          <div class="field language-field"><label for="languageSelector">Language</label><select id="languageSelector"><option value="en">English</option><option value="ml">മലയാളം</option><option value="hi">हिंदी</option><option value="ta">தமிழ்</option></select></div>
+          <div class="field language-field">
+            <label for="languageSelector">Language</label>
+            <select id="languageSelector">
+              <option value="en">English</option>
+              <option value="ml">മലയാളം</option>
+              <option value="hi">हिंदी</option>
+              <option value="ta">தமிழ்</option>
+            </select>
+          </div>
           <button id="signIn" class="login-submit">Sign in securely <span>→</span></button>
         </div>
-        <div class="actions"><button id="openSignup" class="pill" type="button">New invited member? Sign up</button><button id="forgotPassword" class="pill" type="button">Forgot password?</button></div>
+        <div class="actions">
+          <button id="openSignup" class="pill" type="button">New registered member? Create my login</button>
+          <button id="forgotPassword" class="pill" type="button">Forgot password?</button>
+        </div>
       </div>
-      <p class="login-help">Accounts are assigned only by Super Admin. An invited Player or Flight Admin completes their own sign-up with the one-time join code received from Super Admin. Business advertisers use the public Indi Mart form.</p>
+      <p class="login-help">
+        Accounts are pre-registered only by Super Admin. A Player or Flight Admin completes their own login by matching the name and phone number recorded by Super Admin.
+      </p>
     </div>
   </section>
 
-  <section id="signup" class="login-overlay hidden" aria-modal="true" role="dialog" aria-labelledby="signupTitle">
+  <section id="signup" class="login-overlay hidden" aria-modal="true" role="dialog">
     <div class="login-backdrop"></div>
     <div class="login-stage">
-      <button id="closeSignup" class="login-close" aria-label="Close member sign-up">×</button>
-      <div class="login-flag-strip" aria-hidden="true"><span></span><span></span><span></span></div>
-      <div class="login-brand"><div class="login-crest">IC</div><div><p>INDIAN CLUB BAHRAIN</p><h1 id="signupTitle">Complete Member Sign-up</h1><small>Use the private one-time join code supplied by Super Admin</small></div></div>
+      <button id="closeSignup" class="login-close">×</button>
+      <div class="login-flag-strip"><span></span><span></span><span></span></div>
+      <div class="login-brand">
+        <div class="login-crest">IC</div>
+        <div>
+          <p>INDIAN CLUB BAHRAIN</p>
+          <h1>Create My Login</h1>
+          <small>Enter the name and phone number recorded by Super Admin</small>
+        </div>
+      </div>
       <div class="login-form-panel">
-        <div class="field"><label for="signupFullName">Full name</label><input id="signupFullName" autocomplete="name" placeholder="Exactly as assigned by Super Admin" /></div>
-        <div class="field"><label for="signupInviteCode">One-time join code</label><input id="signupInviteCode" autocomplete="one-time-code" placeholder="ABCD-1234-EFGH" /></div>
+        <div class="field"><label for="signupFullName">Registered name</label><input id="signupFullName" /></div>
         <div class="field"><label for="signupMemberId">Member ID</label><input id="signupMemberId" placeholder="ICB-PL-001" /></div>
-        <div class="field"><label for="signupEmail">Your email address</label><input id="signupEmail" type="email" autocomplete="email" placeholder="name@example.com" /></div>
-        <div class="field"><label for="signupPhone">Phone number</label><div class="phone-field"><select id="signupCountryCode" aria-label="Country code"><option value="+973">Bahrain (+973)</option><option value="+91">India (+91)</option><option value="+971">UAE (+971)</option><option value="+966">Saudi Arabia (+966)</option><option value="+974">Qatar (+974)</option><option value="+968">Oman (+968)</option><option value="+965">Kuwait (+965)</option><option value="+44">United Kingdom (+44)</option><option value="+1">USA / Canada (+1)</option></select><input id="signupPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Phone number" /></div></div>
-        <div class="field"><label for="signupPassword">Create password</label><div class="password-field"><input id="signupPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /><button type="button" class="password-toggle" data-toggle-password="signupPassword">Show</button></div></div>
-        <div class="field"><label for="signupPasswordConfirm">Confirm password</label><div class="password-field"><input id="signupPasswordConfirm" type="password" autocomplete="new-password" /><button type="button" class="password-toggle" data-toggle-password="signupPasswordConfirm">Show</button></div></div>
+        <div class="field"><label for="signupEmail">Your email address</label><input id="signupEmail" type="email" /></div>
+        <div class="field">
+          <label for="signupPhone">Registered phone number</label>
+          <div class="phone-field">
+            <select id="signupCountryCode">
+              <option value="+973">Bahrain (+973)</option>
+              <option value="+91">India (+91)</option>
+              <option value="+971">UAE (+971)</option>
+              <option value="+966">Saudi Arabia (+966)</option>
+              <option value="+974">Qatar (+974)</option>
+              <option value="+968">Oman (+968)</option>
+              <option value="+965">Kuwait (+965)</option>
+              <option value="+44">United Kingdom (+44)</option>
+              <option value="+1">USA / Canada (+1)</option>
+            </select>
+            <input id="signupPhone" type="tel" inputmode="tel" />
+          </div>
+        </div>
+        <div class="field"><label for="signupPassword">Create password</label><div class="password-field"><input id="signupPassword" type="password" /><button type="button" class="password-toggle" data-toggle-password="signupPassword">Show</button></div></div>
+        <div class="field"><label for="signupPasswordConfirm">Confirm password</label><div class="password-field"><input id="signupPasswordConfirm" type="password" /><button type="button" class="password-toggle" data-toggle-password="signupPasswordConfirm">Show</button></div></div>
         <div class="actions"><button id="activateMember" class="primary">Activate my account</button><button id="backToLogin" class="pill" type="button">Back to login</button></div>
       </div>
     </div>
@@ -135,7 +223,7 @@
         <div class="nav-group super-nav">SUPER ADMIN</div>
         <button class="nav super-nav" data-page="master">Master Timetable</button>
         <button class="nav super-nav" data-page="flights">Activities, Flights & Members</button>
-        <button class="nav super-nav" data-page="finance">Finance & Arrears</button>
+        <button class="nav super-nav" data-page="finance">Finance</button>
         <button class="nav super-nav" data-page="ads">Advertising Approval</button>
         <button class="nav super-nav" data-page="audit">Audit History</button>
         <div class="nav-group">COMMUNITY</div>
@@ -146,7 +234,7 @@
     <footer class="footer"><b>Indian Club Bahrain</b> · Powered by <b>Nuzan AI Studio</b></footer>
   </main>
 
-  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <div id="toast" class="toast hidden" role="status"></div>
   <script>window.INDIAN_CLUB_API_URL = "https://indian-club-api.onrender.com/api";</script>
   <script type="module">
     import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness } from "./js/modules/auth.js";
@@ -155,16 +243,42 @@
     import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, bindAdminViews } from "./js/modules/adminViews.js";
 
     const $ = id => document.getElementById(id );
-    const isGitHubPagesPreview = window.location.hostname.endsWith("github.io");
-    const publicApiBase = window.INDIAN_CLUB_API_URL || (isGitHubPagesPreview ? null : "http://localhost:3000/api" );
+    const publicApiBase = window.INDIAN_CLUB_API_URL;
 
-    function toast(message) { const box = $("toast"); box.textContent = message; box.classList.remove("hidden"); window.setTimeout(() => box.classList.add("hidden"), 3000); }
-    function hidePublicPanels() { ["businessForm", "publicDirectory"].forEach(id => $(id).classList.add("hidden")); }
-    function closeLoginOverlay() { $("login").classList.add("hidden"); document.body.classList.remove("login-active"); }
-    function closeSignupOverlay() { $("signup").classList.add("hidden"); document.body.classList.remove("login-active"); }
-    function openLoginOverlay() { hidePublicPanels(); closeSignupOverlay(); $("login").classList.remove("hidden"); document.body.classList.add("login-active"); window.setTimeout(() => $("loginEmail").focus(), 140); }
-    function openSignupOverlay() { hidePublicPanels(); closeLoginOverlay(); $("signup").classList.remove("hidden"); document.body.classList.add("login-active"); window.setTimeout(() => $("signupFullName").focus(), 140); }
-    function showPublicSection(sectionId) { hidePublicPanels(); $(sectionId).classList.remove("hidden"); $(sectionId).scrollIntoView({ behavior: "smooth", block: "start" }); }
+    function toast(message) {
+      const box = $("toast");
+      box.textContent = message;
+      box.classList.remove("hidden");
+      window.setTimeout(() => box.classList.add("hidden"), 3000);
+    }
+
+    function hidePublicPanels() {
+      ["businessForm", "publicDirectory"].forEach(id => $(id).classList.add("hidden"));
+    }
+
+    function closeLoginOverlay() {
+      $("login").classList.add("hidden");
+      document.body.classList.remove("login-active");
+    }
+
+    function closeSignupOverlay() {
+      $("signup").classList.add("hidden");
+      document.body.classList.remove("login-active");
+    }
+
+    function openLoginOverlay() {
+      hidePublicPanels();
+      closeSignupOverlay();
+      $("login").classList.remove("hidden");
+      document.body.classList.add("login-active");
+    }
+
+    function openSignupOverlay() {
+      hidePublicPanels();
+      closeLoginOverlay();
+      $("signup").classList.remove("hidden");
+      document.body.classList.add("login-active");
+    }
 
     function updateNavigation() {
       const isAdmin = ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(state.member?.role);
@@ -173,7 +287,7 @@
       document.querySelectorAll(".super-nav").forEach(item => item.classList.toggle("hidden", !isSuper));
       $("memberName").textContent = state.member?.fullName || "Member";
       $("roleLabel").textContent = state.member?.role?.replace("_", " ") || "";
-      $("sideRole").textContent = state.member?.role === "SUPER_ADMIN" ? "All activities" : (state.member?.flightName || "No flight assigned");
+      $("sideRole").textContent = isSuper ? "All activities" : (state.member?.flightName || "No flight assigned");
       $("avatar").textContent = (state.member?.fullName || "IC").split(" ").map(word => word[0]).join("").slice(0, 2);
     }
 
@@ -185,31 +299,44 @@
         let html = "";
         if (state.page === "home") html = await playerDashboard(state.member);
         else if (state.page === "timetable") html = await playerTimetable();
-        else if (state.page === "attendance") { const sessions = await api("/timetable/mine"); const next = sessions.filter(s => new Date(s.startAt).getTime() >= Date.now()).sort((a,b) => new Date(a.startAt) - new Date(b.startAt))[0]; html = next ? await attendanceView(next.id) : "<section class='card'><h2>Attendance</h2><p class='note'>No upcoming session is published for your flight.</p></section>"; }
+        else if (state.page === "attendance") {
+          const sessions = await api("/timetable/mine");
+          const next = sessions.filter(s => new Date(s.startAt).getTime() >= Date.now()).sort((a, b) => new Date(a.startAt) - new Date(b.startAt))[0];
+          html = next ? await attendanceView(next.id) : "<section class='card'><h2>Attendance</h2><p class='note'>No upcoming session is published for your flight.</p></section>";
+        }
         else if (state.page === "logs") html = await playerActivityLog();
         else if (state.page === "bazaar") html = await publicIndiMart();
         else if (state.page === "master") html = await superAdminTimetableView();
         else if (state.page === "flights") html = await activitiesAndFlightsView();
         else if (state.page === "finance") html = await financeAdminView();
-        else if (state.page === "wallet") html = "<section class='card'><h2>Wallet & Payments</h2><p class='note'>Your wallet entries and pending payments load from the protected Finance module.</p></section>";
         else if (state.page === "profile") html = await credentialsView();
         else html = `<section class="card"><h2>${state.page}</h2><p class="note">This module is controlled by its protected server route.</p></section>`;
         $("view").innerHTML = html;
         bindBusinessSubmission();
         bindAdminViews();
-      } catch (error) { $("view").innerHTML = `<section class="card"><h2>Unable to load this page</h2><p class="note">${error.message || "Please try again later."}</p></section>`; }
+      } catch (error) {
+        $("view").innerHTML = `<section class="card"><h2>Unable to load this page</h2><p class="note">${error.message || "Please try again later."}</p></section>`;
+      }
     }
 
     async function loadPublicHub() {
-      if (!publicApiBase) return;
       try {
-        const [noticeResponse, sponsorResponse] = await Promise.all([fetch(`${publicApiBase}/business/public/notices`), fetch(`${publicApiBase}/business/public/sponsors`)]);
+        const [noticeResponse, sponsorResponse] = await Promise.all([
+          fetch(`${publicApiBase}/business/public/notices`),
+          fetch(`${publicApiBase}/business/public/sponsors`)
+        ]);
         if (!noticeResponse.ok || !sponsorResponse.ok) return;
         const notices = await noticeResponse.json();
         const sponsors = await sponsorResponse.json();
-        if (notices[0]) { $("publicNoticeTitle").textContent = notices[0].title; $("publicNoticeBody").textContent = notices[0].body; $("tickerTrack").textContent = notices.map(notice => notice.title).join(" • "); }
-        if (sponsors.length) $("publicSponsorCarousel").innerHTML = sponsors.map(sponsor => `<article class="ad-card">${sponsor.flyerUrl ? `<img src="${sponsor.flyerUrl}" alt="${sponsor.businessName}">` : ""}<h3>${sponsor.businessName}</h3><p>${sponsor.discountText || "Approved sponsor"}</p></article>`).join("");
-      } catch { }
+        if (notices[0]) {
+          $("publicNoticeTitle").textContent = notices[0].title;
+          $("publicNoticeBody").textContent = notices[0].body;
+          $("tickerTrack").textContent = notices.map(notice => notice.title).join(" • ");
+        }
+        if (sponsors.length) {
+          $("publicSponsorCarousel").innerHTML = sponsors.map(sponsor => `<article class="ad-card"><h3>${sponsor.businessName}</h3><p>${sponsor.discountText || "Approved sponsor"}</p></article>`).join("");
+        }
+      } catch {}
     }
 
     $("openLogin").onclick = openLoginOverlay;
@@ -217,43 +344,87 @@
     $("openSignup").onclick = openSignupOverlay;
     $("closeSignup").onclick = closeSignupOverlay;
     $("backToLogin").onclick = openLoginOverlay;
-    $("openDirectory").onclick = () => showPublicSection("publicDirectory");
+    $("openDirectory").onclick = () => { hidePublicPanels(); $("publicDirectory").classList.remove("hidden"); };
     $("closeDirectory").onclick = () => $("publicDirectory").classList.add("hidden");
-    $("openBusiness").onclick = () => showPublicSection("businessForm");
-    $("directoryBusinessButton").onclick = () => showPublicSection("businessForm");
+    $("openBusiness").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
+    $("directoryBusinessButton").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
     $("closeBusinessForm").onclick = () => $("businessForm").classList.add("hidden");
-    $("login").onclick = event => { if (event.target.classList.contains("login-backdrop")) closeLoginOverlay(); };
-    $("signup").onclick = event => { if (event.target.classList.contains("login-backdrop")) closeSignupOverlay(); };
     $("languageSelector").onchange = event => setLanguage(event.target.value);
 
     $("submitBusiness").onclick = async () => {
       try {
-        const response = await submitPublicBusiness({ businessName: $("bizName").value.trim(), ownerName: $("bizOwner").value.trim(), phone: $("bizPhone").value.trim(), category: $("bizCategory").value.trim(), description: $("bizDescription").value.trim(), packageId: "community-standard" });
-        toast(`Submitted. Save reference code: ${response.referenceCode}`); $("businessForm").classList.add("hidden");
-      } catch (error) { toast(error.message || "Business request could not be submitted."); }
+        const response = await submitPublicBusiness({
+          businessName: $("bizName").value.trim(),
+          ownerName: $("bizOwner").value.trim(),
+          phone: $("bizPhone").value.trim(),
+          category: $("bizCategory").value.trim(),
+          description: $("bizDescription").value.trim(),
+          packageId: "community-standard"
+        });
+        toast(`Submitted. Save reference code: ${response.referenceCode}`);
+        $("businessForm").classList.add("hidden");
+      } catch (error) {
+        toast(error.message || "Business request could not be submitted.");
+      }
     };
 
     $("activateMember").onclick = async () => {
       try {
         const password = $("signupPassword").value;
-        if (password !== $("signupPasswordConfirm").value) throw new Error("The password and confirmation do not match.");
-        const result = await activateMemberAccount({ inviteCode: $("signupInviteCode").value.trim(), fullName: $("signupFullName").value.trim(), memberId: $("signupMemberId").value.trim(), email: $("signupEmail").value.trim(), phone: `${$("signupCountryCode").value} ${$("signupPhone").value.trim()}`.trim(), password });
-        $("loginEmail").value = result.email; $("loginPassword").value = ""; closeSignupOverlay(); openLoginOverlay(); toast("Account activated. Sign in with your new email and password.");
-      } catch (error) { toast(error.message || "Could not activate your account."); }
+        if (password !== $("signupPasswordConfirm").value) {
+          throw new Error("The password and confirmation do not match.");
+        }
+        const result = await activateMemberAccount({
+          fullName: $("signupFullName").value.trim(),
+          memberId: $("signupMemberId").value.trim(),
+          email: $("signupEmail").value.trim(),
+          phone: `${$("signupCountryCode").value} ${$("signupPhone").value.trim()}`.trim(),
+          password
+        });
+        $("loginEmail").value = result.email;
+        $("loginPassword").value = "";
+        closeSignupOverlay();
+        openLoginOverlay();
+        toast("Account activated. Sign in with your new email and password.");
+      } catch (error) {
+        toast(error.message || "Could not activate your account.");
+      }
     };
 
     $("forgotPassword").onclick = async () => {
-      try { await sendMyPasswordReset($("loginEmail").value); toast("Password reset email sent. Check your inbox and spam folder."); }
-      catch (error) { toast(error.message || "Could not send password reset email."); }
+      try {
+        await sendMyPasswordReset($("loginEmail").value);
+        toast("Password reset email sent. Check your inbox and spam folder.");
+      } catch (error) {
+        toast(error.message || "Could not send password reset email.");
+      }
     };
 
     $("signIn").onclick = async () => {
-      try { await login($("loginEmail").value.trim(), $("loginPassword").value); await startSignedInApp(); closeLoginOverlay(); $("publicLanding").classList.add("hidden"); $("app").classList.remove("hidden"); await renderPage(); }
-      catch (error) { toast(error.message || "Unable to sign in."); }
+      try {
+        await login($("loginEmail").value.trim(), $("loginPassword").value);
+        await startSignedInApp();
+        closeLoginOverlay();
+        $("publicLanding").classList.add("hidden");
+        $("app").classList.remove("hidden");
+        await renderPage();
+      } catch (error) {
+        toast(error.message || "Unable to sign in.");
+      }
     };
 
-    $("logout").onclick = async () => { await logout(); $("app").classList.add("hidden"); $("publicLanding").classList.remove("hidden"); hidePublicPanels(); toast("Signed out"); };
-    document.querySelectorAll(".nav[data-page]").forEach(button => { button.onclick = () => navigate(button.dataset.page); });
+    $("logout").onclick = async () => {
+      await logout();
+      $("app").classList.add("hidden");
+      $("publicLanding").classList.remove("hidden");
+      hidePublicPanels();
+      toast("Signed out");
+    };
+
+    document.querySelectorAll(".nav[data-page]").forEach(button => {
+      button.onclick = () => navigate(button.dataset.page);
+    });
+
     document.querySelectorAll("[data-toggle-password]").forEach(button => {
       button.onclick = () => {
         const input = $(button.dataset.togglePassword);
@@ -262,11 +433,23 @@
         button.textContent = reveal ? "Hide" : "Show";
       };
     });
+
     window.addEventListener("indianclub:render", renderPage);
     window.addEventListener("indianclub:toast", event => toast(event.detail));
-    window.addEventListener("indianclub:navigate", event => { if (!state.member) return; if (navigate(event.detail.page)) renderPage(); });
-    window.setTimeout(async () => { $("splash").classList.add("hidden"); $("publicLanding").classList.remove("hidden"); await loadPublicHub(); }, 850);
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => undefined);
+    window.addEventListener("indianclub:navigate", event => {
+      if (!state.member) return;
+      if (navigate(event.detail.page)) renderPage();
+    });
+
+    window.setTimeout(async () => {
+      $("splash").classList.add("hidden");
+      $("publicLanding").classList.remove("hidden");
+      await loadPublicHub();
+    }, 850);
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(() => undefined);
+    }
   </script>
 </body>
 </html>
