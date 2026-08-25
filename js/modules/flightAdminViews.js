@@ -49,7 +49,9 @@ function rows(items, empty, options = {}) {
   if (!items?.length) return `<p class="note">${escapeHtml(empty)}</p>`;
   const due = Boolean(options.due);
   const reminder = Boolean(options.reminder);
-  return `<div class="table-wrap"><table class="schedule"><thead><tr><th>Player</th><th>Date</th><th>Amount</th><th>Status</th>${reminder ? "<th>Action</th>" : ""}</tr></thead><tbody>${items.map(item => `<tr><td><b>${escapeHtml(item.memberName || item.memberId || item.memberUid)}</b><br><small>${escapeHtml(item.memberId || "")}</small></td><td>${escapeHtml(dateLabel(item.paidAt || item.createdAt || item.dueAt))}</td><td>${bhd(due ? item.amountDueFils : (item.totalChargeFils || item.amountFils))}</td><td><span class="tag ${String(item.status || "").startsWith("PAID") ? "blue" : item.status === "DUE" ? "red" : "amber"}">${escapeHtml(item.status || "DUE")}</span></td>${reminder ? `<td><button class="pill" data-flight-reminder-phone="${escapeHtml(item.phone || "")}" data-flight-reminder-name="${escapeHtml(item.memberName || "Member")}" data-flight-reminder-amount="${escapeHtml(bhd(item.amountDueFils))}">WhatsApp reminder</button></td>` : ""}</tr>`).join("")}</tbody></table></div>`;
+  const confirmation = Boolean(options.confirmation);
+  const actionHead = reminder || confirmation ? "<th>Action</th>" : "";
+  return `<div class="table-wrap"><table class="schedule"><thead><tr><th>Player</th><th>Date</th><th>Amount</th><th>Status</th>${actionHead}</tr></thead><tbody>${items.map(item => { const amount = bhd(due ? item.amountDueFils : (item.totalChargeFils || item.amountFils)); const action = reminder ? `<button class="pill" data-flight-reminder-phone="${escapeHtml(item.phone || "")}" data-flight-reminder-name="${escapeHtml(item.memberName || "Member")}" data-flight-reminder-amount="${escapeHtml(amount)}">WhatsApp reminder</button>` : confirmation ? `<button class="pill" data-flight-paid-phone="${escapeHtml(item.phone || "")}" data-flight-paid-name="${escapeHtml(item.memberName || "Member")}" data-flight-paid-amount="${escapeHtml(amount)}" data-flight-paid-date="${escapeHtml(dateLabel(item.paidAt || item.createdAt || item.dueAt))}">WhatsApp confirmation</button>` : ""; return `<tr><td><b>${escapeHtml(item.memberName || item.memberId || item.memberUid)}</b><br><small>${escapeHtml(item.memberId || "")}</small></td><td>${escapeHtml(dateLabel(item.paidAt || item.createdAt || item.dueAt))}</td><td>${amount}</td><td><span class="tag ${String(item.status || "").startsWith("PAID") ? "blue" : item.status === "DUE" ? "red" : "amber"}">${escapeHtml(item.status || "DUE")}</span></td>${action ? `<td>${action}</td>` : ""}</tr>`; }).join("")}</tbody></table></div>`;
 }
 
 export async function flightAdminSessionControlView() {
@@ -68,8 +70,8 @@ export async function flightAdminSessionControlView() {
 
   return `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${escapeHtml(state.member.flightName || "Assigned flight")}</span><h2>Session Control</h2><p>Today’s scheduled game appears here. Finish it using the actual shuttlecocks used; charges are divided only among final PRESENT attendees.</p></div></div>
   <section class="card"><h3>Today’s game session</h3>${sessionCards}<div id="flightGameResult"></div></section>
-  <section class="card"><h3>Payment Methods</h3><p class="note">Players may pay completed shuttlecock charges using verified wallet credit, Cash, or Benefit. Cash and Benefit remain pending until the Flight Admin verifies them.</p><div class="actions"><span class="tag blue">WALLET CREDIT</span><span class="tag amber">CASH</span><span class="tag amber">BENEFIT</span></div></section><section class="card"><h3>Pending Cash / Benefit confirmation</h3>${(finance.pendingPayments || []).map(payment => `<div class="session"><div class="grow"><b>${escapeHtml(payment.memberName || payment.memberUid)}</b><p>${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")} · ${escapeHtml(dateLabel(payment.submittedAt))}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-flight-verify="${escapeHtml(payment.id)}">Verify</button></div>`).join("") || "<p class='note'>No Cash or Benefit settlement is awaiting confirmation for your flight.</p>"}</section>
-  <section class="card"><div class="page-head"><div><h3>Paid Players</h3><p class="note">Payment records for your assigned flight.</p></div><button class="pill" data-flight-print>Print paid list</button></div>${rows(finance.paid || [], "No paid Player records.")}</section>
+  <section class="card"><h3>Pending Cash / Benefit confirmation</h3>${(finance.pendingPayments || []).map(payment => `<div class="session"><div class="grow"><b>${escapeHtml(payment.memberName || payment.memberUid)}</b><p>${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")} · ${escapeHtml(dateLabel(payment.submittedAt))}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-flight-verify="${escapeHtml(payment.id)}">Verify</button></div>`).join("") || "<p class='note'>No Cash or Benefit settlement is awaiting confirmation for your flight.</p>"}</section>
+  <section class="card"><div class="page-head"><div><h3>Paid Players</h3><p class="note">Use the short WhatsApp confirmation button only when needed.</p></div><button class="pill" data-flight-print>Print paid list</button></div>${rows(finance.paid || [], "No paid Player records.", { confirmation: true })}</section>
   <section class="card"><div class="page-head"><div><h3>Unpaid Players</h3><p class="note">Send a controlled WhatsApp reminder when appropriate.</p></div><button class="pill" data-flight-print>Print unpaid list</button></div>${rows(finance.unpaid || [], "No unpaid Player records.", { due: true, reminder: true })}</section>`;
 }
 
@@ -125,6 +127,13 @@ export function bindFlightAdminViews() {
     const phone = String(button.dataset.flightReminderPhone || "").replace(/\D/g, "");
     if (!phone) return notify("This Player has no phone number saved.");
     const message = encodeURIComponent(`Hello ${button.dataset.flightReminderName}, your Indian Club Bahrain shuttlecock charge of ${button.dataset.flightReminderAmount} is unpaid. Please pay using wallet credit, Cash, or Benefit. Thank you.`);
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener");
+  });
+
+  document.querySelectorAll("[data-flight-paid-phone]").forEach(button => button.onclick = () => {
+    const phone = String(button.dataset.flightPaidPhone || "").replace(/\D/g, "");
+    if (!phone) return notify("This Player has no phone number saved.");
+    const message = encodeURIComponent(`Hello ${button.dataset.flightPaidName}, your Indian Club Bahrain shuttlecock payment of ${button.dataset.flightPaidAmount} for ${button.dataset.flightPaidDate} is recorded as paid. Thank you.`);
     window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener");
   });
 
