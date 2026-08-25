@@ -9,9 +9,21 @@ const escapeHtml = value => String(value ?? "")
   .replaceAll("'", "&#039;");
 
 const bhd = fils => `BHD ${(Number(fils || 0) / 1000).toFixed(3)}`;
-const dateTime = value => value ? new Date(value).toLocaleString("en-BH", {
-  dateStyle: "medium", timeStyle: "short"
-}) : "Not scheduled";
+function clubDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+const dateTime = value => {
+  const date = clubDate(value);
+  return date ? date.toLocaleString("en-BH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bahrain" }) : "Not scheduled";
+};
+
+const weekdayTime = value => {
+  const date = clubDate(value);
+  return date ? date.toLocaleDateString("en-BH", { weekday: "long", timeZone: "Asia/Bahrain" }) : "Day unavailable";
+};
 
 const countryCodes = [
   ["+973", "Bahrain (+973)"],
@@ -46,8 +58,10 @@ function notify(message) {
 }
 
 export async function playerDashboard(member = state.member) {
-  const data = await api("/members/dashboard");
-  const next = data.nextSession;
+  const [data, personalSessions] = await Promise.all([api("/members/dashboard"), api("/timetable/mine")]);
+  const next = (personalSessions || [])
+    .filter(session => session.status === "SCHEDULED" && Number.isFinite(new Date(session.startAt).getTime()) && new Date(session.startAt).getTime() >= Date.now())
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())[0] || null;
 
   return `
     <div class="page-head">
@@ -71,7 +85,7 @@ export async function playerDashboard(member = state.member) {
         ${next ? `
           <div class="session">
             <div class="datebox">${new Date(next.startAt).getDate()}<small>${new Date(next.startAt).toLocaleString("en", { month: "short" })}</small></div>
-            <div class="grow"><b>${escapeHtml(next.flightName)}</b><p>${new Date(next.startAt).toLocaleDateString("en-BH", { weekday: "long", dateStyle: "medium" })}</p><p>${dateTime(next.startAt)} · 2 courts</p></div>
+            <div class="grow"><b>${escapeHtml(next.flightName)}</b><p>${new Date(next.startAt).toLocaleDateString("en-BH", { weekday: "long", dateStyle: "medium", timeZone: "Asia/Bahrain" })}</p><p>${dateTime(next.startAt)} · 2 courts</p></div>
             <span class="tag blue">UPCOMING</span>
           </div>
         ` : "<p class='note'>No upcoming game has been published for your flight.</p>"}
@@ -145,12 +159,12 @@ export async function attendanceView(sessionId) {
 
   return `<div class="page-head"><div><h2>Attendance</h2><p>Your response is fixed to the next game day for your flight in the club timetable.</p></div>${session.locked ? "<span class='tag red'>PLAYER RESPONSES LOCKED</span>" : "<span class='tag blue'>RESPONSES OPEN</span>"}</div>
     <section class="card">
-      <h3>${escapeHtml(session.flightName)} · ${escapeHtml(dateTime(session.startAt))}</h3>
+      <h3>${escapeHtml(session.flightName)} · ${escapeHtml(weekdayTime(session.startAt))}, ${escapeHtml(dateTime(session.startAt))}</h3>
       <p class="note">You can update only your own response until 15 minutes before game start. After the game begins, your Flight Admin can correct actual attendance with an audit reason.</p>
       <div class="session"><div class="grow"><b>My attendance</b></div>${attendanceBadge(session.myAttendance)}</div>
       ${session.canRespond ? `<div class="actions"><button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I am coming</button><button class="pill" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">I am not coming</button></div>` : ""}
     </section>
-    <section class="card"><h3>Players coming for this game</h3><p class="note">Only members of ${escapeHtml(session.flightName)} who responded “I am coming” are shown here. Other members’ attendance is not editable from this screen.</p>${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(word => word[0]).join("").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}${session.canCorrect ? `<div class="actions"><button class="pill" data-attendance-correct="PRESENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Present</button><button class="pill" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No members have responded “I am coming” yet.</p>"}</section>
+    <section class="card"><h3>Players coming for this game</h3><p class="note">Only members of ${escapeHtml(session.flightName)} who responded “I am coming” are shown here. Their attendance is read-only on this screen; only your own response can be changed in Attendance.</p>${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(word => word[0]).join("").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}${session.canCorrect ? `<div class="actions"><button class="pill" data-attendance-correct="PRESENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Present</button><button class="pill" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No members have responded “I am coming” yet.</p>"}</section>
     ${session.canCorrect ? `<section class="card"><h3>Attendance correction audit</h3>${audit.map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.previousStatus)} → ${escapeHtml(item.newStatus)}</b><p>${escapeHtml(item.reason)} · ${escapeHtml(dateTime(item.createdAt))}</p></div></div>`).join("") || "<p class='note'>No corrections have been recorded for this session.</p>"}</section>` : ""}`;
 }
 
