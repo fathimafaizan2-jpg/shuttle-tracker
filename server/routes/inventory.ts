@@ -42,8 +42,10 @@ router.get("/mine", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), asyn
       return response.json(record.exists ? [{ id: record.id, ...record.data() }] : []);
     }
 
-    const records = await db.collection("inventory").orderBy("updatedAt", "desc").get();
-    response.json(records.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const records = await db.collection("inventory").get();
+    response.json(records.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => String(a.flightName || "").localeCompare(String(b.flightName || ""))));
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not load stock." });
   }
@@ -70,7 +72,13 @@ router.put("/:flightId/config", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_A
     const tubePriceFils = wholeNumber(request.body.tubePriceFils, "Tube price in fils", 1);
     const shuttlesPerTube = wholeNumber(request.body.shuttlesPerTube, "Shuttles per tube", 1);
     const availableTubes = wholeNumber(request.body.availableTubes, "Available tubes");
-    const looseShuttles = wholeNumber(request.body.looseShuttles, "Loose shuttles");
+    const existing = await db.collection("inventory").doc(flightId).get();
+    const looseShuttles = request.body.looseShuttles === undefined || request.body.looseShuttles === null || request.body.looseShuttles === ""
+      ? (existing.exists ? wholeNumber(existing.data()!.looseShuttles || 0, "Existing loose shuttles") : 0)
+      : wholeNumber(request.body.looseShuttles, "Loose shuttles");
+    const totalAvailableShuttles = availableTubes * shuttlesPerTube + looseShuttles;
+    const lowStockThresholdShuttles = shuttlesPerTube;
+    const lowStock = totalAvailableShuttles <= lowStockThresholdShuttles;
 
     await db.collection("inventory").doc(flightId).set({
       flightId,
@@ -81,7 +89,9 @@ router.put("/:flightId/config", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_A
       shuttlesPerTube,
       availableTubes,
       looseShuttles,
-      totalAvailableShuttles: availableTubes * shuttlesPerTube + looseShuttles,
+      totalAvailableShuttles,
+      lowStockThresholdShuttles,
+      lowStock,
       updatedAt: FieldValue.serverTimestamp(),
       updatedBy: request.member!.uid
     }, { merge: true });
@@ -93,6 +103,9 @@ router.put("/:flightId/config", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_A
       shuttlesPerTube,
       availableTubes,
       looseShuttles,
+      totalAvailableShuttles,
+      lowStockThresholdShuttles,
+      lowStock,
       actionBy: request.member!.uid,
       actionRole: request.member!.role,
       createdAt: FieldValue.serverTimestamp()
@@ -100,55 +113,12 @@ router.put("/:flightId/config", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_A
 
     response.json({
       success: true,
-      totalAvailableShuttles: availableTubes * shuttlesPerTube + looseShuttles
+      totalAvailableShuttles,
+      lowStockThresholdShuttles,
+      lowStock
     });
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not save inventory configuration." });
-  }
-});
-
-/* Physical stock top-up or correction. Consumption after a completed game happens only in finance.ts. */
-router.post("/:flightId/adjust", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), async (request, response) => {
-  try {
-    const flightId = text(request.params.flightId, "Flight ID");
-    assertInventoryAccess(flightId, request.member);
-    const reason = text(request.body.reason, "Stock adjustment reason");
-    const tubeChange = wholeNumber(Math.abs(Number(request.body.tubeChange)), "Tube change");
-    const looseChange = wholeNumber(Math.abs(Number(request.body.looseChange)), "Loose shuttle change");
-    const direction = request.body.direction === "REMOVE" ? "REMOVE" : "ADD";
-
-    const ref = db.collection("inventory").doc(flightId);
-    await db.runTransaction(async transaction => {
-      const current = await transaction.get(ref);
-      if (!current.exists) throw new Error("Create inventory configuration before adjusting stock.");
-      const stock = current.data()!;
-      const availableTubes = Number(stock.availableTubes || 0) + (direction === "ADD" ? tubeChange : -tubeChange);
-      const looseShuttles = Number(stock.looseShuttles || 0) + (direction === "ADD" ? looseChange : -looseChange);
-      if (availableTubes < 0 || looseShuttles < 0) throw new Error("Stock cannot become negative.");
-      transaction.update(ref, {
-        availableTubes,
-        looseShuttles,
-        totalAvailableShuttles: availableTubes * Number(stock.shuttlesPerTube) + looseShuttles,
-        updatedAt: FieldValue.serverTimestamp(),
-        updatedBy: request.member!.uid
-      });
-    });
-
-    await db.collection("inventoryAudit").add({
-      flightId,
-      action: "MANUAL_STOCK_ADJUSTMENT",
-      direction,
-      tubeChange,
-      looseChange,
-      reason,
-      actionBy: request.member!.uid,
-      actionRole: request.member!.role,
-      createdAt: FieldValue.serverTimestamp()
-    });
-
-    response.json({ success: true });
-  } catch (error) {
-    response.status(400).json({ message: error instanceof Error ? error.message : "Could not adjust stock." });
   }
 });
 
