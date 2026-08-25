@@ -340,6 +340,29 @@ router.get("/", requireAuth, requireRole("SUPER_ADMIN"), async (request, respons
   );
 });
 
+router.get("/audit", requireAuth, requireRole("SUPER_ADMIN"), async (_request, response) => {
+  try {
+    const [memberAudit, attendanceAudit, inventoryAudit, members, sessions] = await Promise.all([
+      db.collection("memberAudit").get(),
+      db.collection("attendanceAudit").get(),
+      db.collection("inventoryAudit").get(),
+      db.collection("members").get(),
+      db.collection("sessions").get()
+    ]);
+    const memberRows = new Map(members.docs.map(doc => [doc.id, doc.data()]));
+    const sessionRows = new Map(sessions.docs.map(doc => [doc.id, doc.data()]));
+    const actorName = (uid: unknown) => memberRows.get(String(uid || ""))?.fullName || String(uid || "System");
+    const records = [
+      ...memberAudit.docs.map(doc => ({ id: doc.id, category: "MEMBER", action: doc.data().action || "MEMBER_EVENT", subject: actorName(doc.data().targetMemberUid), detail: doc.data().flightId ? `Flight ${doc.data().flightId}` : "", actor: actorName(doc.data().actionBy), createdAt: toIso(doc.data().createdAt) })),
+      ...attendanceAudit.docs.map(doc => ({ id: doc.id, category: "ATTENDANCE", action: doc.data().actionRole === "PLAYER" ? "PLAYER RESPONSE" : "ADMIN CORRECTION", subject: actorName(doc.data().targetMemberUid), detail: `${doc.data().previousStatus || "NO_RESPONSE"} → ${doc.data().newStatus || "—"}${doc.data().reason ? ` · ${doc.data().reason}` : ""}`, actor: actorName(doc.data().actionBy), createdAt: toIso(doc.data().createdAt), sessionDate: toIso(sessionRows.get(String(doc.data().sessionId))?.startAt) })),
+      ...inventoryAudit.docs.map(doc => ({ id: doc.id, category: "GAME / STOCK", action: doc.data().action || "STOCK EVENT", subject: sessionRows.get(String(doc.data().sessionId))?.flightName || doc.data().flightId || "Flight", detail: `${doc.data().attendeeCount || 0} attendees · ${doc.data().actualShuttlesUsed || 0} shuttles used · ${doc.data().totalDayCostFils || 0} fils`, actor: actorName(doc.data().actionBy), createdAt: toIso(doc.data().createdAt), sessionDate: toIso(sessionRows.get(String(doc.data().sessionId))?.startAt) }))
+    ].sort((a, b) => timeValue(b.createdAt) - timeValue(a.createdAt));
+    response.json(records);
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not load audit history." });
+  }
+});
+
 router.post("/pre-register", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
   try {
     const registeredName = asText(request.body.registeredName, "Registered name");
