@@ -111,20 +111,17 @@ async function getActivityFlights() {
 router.get("/mine", requireAuth, async (request, response) => {
   try {
     const member = request.member!;
-    if (!member.flightId && member.role !== "SUPER_ADMIN") return response.json([]);
+    /* /mine is the personal attendance feed. Super Admin uses /club and /master for all-club administration. */
+    if (!member.flightId) return response.json([]);
 
     const [snapshot, slots] = await Promise.all([
-      member.role === "SUPER_ADMIN"
-        ? db.collection("sessions").get()
-        : db.collection("sessions").where("flightId", "==", member.flightId).get(),
+      db.collection("sessions").where("flightId", "==", member.flightId).get(),
       db.collection("weeklyTimetable").get()
     ]);
 
     const slotsById = new Map(slots.docs.map(doc => [doc.id, doc.data()]));
     const visibleSessionDocs = snapshot.docs.filter(doc => matchesCurrentWeeklySlot(doc.data(), slotsById));
-    const attendanceRows = member.role === "SUPER_ADMIN"
-      ? []
-      : await Promise.all(visibleSessionDocs.map(doc => db.collection("attendance").doc(`${doc.id}_${member.uid}`).get()));
+    const attendanceRows = await Promise.all(visibleSessionDocs.map(doc => db.collection("attendance").doc(`${doc.id}_${member.uid}`).get()));
     const attendanceBySession = new Map(
       attendanceRows.filter(row => row.exists).map(row => [String(row.data()!.sessionId), row.data()!.status])
     );
