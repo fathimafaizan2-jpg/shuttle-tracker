@@ -194,6 +194,7 @@ export async function walletView() {
       .map(row => row.chargeId)
   );
   const paymentKind = row => row.kind === "CREDIT_TOPUP" ? "Wallet refill request" : "Game charge settlement";
+  const adminContact = data.flightAdminContact || {};
 
   return `
     <div class="page-head">
@@ -226,7 +227,7 @@ export async function walletView() {
       ${chargeRows.map(row => {
         const due = Number(row.amountDueFils || 0);
         const claimPending = pendingChargeIds.has(row.id);
-        return `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName || "Club game")}</b><p>${escapeHtml(dateTime(row.createdAt))} · Total ${bhd(row.totalChargeFils)} · Amount payable ${bhd(due)}</p></div>${due > 0 && !claimPending ? `<div class="actions"><button class="primary" data-credit-charge="${escapeHtml(row.id)}">Pay ${bhd(due)} with credit</button><button class="pill" data-manual-charge="${escapeHtml(row.id)}">Cash / Benefit</button></div>` : claimPending ? "<span class='tag amber'>CASH / BENEFIT PENDING</span>" : `<span class='tag blue'>${escapeHtml(String(row.status || "PAID").replaceAll("_", " "))}</span>`}</div>`;
+        return `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName || "Club game")}</b><p>${escapeHtml(dateTime(row.createdAt))} · Total ${bhd(row.totalChargeFils)} · Amount payable ${bhd(due)}</p></div>${due > 0 && !claimPending ? `<div class="actions"><button class="primary" data-credit-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(bhd(due))}">Pay ${bhd(due)} with credit</button><button class="pill" data-manual-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(bhd(due))}">Cash / Benefit</button></div>` : claimPending ? "<span class='tag amber'>CASH / BENEFIT PENDING</span>" : `<span class='tag blue'>${escapeHtml(String(row.status || "PAID").replaceAll("_", " "))}</span>`}</div>`;
       }).join("") || "<p class='note'>No completed-game shuttlecock charges yet.</p>"}
     </section>
 
@@ -279,10 +280,14 @@ export function bindBusinessSubmission() {
     } catch (error) { notify(error.message); }
   };
 
+  const openPaymentWhatsapp = (button, text) => { const phone = String(button.dataset.adminPhone || "").replace(/\D/g, ""); if (!phone) return notify("Payment recorded, but no Flight Admin phone number is saved."); window.open(`https://wa.me/${phone}?text=${encodeURIComponent(`Hello ${button.dataset.adminName || "Flight Admin"}, ${text}`)}`, "_blank", "noopener"); };
+
   document.querySelectorAll("[data-credit-charge]").forEach(button => button.onclick = async () => {
     try {
-      await api(`/finance/charges/${encodeURIComponent(button.dataset.creditCharge)}/pay-with-credit`, { method: "POST" });
-      notify("Charge paid using your verified wallet credit.");
+      const result = await api(`/finance/charges/${encodeURIComponent(button.dataset.creditCharge)}/pay-with-credit`, { method: "POST" });
+      const remaining = bhd(result.remainingBalanceFils || 0);
+      notify(`Charge paid from credit. Remaining credit: ${remaining}.`);
+      openPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} from my verified club credit. My remaining credit is ${remaining}. Please note it for my flight.`);
       window.dispatchEvent(new CustomEvent("indianclub:render"));
     } catch (error) { notify(error.message); }
   });
@@ -295,6 +300,7 @@ export function bindBusinessSubmission() {
     try {
       await api(`/finance/charges/${encodeURIComponent(button.dataset.manualCharge)}/payment-claim`, { method: "POST", body: { method, reference } });
       notify("Cash / Benefit settlement sent to your Flight Admin for confirmation.");
+      openPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} by ${method}. Reference: ${reference}. Please verify my payment for the flight.`);
       window.dispatchEvent(new CustomEvent("indianclub:render"));
     } catch (error) { notify(error.message); }
   });
