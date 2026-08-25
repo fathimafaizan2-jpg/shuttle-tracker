@@ -1,3 +1,4 @@
+/* js/modules/auth.js */
 import {
   EmailAuthProvider,
   onAuthStateChanged,
@@ -10,18 +11,14 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { firebaseAuth } from "../config.js";
 
-function resolveApiBaseUrl() {
+function resolveApiBaseUrl( ) {
   const configured = window.INDIAN_CLUB_API_URL;
   if (configured) return configured.replace(/\/+$/, "");
-
-  if (window.location.hostname.endsWith("github.io")) {
-    return "https://indian-club-api.onrender.com/api";
-  }
-
+  if (window.location.hostname.endsWith("github.io")) return "https://indian-club-api.onrender.com/api";
   return "http://localhost:3000/api";
 }
 
-const API_BASE_URL = resolveApiBaseUrl();
+const API_BASE_URL = resolveApiBaseUrl( );
 
 function messageFromResponse(data, fallback) {
   return data?.message || data?.error || fallback;
@@ -48,7 +45,6 @@ export async function getIdToken(forceRefresh = false) {
   return user.getIdToken(forceRefresh);
 }
 
-/* All protected club actions go through Render API with a Firebase ID token. */
 export async function api(path, options = {}) {
   const token = await getIdToken(Boolean(options.forceRefresh));
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -66,7 +62,6 @@ export async function api(path, options = {}) {
   return data;
 }
 
-/* Public business requests never require a Player/Admin Firebase account. */
 export async function submitPublicBusiness(payload) {
   return publicApi("/business/public/submit", { method: "POST", body: payload });
 }
@@ -75,9 +70,8 @@ export async function submitBusinessUpdateRequest(payload) {
   return publicApi("/business/public/update-request", { method: "POST", body: payload });
 }
 
-/* A member uses the one-time code supplied privately by Super Admin to create their own login. */
 export async function activateMemberAccount(payload) {
-  return publicApi("/members/activate", { method: "POST", body: payload });
+  return publicApi("/members/activate-registered", { method: "POST", body: payload });
 }
 
 export async function login(email, password) {
@@ -108,7 +102,6 @@ export async function sendMyPasswordReset(email) {
   await sendPasswordResetEmail(firebaseAuth, value);
 }
 
-/* Re-authentication is required only before a sensitive email or password change. */
 async function reauthenticate(currentPassword) {
   const current = firebaseAuth.currentUser;
   if (!current?.email) throw new Error("Please sign in again.");
@@ -135,10 +128,7 @@ export async function updateMyCredentials(payload) {
   }
 
   if (isChangingEmail) {
-    await api("/members/me/validate-email", {
-      method: "POST",
-      body: { email: nextEmail }
-    });
+    await api("/members/me/validate-email", { method: "POST", body: { email: nextEmail } });
     await updateEmail(current, nextEmail);
   }
 
@@ -149,6 +139,7 @@ export async function updateMyCredentials(payload) {
     forceRefresh: isChangingEmail,
     body: {
       memberId: payload.memberId,
+      fullName: payload.fullName,
       phone: payload.phone,
       email: isChangingEmail ? nextEmail : current.email
     }
