@@ -7,14 +7,14 @@
   <meta name="description" content="Indian Club Bahrain shuttle tracker" />
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="css/styles.css" />
-  <title>Indian Club Bahrain | Powered by Nuzan AI Studio</title>
+  <title>Indian Club Bahrain | Powered by A1 Groups</title>
 </head>
 <body>
   <section id="splash" class="splash">
     <div class="splash-content">
       <div class="splash-mark">🏸</div>
       <h1>Indian Club Bahrain</h1>
-      <p>Shuttle Tracker · Powered by Nuzan AI Studio</p>
+      <p>Shuttle Tracker · Powered by A1 Groups</p>
     </div>
   </section>
 
@@ -23,7 +23,7 @@
       <div class="brand-mark">IC</div>
       <div>
         <strong>Indian Club Bahrain</strong>
-        <small>Shuttle Tracker · Powered by Nuzan AI Studio</small>
+        <small>Shuttle Tracker · Powered by A1 Groups</small>
       </div>
     </header>
 
@@ -103,7 +103,7 @@
       <button id="submitBusiness" class="primary">Submit to Super Admin</button>
     </section>
 
-    <footer class="footer"><b>Indian Club Bahrain</b> Powered by <b>Nuzan AI Studio</b></footer>
+    <footer class="footer"><b>Indian Club Bahrain</b> Powered by <b>A1 Groups</b></footer>
   </main>
 
   <section id="login" class="login-overlay hidden" aria-modal="true" role="dialog">
@@ -202,10 +202,10 @@
 
   <main id="app" class="hidden">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark">IC</div><div><h1>Indian Club</h1><small>Powered by Nuzan AI Studio</small></div></div>
+      <div class="brand"><div class="brand-mark">IC</div><div><h1>Indian Club</h1><small>Powered by A1 Groups</small></div></div>
       <div class="user-dot"><span id="roleLabel"></span><div id="avatar" class="avatar">IC</div><button id="logout" class="tag red">Logout</button></div>
     </header>
-    <div class="ticker"><div id="tickerTrack" class="ticker-track">Indian Club Bahrain · Powered by Nuzan AI Studio</div></div>
+    <div class="ticker"><div id="tickerTrack" class="ticker-track">Indian Club Bahrain · Powered by A1 Groups</div></div>
     <div class="layout">
       <aside id="side" class="side">
         <div class="brand"><div class="brand-mark">IC</div><div><b id="memberName">Member</b><small id="sideRole"></small></div></div>
@@ -231,7 +231,7 @@
       </aside>
       <section id="view"></section>
     </div>
-    <footer class="footer"><b>Indian Club Bahrain</b> · Powered by <b>Nuzan AI Studio</b></footer>
+    <footer class="footer"><b>Indian Club Bahrain</b> · Powered by <b>A1 Groups</b></footer>
   </main>
 
   <div id="toast" class="toast hidden" role="status"></div>
@@ -240,8 +240,8 @@
     import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness } from "./js/modules/auth.js";
     import { state, navigate, startSignedInApp, setLanguage } from "./js/router.js";
     import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
-    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, bindAdminViews } from "./js/modules/adminViews.js";
-    import {flightAdminSessionControlView,flightAdminShuttleStockView,flightAdminReportsView,bindFlightAdminViews} from "./js/modules/flightAdminViews.js";
+    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, bindAdminViews } from "./js/modules/adminViews.js";
+    import { flightAdminSessionControlView, flightAdminShuttleStockView, flightAdminReportsView, bindFlightAdminViews } from "./js/modules/flightAdminViews.js";
 
     const $ = id => document.getElementById(id );
     const publicApiBase = window.INDIAN_CLUB_API_URL;
@@ -298,7 +298,8 @@
       document.querySelectorAll(".nav[data-page]").forEach(button => button.classList.toggle("active", button.dataset.page === state.page));
       try {
         let html = "";
-        if (state.page === "home") html = await playerDashboard(state.member);
+        if (state.page === "home" && state.member.role === "LEVEL_ADMIN") html = `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${state.member.flightName || "Assigned flight"}</span><h2>Admin Home</h2><p>Manage today’s attendance, session control, shuttle stock, and payment records for your assigned flight.</p></div></div><section class="grid metrics"><article class="card"><h3>Today’s operations</h3><p class="note">Open Attendance to review your flight roster. Use Session Control after the game to create the final Player charges.</p><div class="actions"><button class="primary" data-go-page="attendance">Open Attendance</button><button class="pill" data-go-page="sessions">Session Control</button></div></article><article class="card"><h3>Finance and stock</h3><p class="note">Use Shuttle Stock for tube settings and Finance for Cash / Benefit confirmations and unpaid reminders.</p><div class="actions"><button class="pill" data-go-page="stock">Shuttle Stock</button><button class="pill" data-go-page="finance">Finance</button></div></article></section>`;
+        else if (state.page === "home") html = await playerDashboard(state.member);
         else if (state.page === "timetable") html = await playerTimetable();
         else if (state.page === "attendance") {
           const sessions = await api("/timetable/mine");
@@ -310,6 +311,7 @@
         else if (state.page === "master") html = await superAdminTimetableView();
         else if (state.page === "flights") html = await activitiesAndFlightsView();
         else if (state.page === "finance") html = await financeAdminView();
+        else if (state.page === "audit") html = await auditHistoryView();
         else if (state.page === "sessions") html = await flightAdminSessionControlView();
         else if (state.page === "stock") html = await flightAdminShuttleStockView();
         else if (state.page === "reports") html = await flightAdminReportsView();
@@ -319,6 +321,7 @@
         bindBusinessSubmission();
         bindAdminViews();
         bindFlightAdminViews();
+        document.querySelectorAll("[data-go-page]").forEach(button => button.onclick = () => navigate(button.dataset.goPage));
       } catch (error) {
         $("view").innerHTML = `<section class="card"><h2>Unable to load this page</h2><p class="note">${error.message || "Please try again later."}</p></section>`;
       }
