@@ -278,6 +278,7 @@ router.post("/charges/:chargeId/pay-with-credit", requireAuth, async (request, r
       return response.status(403).json({ message: "You may pay only your own charge." });
     }
 
+    let remainingBalanceFils = 0;
     await db.runTransaction(async transaction => {
       const liveCharge = await transaction.get(charge.ref);
       if (!liveCharge.exists || liveCharge.data()!.status !== "DUE") {
@@ -299,11 +300,12 @@ router.post("/charges/:chargeId/pay-with-credit", requireAuth, async (request, r
         );
       }
 
+      remainingBalanceFils = balance - due;
       transaction.set(
         wallet,
         {
           memberUid: request.member!.uid,
-          balanceFils: balance - due,
+          balanceFils: remainingBalanceFils,
           updatedAt: FieldValue.serverTimestamp()
         },
         { merge: true }
@@ -328,7 +330,7 @@ router.post("/charges/:chargeId/pay-with-credit", requireAuth, async (request, r
       });
     });
 
-    response.json({ success: true, message: "Shuttlecock charge paid using wallet credit." });
+    response.json({ success: true, message: "Shuttlecock charge paid using wallet credit.", remainingBalanceFils });
   } catch (error) {
     response.status(400).json({
       message: error instanceof Error ? error.message : "Could not pay using credit."
@@ -573,12 +575,18 @@ router.post(
 router.get("/mine", requireAuth, async (request, response) => {
   try {
     const memberUid = request.member!.uid;
-    const [wallet, ledger, charges, payments] = await Promise.all([
+    const [wallet, ledger, charges, payments, adminSnapshot] = await Promise.all([
       walletRef(memberUid).get(),
       db.collection("walletLedger").where("memberUid", "==", memberUid).get(),
       db.collection("sessionCharges").where("memberUid", "==", memberUid).get(),
-      db.collection("payments").where("memberUid", "==", memberUid).get()
+      db.collection("payments").where("memberUid", "==", memberUid).get(),
+      db.collection("members").where("role", "==", "LEVEL_ADMIN").get()
     ]);
+
+    const assignedFlightId = request.member!.flightId || null;
+    const assignedFlightAdmin = adminSnapshot.docs
+      .map(doc => ({ uid: doc.id, ...doc.data() }))
+      .find(admin => admin.active !== false && assignedFlightId && admin.flightId === assignedFlightId) as Record<string, unknown> | undefined;
 
     const iso = (value: unknown) => {
       const time = dateValue(value);
@@ -627,7 +635,11 @@ router.get("/mine", requireAuth, async (request, response) => {
             row.dueAt &&
             new Date(row.dueAt).getTime() <= now
         )
-        .reduce((sum, row) => sum + Number(row.amountDueFils || 0), 0)
+        .reduce((sum, row) => sum + Number(row.amountDueFils || 0), 0),
+      flightAdminContact: assignedFlightAdmin ? {
+        name: assignedFlightAdmin.fullName || assignedFlightAdmin.memberId || "Flight Admin",
+        phone: assignedFlightAdmin.phone || ""
+      } : null
     });
   } catch (error) {
     response.status(400).json({
