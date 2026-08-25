@@ -1,4 +1,3 @@
-/* js/modules/auth.js */
 import {
   EmailAuthProvider,
   onAuthStateChanged,
