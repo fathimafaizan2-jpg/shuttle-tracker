@@ -212,7 +212,7 @@ export async function walletView() {
 
     <section class="card">
       <h3>Request wallet refill</h3>
-      <p class="note">Submit Cash or Benefit details. Only Super Admin can approve the request and add the verified amount to your wallet credit.</p>
+      <p class="note">Pay Cash or Benefit at the Super Admin desk. Super Admin verifies the payment and updates your wallet credit from their finance page.</p>
       <div class="grid two">
         <div class="field"><label for="topupAmount">Amount in BHD</label><input id="topupAmount" type="number" min="0.001" step="0.001" placeholder="1.000" /></div>
         <div class="field"><label for="topupMethod">Payment method</label><select id="topupMethod"><option value="BENEFIT">Benefit</option><option value="CASH">Cash</option></select></div>
@@ -227,7 +227,8 @@ export async function walletView() {
       ${chargeRows.map(row => {
         const due = Number(row.amountDueFils || 0);
         const claimPending = pendingChargeIds.has(row.id);
-        return `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName || "Club game")}</b><p>${escapeHtml(dateTime(row.createdAt))} · Total ${bhd(row.totalChargeFils)} · Amount payable ${bhd(due)}</p></div>${due > 0 && !claimPending ? `<div class="actions"><button class="primary" data-credit-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(bhd(due))}">Pay ${bhd(due)} with credit</button><button class="pill" data-manual-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(bhd(due))}">Cash / Benefit</button></div>` : claimPending ? "<span class='tag amber'>CASH / BENEFIT PENDING</span>" : `<span class='tag blue'>${escapeHtml(String(row.status || "PAID").replaceAll("_", " "))}</span>`}</div>`;
+        const notificationToggle = `<label class="pill"><input id="notifyFlightAdmin-${escapeHtml(row.id)}" type="checkbox" /> WhatsApp Flight Admin</label>`;
+        return `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName || "Club game")}</b><p>${escapeHtml(dateTime(row.createdAt))} · Total ${bhd(row.totalChargeFils)} · Amount payable ${bhd(due)}</p></div>${due > 0 && !claimPending ? `<div class="actions"><span class="tag red">UNPAID · ${escapeHtml(day(row.createdAt))}</span>${notificationToggle}<button class="primary" data-credit-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(bhd(due))}">Pay ${bhd(due)} with credit</button><button class="pill" data-manual-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(bhd(due))}">Cash / Benefit</button></div>` : claimPending ? "<span class='tag amber'>CASH / BENEFIT PENDING</span>" : `<span class='tag blue'>${escapeHtml(String(row.status || "PAID").replaceAll("_", " "))}</span>`}</div>`;
       }).join("") || "<p class='note'>No completed-game shuttlecock charges yet.</p>"}
     </section>
 
@@ -280,14 +281,20 @@ export function bindBusinessSubmission() {
     } catch (error) { notify(error.message); }
   };
 
-  const openPaymentWhatsapp = (button, text) => { const phone = String(button.dataset.adminPhone || "").replace(/\D/g, ""); if (!phone) return notify("Payment recorded, but no Flight Admin phone number is saved."); window.open(`https://wa.me/${phone}?text=${encodeURIComponent(`Hello ${button.dataset.adminName || "Flight Admin"}, ${text}`)}`, "_blank", "noopener"); };
+  const maybeOpenPaymentWhatsapp = (button, text) => {
+    const toggle = document.getElementById(`notifyFlightAdmin-${button.dataset.creditCharge || button.dataset.manualCharge}`);
+    if (!toggle?.checked) return;
+    const phone = String(button.dataset.adminPhone || "").replace(/\D/g, "");
+    if (!phone) return notify("Payment recorded, but no Flight Admin phone number is saved.");
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(`Hello ${button.dataset.adminName || "Flight Admin"}, ${text}`)}`, "_blank", "noopener");
+  };
 
   document.querySelectorAll("[data-credit-charge]").forEach(button => button.onclick = async () => {
     try {
       const result = await api(`/finance/charges/${encodeURIComponent(button.dataset.creditCharge)}/pay-with-credit`, { method: "POST" });
       const remaining = bhd(result.remainingBalanceFils || 0);
       notify(`Charge paid from credit. Remaining credit: ${remaining}.`);
-      openPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} from my verified club credit. My remaining credit is ${remaining}. Please note it for my flight.`);
+      maybeOpenPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} from my verified club credit. My remaining credit is ${remaining}. Please note it for my flight.`);
       window.dispatchEvent(new CustomEvent("indianclub:render"));
     } catch (error) { notify(error.message); }
   });
@@ -300,7 +307,7 @@ export function bindBusinessSubmission() {
     try {
       await api(`/finance/charges/${encodeURIComponent(button.dataset.manualCharge)}/payment-claim`, { method: "POST", body: { method, reference } });
       notify("Cash / Benefit settlement sent to your Flight Admin for confirmation.");
-      openPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} by ${method}. Reference: ${reference}. Please verify my payment for the flight.`);
+      maybeOpenPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} by ${method}. Reference: ${reference}. Please verify my payment for the flight.`);
       window.dispatchEvent(new CustomEvent("indianclub:render"));
     } catch (error) { notify(error.message); }
   });
