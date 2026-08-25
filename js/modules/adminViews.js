@@ -52,10 +52,13 @@ export async function activitiesAndFlightsView() {
 
 export async function superAdminTimetableView() {
   requireSuperAdmin();
+  const baseData = await api(`/timetable/master?${new URLSearchParams({ month: selectedMasterMonth }).toString()}`);
+  const activities = baseData.activities || [];
+  if (!activities.some(activity => activity.id === selectedMasterActivityId)) selectedMasterActivityId = baseData.activityId || activities[0]?.id || "";
   const query = new URLSearchParams({ month: selectedMasterMonth });
   if (selectedMasterActivityId) query.set("activityId", selectedMasterActivityId);
-  const data = await api(`/timetable/master?${query.toString()}`), activities = data.activities || [], flights = data.flights || [];
-  if (!selectedMasterActivityId && data.activityId) selectedMasterActivityId = data.activityId;
+  const data = selectedMasterActivityId === baseData.activityId ? baseData : await api(`/timetable/master?${query.toString()}`);
+  const flights = data.flights || [];
   return `<div class="page-head"><div><span class="tag blue">SUPER ADMIN</span><h2>Master Timetable</h2><p>Weekly pattern for the selected month. Courts always use 1 and 2.</p></div></div><section class="card"><div class="grid two"><div class="field"><label for="masterMonth">Month</label><input id="masterMonth" type="month" value="${escapeHtml(selectedMasterMonth)}" /></div><div class="field"><label for="masterActivity">Activity</label><select id="masterActivity">${activities.map(activity => `<option value="${escapeHtml(activity.id)}" ${activity.id === selectedMasterActivityId ? "selected" : ""}>${escapeHtml(activity.name)}</option>`).join("")}</select></div></div><div class="actions"><button id="loadMasterMonth" class="pill">Load timetable</button><button id="publishMasterMonth" class="primary">Publish this month</button></div></section><section class="card table-wrap"><table class="schedule"><thead><tr><th>Day</th><th>Flight</th><th>Start</th><th>End</th><th>Courts</th><th>Action</th></tr></thead><tbody>${(data.weeklyPattern || []).map(slot => `<tr><td>${escapeHtml(slot.weekday)}</td><td>${escapeHtml(slot.flightName)}</td><td>${escapeHtml(slot.startTime)}</td><td>${escapeHtml(slot.endTime)}</td><td>1 & 2</td><td><button class="pill" data-delete-slot="${escapeHtml(slot.id)}">Remove</button></td></tr>`).join("") || "<tr><td colspan='6'>No weekly slots yet.</td></tr>"}</tbody></table></section><section class="card"><h3>Bulk weekly grid</h3><p class="note">Paste one row per occupied cell from your weekly chart. Use the flight name exactly as shown in the flight list. The app creates the whole weekly pattern at once and rejects duplicate or overlapping times for the same flight and weekday.</p><div class="field"><label for="bulkTimetableCsv">CSV rows: weekday, flight, start time, end time</label><textarea id="bulkTimetableCsv" rows="8" placeholder="weekday,flight,startTime,endTime\nSaturday,Flight 2,18:35,19:35\nSaturday,Flight 1,19:35,20:35\nSunday,Flight 4B,18:35,19:35"></textarea></div><div class="actions"><button id="importBulkTimetable" class="primary">Import weekly grid</button><button id="downloadBulkTemplate" class="pill">Download CSV template</button></div></section><section class="card"><h3>Add weekly flight slot</h3><div class="grid two"><div class="field"><label for="slotDay">Day</label><select id="slotDay"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select></div><div class="field"><label for="slotFlight">Flight</label><select id="slotFlight">${flights.map(flight => `<option value="${escapeHtml(flight.id)}">${escapeHtml(flight.name)}</option>`).join("")}</select></div><div class="field"><label for="slotStart">Start time</label><input id="slotStart" type="time" /></div><div class="field"><label for="slotEnd">End time</label><input id="slotEnd" type="time" /></div></div><button id="saveMasterSlot" class="primary">Save weekly slot</button></section>`;
 }
 
@@ -63,12 +66,23 @@ export async function financeAdminView() {
   const isSuperAdmin = state.member?.role === "SUPER_ADMIN", isFlightAdmin = state.member?.role === "LEVEL_ADMIN";
   if (!isSuperAdmin && !isFlightAdmin) throw new Error("Only Flight Admin or Super Admin can access finance.");
   const [activities, members] = await Promise.all([api("/activities"), isSuperAdmin ? api("/members") : Promise.resolve([])]);
-  const flights = flattenFlights(activities), selectedFlights = selectedFinanceActivityId ? flights.filter(flight => flight.activityId === selectedFinanceActivityId) : flights;
+  const flights = flattenFlights(activities);
+  if (selectedFinanceActivityId && !activities.some(activity => activity.id === selectedFinanceActivityId)) selectedFinanceActivityId = "";
+  const selectedFlights = selectedFinanceActivityId ? flights.filter(flight => flight.activityId === selectedFinanceActivityId) : flights;
   if (selectedFinanceFlightId && !selectedFlights.some(flight => flight.id === selectedFinanceFlightId)) selectedFinanceFlightId = "";
   const query = new URLSearchParams();
-  if (isSuperAdmin && selectedFinanceActivityId) query.set("activityId", selectedFinanceActivityId);
   if (isSuperAdmin && selectedFinanceFlightId) query.set("flightId", selectedFinanceFlightId);
-  const data = await api(`/finance/overview${query.size ? `?${query.toString()}` : ""}`);
+  else if (isSuperAdmin && selectedFinanceActivityId) query.set("activityId", selectedFinanceActivityId);
+  let data;
+  try {
+    data = await api(`/finance/overview${query.size ? `?${query.toString()}` : ""}`);
+  } catch (error) {
+    const message = String(error?.message || error || "");
+    if (!isSuperAdmin || (!message.toLowerCase().includes("selected flight") && !message.toLowerCase().includes("invalid option"))) throw error;
+    selectedFinanceActivityId = "";
+    selectedFinanceFlightId = "";
+    data = await api("/finance/overview");
+  }
   const allowedFlights = new Set(selectedFlights.map(flight => flight.id));
   const players = members.filter(member => member.active && member.role === "PLAYER" && (!selectedFinanceFlightId || member.flightId === selectedFinanceFlightId) && (!selectedFinanceActivityId || allowedFlights.has(member.flightId)));
   const scope = isFlightAdmin ? (data.scope?.flights?.[0]?.name || state.member?.flightName || "Your flight") : selectedFinanceFlightId ? (flights.find(flight => flight.id === selectedFinanceFlightId)?.name || "Selected flight") : selectedFinanceActivityId ? (activities.find(activity => activity.id === selectedFinanceActivityId)?.name || "Selected activity") : "All activities and flights";
@@ -82,6 +96,12 @@ export async function financeAdminView() {
   if (!keys.includes(selectedFinanceTab)) selectedFinanceTab = keys[0];
   const active = tabs[selectedFinanceTab];
   return `<div class="page-head"><div><span class="tag blue">${isSuperAdmin ? "SUPER ADMIN FINANCE" : "FLIGHT ADMIN FINANCE"}</span><h2>Finance</h2><p>${isSuperAdmin ? "View and print audit lists by selected activity and level." : "Manage only your assigned flight."}</p></div></div><div class="grid metrics"><article class="card metric"><span>Verified credit</span><b>${bhd(data.totalCreditFils)}</b><i>${escapeHtml(scope)}</i></article>${isFlightAdmin ? `<article class="card metric"><span>Pending payment</span><b>${bhd(data.pendingPaymentFils)}</b><i>Your flight</i></article>` : ""}<article class="card metric"><span>Unpaid amount</span><b>${bhd((data.unpaid || []).reduce((sum, row) => sum + Number(row.amountDueFils || 0), 0))}</b><i>Selected level</i></article><article class="card metric"><span>Session costs</span><b>${bhd(data.monthCostFils)}</b><i>Current month</i></article></div>${isSuperAdmin ? `<section class="card"><h3>Select activity and level</h3><div class="grid two"><div class="field"><label for="financeActivityFilter">Activity</label><select id="financeActivityFilter"><option value="">All activities</option>${activities.map(activity => `<option value="${escapeHtml(activity.id)}" ${activity.id === selectedFinanceActivityId ? "selected" : ""}>${escapeHtml(activity.name)}</option>`).join("")}</select></div><div class="field"><label for="financeFlightFilter">Flight / Level</label><select id="financeFlightFilter"><option value="">All flights in this selection</option>${selectedFlights.map(flight => `<option value="${escapeHtml(flight.id)}" ${flight.id === selectedFinanceFlightId ? "selected" : ""}>${escapeHtml(flight.activityName)} · ${escapeHtml(flight.name)}</option>`).join("")}</select></div></div></section>` : ""}<section class="card"><div class="actions">${keys.map(key => `<button class="${key === selectedFinanceTab ? "primary" : "pill"}" data-finance-tab="${key}">${tabs[key].label}</button>`).join("")}<button class="pill" data-print-finance>Print current tab</button></div></section><section class="card"><div class="page-head"><div><h3>${escapeHtml(active.label)}</h3><p class="note">${escapeHtml(scope)}</p></div></div>${active.content}</section>`;
+}
+
+export async function auditHistoryView() {
+  requireSuperAdmin();
+  const records = await api("/members/audit");
+  return `<div class="page-head"><div><span class="tag blue">SUPER ADMIN</span><h2>Audit History</h2><p>Read-only history of member, attendance, payment, and game-stock actions.</p></div><button class="pill" data-print-audit>Print audit</button></div><section class="card table-wrap"><table class="schedule"><thead><tr><th>Date</th><th>Category</th><th>Action</th><th>Subject</th><th>Details</th><th>By</th></tr></thead><tbody>${(records || []).map(row => `<tr><td>${escapeHtml(recordDate(row.createdAt))}</td><td>${escapeHtml(row.category || "—")}</td><td>${escapeHtml(row.action || "—")}</td><td>${escapeHtml(row.subject || "—")}</td><td>${escapeHtml(row.detail || "—")}${row.sessionDate ? `<br><small>Game: ${escapeHtml(recordDate(row.sessionDate))}</small>` : ""}</td><td>${escapeHtml(row.actor || "—")}</td></tr>`).join("") || "<tr><td colspan='6'>No audit records have been recorded yet.</td></tr>"}</tbody></table></section>`;
 }
 
 export function bindAdminViews() {
@@ -109,11 +129,11 @@ export function bindAdminViews() {
   const publish = document.getElementById("publishMasterMonth"); if (publish) publish.onclick = async () => { try { await api("/timetable/master/publish-month", { method: "POST", body: { month: selectedMasterMonth, activityId: selectedMasterActivityId } }); notify("Monthly sessions published."); } catch (error) { notify(error.message); } };
   document.querySelectorAll("[data-delete-slot]").forEach(button => button.onclick = async () => { if (!confirm("Remove this weekly timetable slot?")) return; try { await api(`/timetable/master/slot/${encodeURIComponent(button.dataset.deleteSlot)}`, { method: "DELETE" }); refresh(); } catch (error) { notify(error.message); } });
 
-  const financeActivity = document.getElementById("financeActivityFilter"); if (financeActivity) financeActivity.onchange = () => { selectedFinanceActivityId = financeActivity.value; selectedFinanceFlightId = ""; refresh(); };
-  const financeFlight = document.getElementById("financeFlightFilter"); if (financeFlight) financeFlight.onchange = () => { selectedFinanceFlightId = financeFlight.value; refresh(); };
+  const financeActivity = document.getElementById("financeActivityFilter"); if (financeActivity) financeActivity.onchange = () => { selectedFinanceActivityId = financeActivity.value && [...financeActivity.options].some(option => option.value === financeActivity.value) ? financeActivity.value : ""; selectedFinanceFlightId = ""; refresh(); };
+  const financeFlight = document.getElementById("financeFlightFilter"); if (financeFlight) financeFlight.onchange = () => { selectedFinanceFlightId = financeFlight.value && [...financeFlight.options].some(option => option.value === financeFlight.value) ? financeFlight.value : ""; refresh(); };
   document.querySelectorAll("[data-finance-tab]").forEach(button => button.onclick = () => { selectedFinanceTab = button.dataset.financeTab || "credits"; refresh(); });
   const addCredit = document.getElementById("addFinanceCredit"); if (addCredit) addCredit.onclick = async () => { try { const memberUid = document.getElementById("financeCreditMember").value, amountFils = Math.round(Number(document.getElementById("financeCreditAmount").value) * 1000), note = document.getElementById("financeCreditNote").value.trim(); if (!memberUid) throw new Error("Choose a Player."); if (!Number.isInteger(amountFils) || amountFils < 1) throw new Error("Enter a valid credit amount."); await api("/finance/admin/wallet-credit", { method: "POST", body: { memberUid, amountFils, note } }); notify("Verified wallet credit added."); refresh(); } catch (error) { notify(error.message); } };
   document.querySelectorAll("[data-verify-payment]").forEach(button => button.onclick = async () => { try { await api(`/finance/payments/${encodeURIComponent(button.dataset.verifyPayment)}/verify`, { method: "POST" }); notify("Cash / Benefit payment confirmed."); refresh(); } catch (error) { notify(error.message); } });
   document.querySelectorAll("[data-whatsapp-reminder]").forEach(button => button.onclick = () => { const phone = String(button.dataset.whatsappReminder || "").replace(/\D/g, ""); if (!phone) return notify("This Player has no phone number saved."); const message = encodeURIComponent(`Hello ${button.dataset.whatsappName}, a club shuttlecock amount of ${button.dataset.whatsappAmount} is unpaid. Please pay using wallet credit, Cash, or Benefit. Thank you.`); window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener" ); });
-  document.querySelectorAll("[data-print-finance]").forEach(button => button.onclick = () => window.print());
+  document.querySelectorAll("[data-print-finance], [data-print-audit]").forEach(button => button.onclick = () => window.print());
 }
