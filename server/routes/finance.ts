@@ -663,6 +663,10 @@ router.get("/mine", requireAuth, async (request, response) => {
       db.collection("members").where("role", "==", "LEVEL_ADMIN").get()
     ]);
 
+    const chargeSessionIds = [...new Set(charges.docs.map(doc => String(doc.data().sessionId || "")).filter(Boolean))];
+    const sessionDocs = await Promise.all(chargeSessionIds.map(sessionId => db.collection("sessions").doc(sessionId).get()));
+    const sessionById = new Map(sessionDocs.filter(doc => doc.exists).map(doc => [doc.id, doc.data()!]));
+
     const assignedFlightId = request.member!.flightId || null;
     const assignedFlightAdmin = adminSnapshot.docs
       .map(doc => ({ uid: doc.id, ...doc.data() }))
@@ -677,13 +681,23 @@ router.get("/mine", requireAuth, async (request, response) => {
       dateValue(b.createdAt || b.submittedAt || b.dueAt) -
       dateValue(a.createdAt || a.submittedAt || a.dueAt);
 
-    const chargeRows = charges.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      dueAt: iso(doc.data().dueAt),
-      createdAt: iso(doc.data().createdAt),
-      paidAt: iso(doc.data().paidAt)
-    }));
+    const chargeRows = charges.docs.map(doc => {
+      const charge = doc.data();
+      const session = sessionById.get(String(charge.sessionId || "")) || {};
+      return {
+        id: doc.id,
+        ...charge,
+        gameStartAt: iso(session.startAt || charge.sessionStartAt),
+        gameEndAt: iso(session.endAt),
+        completedAt: iso(session.completedAt),
+        actualShuttlesUsed: Number(session.actualShuttlesUsed || 0),
+        finalPresentCount: Number(session.attendeeCount || 0),
+        totalGameCostFils: Number(session.totalDayCostFils || 0),
+        dueAt: iso(charge.dueAt),
+        createdAt: iso(charge.createdAt),
+        paidAt: iso(charge.paidAt)
+      };
+    });
 
     const paymentRows = payments.docs.map(doc => ({
       id: doc.id,
