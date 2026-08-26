@@ -3,6 +3,8 @@ import { db, FieldValue, Timestamp } from "../firebaseAdmin.js";
 import { requireAuth, requireRole } from "../auth.js";
 
 const router = Router();
+const CLUB_TIME_ZONE = "Asia/Bahrain";
+const CLUB_OFFSET_MINUTES = 3 * 60;
 const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 type Weekday = typeof weekdays[number];
 
@@ -53,14 +55,30 @@ function timestampValue(value: unknown) {
   return timestampToDate(value)?.getTime() || 0;
 }
 
+function clubParts(value: Date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: CLUB_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(value);
+  return Object.fromEntries(parts.filter(part => part.type !== "literal").map(part => [part.type, part.value]));
+}
+
 function dateMonth(value: unknown) {
   const date = timestampToDate(value);
   if (!date) return "";
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  const parts = clubParts(date);
+  return `${parts.year}-${parts.month}`;
 }
 
 function dateTime(value: Date) {
-  return `${String(value.getUTCHours()).padStart(2, "0")}:${String(value.getUTCMinutes()).padStart(2, "0")}`;
+  const parts = clubParts(value);
+  return `${parts.hour}:${parts.minute}`;
 }
 
 function storedWeekdayIndex(slot: FirebaseFirestore.DocumentData) {
@@ -86,10 +104,11 @@ function matchesCurrentWeeklySlot(
   const weekdayIndex = storedWeekdayIndex(slot);
   if (!startAt || weekdayIndex < 0) return false;
 
+  const parts = clubParts(startAt);
   return (
     String(session.activityId || "") === String(slot.activityId || "") &&
     String(session.flightId || "") === String(slot.flightId || "") &&
-    startAt.getUTCDay() === weekdayIndex &&
+    weekdays.indexOf(String(parts.weekday) as Weekday) === weekdayIndex &&
     dateTime(startAt) === String(slot.startTime || "")
   );
 }
@@ -358,8 +377,9 @@ router.post("/master/publish-month", requireAuth, requireRole("SUPER_ADMIN"), as
 
         const [startHour, startMinute] = String(pattern.startTime).split(":").map(Number);
         const [endHour, endMinute] = String(pattern.endTime).split(":").map(Number);
-        const startAt = new Date(Date.UTC(year, monthNumber - 1, day, startHour, startMinute));
-        const endAt = new Date(Date.UTC(year, monthNumber - 1, day, endHour, endMinute));
+        /* Timetable clocks are Bahrain local time; persist the corresponding UTC instant. */
+        const startAt = new Date(Date.UTC(year, monthNumber - 1, day, startHour, startMinute) - CLUB_OFFSET_MINUTES * 60 * 1000);
+        const endAt = new Date(Date.UTC(year, monthNumber - 1, day, endHour, endMinute) - CLUB_OFFSET_MINUTES * 60 * 1000);
         const key = `${month}_${String(day).padStart(2, "0")}_${patternDoc.id}`;
 
         planned.set(key, {
