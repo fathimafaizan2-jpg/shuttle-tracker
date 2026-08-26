@@ -48,17 +48,15 @@ function onlyFlightAdmin(title) {
 function rows(items, empty, options = {}) {
   if (!items?.length) return `<p class="note">${escapeHtml(empty)}</p>`;
   const due = Boolean(options.due);
-  const reminder = Boolean(options.reminder);
-  const confirmation = Boolean(options.confirmation);
-  const actionHead = reminder || confirmation ? "<th>Action</th>" : "";
-  return `<div class="table-wrap"><table class="schedule"><thead><tr><th>Player</th><th>Date</th><th>Amount</th><th>Status / payment ID</th>${actionHead}</tr></thead><tbody>${items.map(item => { const amount = bhd(due ? item.amountDueFils : (item.totalChargeFils || item.amountFils)); const action = reminder ? `<button class="pill" data-flight-reminder-phone="${escapeHtml(item.phone || "")}" data-flight-reminder-name="${escapeHtml(item.memberName || "Member")}" data-flight-reminder-amount="${escapeHtml(amount)}">WhatsApp reminder</button>` : confirmation ? `<button class="pill" data-flight-paid-phone="${escapeHtml(item.phone || "")}" data-flight-paid-name="${escapeHtml(item.memberName || "Member")}" data-flight-paid-amount="${escapeHtml(amount)}" data-flight-paid-date="${escapeHtml(dateLabel(item.paidAt || item.createdAt || item.dueAt))}">WhatsApp confirmation</button>` : ""; const paymentCode = item.paymentCode || item.verifiedPaymentId || "—"; return `<tr><td><b>${escapeHtml(item.memberName || item.memberId || item.memberUid)}</b><br><small>${escapeHtml(item.memberId || "")}</small></td><td>${escapeHtml(dateLabel(item.paidAt || item.createdAt || item.dueAt))}</td><td>${amount}</td><td><span class="tag ${String(item.status || "").startsWith("PAID") ? "blue" : item.status === "DUE" ? "red" : "amber"}">${escapeHtml(item.status || "DUE")}</span><br><small>${paymentCode === "—" ? "" : `ID: ${escapeHtml(paymentCode)}`}</small></td>${action ? `<td>${action}</td>` : ""}</tr>`; }).join("")}</tbody></table></div>`;
+  return `<div class="table-wrap"><table class="schedule"><thead><tr><th>Player</th><th>Date</th><th>Amount</th><th>Status / payment ID</th></tr></thead><tbody>${items.map(item => { const amount = bhd(due ? item.amountDueFils : (item.totalChargeFils || item.amountFils)); const paymentCode = item.paymentCode || item.verifiedPaymentId || "—"; return `<tr><td><b>${escapeHtml(item.memberName || item.memberId || item.memberUid)}</b><br><small>${escapeHtml(item.memberId || "")}</small></td><td>${escapeHtml(dateLabel(item.paidAt || item.createdAt || item.dueAt))}</td><td>${amount}</td><td><span class="tag ${String(item.status || "").startsWith("PAID") ? "blue" : item.status === "DUE" ? "red" : "amber"}">${escapeHtml(item.status || "DUE")}</span><br><small>${paymentCode === "—" ? "" : `ID: ${escapeHtml(paymentCode)}`}</small></td></tr>`; }).join("")}</tbody></table></div>`;
 }
 
 export async function flightAdminSessionControlView() {
   if (!isOperationalAdmin()) return onlyFlightAdmin("Session Control");
 
   const financeQuery = state.member.role === "SUPER_ADMIN" && state.member.flightId ? `?flightId=${encodeURIComponent(state.member.flightId)}` : "";
-  const [sessions, finance] = await Promise.all([api("/timetable/mine"), api(`/finance/overview${financeQuery}`)]);
+  const [sessions, finance, inventoryRows] = await Promise.all([api("/timetable/mine"), api(`/finance/overview${financeQuery}`), api("/inventory/mine")]);
+  const stock = inventoryRows[0] || {};
   const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bahrain", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const today = sessions.filter(session => bahrainDateKey(session.startAt) === todayKey).sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   const attendanceResults = await Promise.all(today.map(async session => {
@@ -73,17 +71,23 @@ export async function flightAdminSessionControlView() {
     const roster = attendance?.roster || [];
     const presentCount = roster.filter(person => person.status === "PRESENT").length;
     const canCorrect = Boolean(attendance?.canCorrect) && !completed;
-    const rosterRows = roster.map(person => `<div class="session"><div class="grow"><b>${escapeHtml(person.fullName || "Member")}</b><p>${escapeHtml(person.memberId || "")}</p></div><span class="tag ${person.status === "PRESENT" ? "blue" : person.status === "ABSENT" ? "red" : "amber"}">${escapeHtml(String(person.status || "NO_RESPONSE").replaceAll("_", " "))}</span>${canCorrect ? `<div class="actions"><button class="pill" data-session-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}" data-member-uid="${escapeHtml(person.uid)}">Mark present</button><button class="pill" data-session-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}" data-member-uid="${escapeHtml(person.uid)}">Mark absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No active members are assigned to this flight.</p>";
-    const finalAttendance = `<section class="card"><div class="page-head"><div><h3>Final attendance before calculation</h3><p class="note">Final PRESENT players: <b>${presentCount}</b>. Mark a player Present when they arrived, or Absent when they did not come. Only this final PRESENT list receives the equal shuttlecock charge.</p></div><span class="tag ${presentCount ? "blue" : "amber"}">${presentCount} PRESENT</span></div>${rosterRows}${!canCorrect && !completed ? "<p class='note'>Final attendance correction becomes available when the game has started. Player self-responses remain open until the normal attendance lock.</p>" : ""}</section>`;
-    const finishControl = ended && !completed ? `<div class="grid two"><div class="field"><label for="actualShuttlesUsed-${escapeHtml(session.id)}">Actual shuttlecocks used</label><input id="actualShuttlesUsed-${escapeHtml(session.id)}" type="number" min="0" step="1" placeholder="Number used" /></div><div class="field"><label>Final players attending</label><b>${presentCount} PRESENT</b><small>Charges will be split only among these final attendees.</small></div></div><button class="primary" data-complete-flight-game="${escapeHtml(session.id)}" ${presentCount ? "" : "disabled"}>Update final attendance and create Player charges</button>` : "";
-    return `<article class="card"><div class="session"><div class="grow"><b>${escapeHtml(session.flightName || state.member.flightName || "Assigned flight")}</b><p>${escapeHtml(dateTime(session.startAt))} – ${escapeHtml(dateTime(session.endAt))}</p></div><span class="tag ${completed ? "blue" : ended ? "amber" : "blue"}">${completed ? "COMPLETED" : ended ? "READY TO FINISH" : "TODAY · UPCOMING"}</span></div>${finalAttendance}${finishControl}</article>`;
+    const rosterRows = roster.map((person, index) => {
+      const isPresent = person.status === "PRESENT";
+      const action = canCorrect ? `<button class="${isPresent ? "pill" : "primary"}" data-session-attendance="${isPresent ? "ABSENT" : "PRESENT"}" data-session-id="${escapeHtml(session.id)}" data-member-uid="${escapeHtml(person.uid)}">${isPresent ? "Remove" : "Add"}</button>` : "";
+      return `<div class="session"><b>${index + 1}.</b><div class="grow"><b>${escapeHtml(person.fullName || "Member")}</b><p>${escapeHtml(person.memberId || "")}</p></div><span class="tag ${isPresent ? "blue" : person.status === "ABSENT" ? "red" : "amber"}">${escapeHtml(String(person.status || "NO_RESPONSE").replaceAll("_", " "))}</span>${action}</div>`;
+    }).join("") || "<p class='note'>No active members are assigned to this flight.</p>";
+    const previewDisabled = !ended || completed || !presentCount || !Number(stock.tubePriceFils) || !Number(stock.shuttlesPerTube);
+    const calculation = completed ? `<div class="grid two"><div class="field"><label>Shuttlecocks used</label><div class="session"><b>${Number(session.actualShuttlesUsed || 0)}</b></div></div><div class="field"><label>Amount payable per person</label><div class="session"><b>${bhd(session.perPlayerCostExactFils || 0)}</b></div></div></div><p class="note">Game completed. Final charges have been created for the final PRESENT attendees.</p>` : `<div class="grid two"><div class="field"><label for="actualShuttlesUsed-${escapeHtml(session.id)}">No. of shuttlecocks used</label><input id="actualShuttlesUsed-${escapeHtml(session.id)}" data-session-cost-input="${escapeHtml(session.id)}" data-present-count="${presentCount}" data-tube-price-fils="${Number(stock.tubePriceFils || 0)}" data-shuttles-per-tube="${Number(stock.shuttlesPerTube || 0)}" type="number" min="0" step="1" placeholder="Enter number used" ${ended ? "" : "disabled"} /></div><div class="field"><label>Amount payable per person</label><div class="session"><b id="perPersonPreview-${escapeHtml(session.id)}">${ended ? "Enter shuttles used" : "Available after game ends"}</b></div><small>Final amount is calculated and saved by the protected game-completion process.</small></div></div><button class="primary" data-complete-flight-game="${escapeHtml(session.id)}" ${previewDisabled ? "disabled" : ""}>Update final attendance and create Player charges</button>`;
+    const attendeeSection = `<section class="card"><div class="page-head"><div><h3>No. of players attended</h3><p class="note">Final PRESENT players: <b>${presentCount}</b>. Use Add for anyone who came and Remove for anyone who did not attend. Only these final attendees receive the equal charge.</p></div><span class="tag ${presentCount ? "blue" : "amber"}">${presentCount} ATTENDED</span></div>${rosterRows}${!canCorrect && !completed ? "<p class='note'>Add or Remove becomes available after the game start time. Before then, Players manage their own response in Attendance.</p>" : ""}</section>`;
+    return `<article class="card"><div class="session"><div class="grow"><b>${escapeHtml(session.flightName || state.member.flightName || "Assigned flight")}</b><p>${escapeHtml(dateTime(session.startAt))} – ${escapeHtml(dateTime(session.endAt))}</p></div><span class="tag ${completed ? "blue" : ended ? "amber" : "blue"}">${completed ? "COMPLETED" : ended ? "READY TO FINISH" : "TODAY · UPCOMING"}</span></div>${attendeeSection}<section class="card"><h3>Game cost calculation</h3>${calculation}</section></article>`;
   }).join("") || "<p class='note'>No game is scheduled for your flight today.</p>";
 
-  return `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${escapeHtml(state.member.flightName || "Assigned flight")}</span><h2>Session Control</h2><p>Today’s scheduled game appears here. Finish it using the actual shuttlecocks used; charges are divided only among final PRESENT attendees.</p></div></div>
+  window.__indianClubUnpaidReminderRows = finance.unpaid || [];
+  return `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${escapeHtml(state.member.flightName || "Assigned flight")}</span><h2>Session Control</h2><p>Confirm actual attendance, enter shuttlecocks used, then create equal final charges only for the players who attended.</p></div></div>
   <section class="card"><h3>Today’s game session</h3>${sessionCards}<div id="flightGameResult"></div></section>
   <section class="card"><h3>Pending Cash / Benefit confirmation</h3>${(finance.pendingPayments || []).map(payment => `<div class="session"><div class="grow"><b>${escapeHtml(payment.memberName || payment.memberUid)}</b><p>Payment ID: <b>${escapeHtml(payment.paymentCode || payment.id)}</b> · ${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")} · ${escapeHtml(dateLabel(payment.submittedAt))}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-flight-verify="${escapeHtml(payment.id)}">Verify</button></div>`).join("") || "<p class='note'>No Cash or Benefit settlement is awaiting confirmation for your flight.</p>"}</section>
-  <section class="card"><div class="page-head"><div><h3>Paid Players</h3><p class="note">Use the short WhatsApp confirmation button only when needed.</p></div><button class="pill" data-flight-print>Print paid list</button></div>${rows(finance.paid || [], "No paid Player records.", { confirmation: true })}</section>
-  <section class="card"><div class="page-head"><div><h3>Unpaid Players</h3><p class="note">Send a controlled WhatsApp reminder when appropriate.</p></div><button class="pill" data-flight-print>Print unpaid list</button></div>${rows(finance.unpaid || [], "No unpaid Player records.", { due: true, reminder: true })}</section>`;
+  <div class="grid two"><section id="paidPlayersList" class="card"><div class="page-head"><div><h3>Paid Players</h3><p class="note">Verified Credit and Cash / Benefit settlement records.</p></div><button class="pill" data-flight-print-list="paidPlayersList">Print</button></div>${rows(finance.paid || [], "No paid Player records.")}</section>
+  <section id="unpaidPlayersList" class="card"><div class="page-head"><div><h3>Unpaid Players</h3><p class="note">Send one combined reminder for all currently unpaid Players.</p></div><div class="actions"><button class="pill" data-flight-print-list="unpaidPlayersList">Print</button><button class="primary" data-unpaid-reminder ${finance.unpaid?.length ? "" : "disabled"}>WhatsApp all unpaid</button></div></div>${rows(finance.unpaid || [], "No unpaid Player records.", { due: true })}</section></div>`;
 }
 
 export async function flightAdminShuttleStockView() {
@@ -111,6 +115,23 @@ export async function flightAdminReportsView() {
 }
 
 export function bindFlightAdminViews() {
+  document.querySelectorAll("[data-session-cost-input]").forEach(input => input.oninput = () => {
+    const sessionId = input.dataset.sessionCostInput;
+    const used = Number(input.value);
+    const presentCount = Number(input.dataset.presentCount || 0);
+    const tubePriceFils = Number(input.dataset.tubePriceFils || 0);
+    const shuttlesPerTube = Number(input.dataset.shuttlesPerTube || 0);
+    const target = document.getElementById(`perPersonPreview-${sessionId}`);
+    if (!target) return;
+    if (!Number.isInteger(used) || used < 0) { target.textContent = "Enter whole shuttlecock number"; return; }
+    if (!presentCount || !tubePriceFils || !shuttlesPerTube) { target.textContent = "Set final attendees and stock first"; return; }
+    const totalDayCostFils = Math.ceil((used * tubePriceFils) / shuttlesPerTube);
+    const baseFils = Math.floor(totalDayCostFils / presentCount);
+    const remainderFils = totalDayCostFils % presentCount;
+    target.textContent = remainderFils ? `${bhd(baseFils)} or ${bhd(baseFils + 1)}*` : bhd(baseFils);
+    target.title = remainderFils ? `* ${remainderFils} attendee(s) receive one extra fil so the total stays exact.` : "";
+  });
+
   document.querySelectorAll("[data-session-attendance]").forEach(button => button.onclick = async () => {
     const status = button.dataset.sessionAttendance;
     const memberUid = button.dataset.memberUid;
@@ -165,6 +186,26 @@ export function bindFlightAdminViews() {
   });
 
   document.querySelectorAll("[data-flight-print]").forEach(button => button.onclick = () => window.print());
+
+  document.querySelectorAll("[data-flight-print-list]").forEach(button => button.onclick = () => {
+    const section = document.getElementById(button.dataset.flightPrintList);
+    if (!section) return;
+    const printWindow = window.open("", "_blank", "noopener,noreferrer");
+    if (!printWindow) return notify("Allow pop-ups to print this list.");
+    printWindow.document.write(`<!doctype html><html><head><title>Indian Club Bahrain payment list</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172554}.card{border:1px solid #cbd5e1;border-radius:12px;padding:20px}.page-head,.actions{display:flex;justify-content:space-between;gap:12px}.schedule{width:100%;border-collapse:collapse;margin-top:16px}.schedule th,.schedule td{border:1px solid #cbd5e1;padding:9px;text-align:left}.tag{font-size:12px;font-weight:700}button{display:none}</style></head><body>${section.outerHTML}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  });
+
+  document.querySelectorAll("[data-unpaid-reminder]").forEach(button => button.onclick = () => {
+    const unpaid = window.__indianClubUnpaidReminderRows || [];
+    if (!unpaid.length) return notify("There are no unpaid Players to remind.");
+    const lines = unpaid.slice(0, 35).map((row, index) => `${index + 1}. ${row.memberName || row.memberId || "Member"} — ${bhd(row.amountDueFils || 0)}`);
+    const extra = unpaid.length > lines.length ? `\n+ ${unpaid.length - lines.length} more unpaid Player(s).` : "";
+    const message = `Indian Club Bahrain payment reminder\n\nThe following shuttlecock charges are unpaid:\n${lines.join("\n")}${extra}\n\nPlease pay through Wallet Credit, Cash, or Benefit. Thank you.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+  });
 
   const saveStock = document.getElementById("saveFlightStock");
   if (saveStock) saveStock.onclick = async () => {
