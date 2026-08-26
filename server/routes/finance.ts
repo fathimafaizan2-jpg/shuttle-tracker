@@ -21,6 +21,14 @@ const asWholeNumber = (value: unknown, label: string, minimum = 0) => {
   return number;
 };
 
+const asSignedWholeNumber = (value: unknown, label: string) => {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number === 0) {
+    throw new Error(`${label} must be a non-zero whole number.`);
+  }
+  return number;
+};
+
 const queryText = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
 function asDate(value: unknown) {
@@ -394,6 +402,78 @@ router.post(
   }
 );
 
+/* Super Admin may correct an existing wallet without deleting its history. */
+router.post(
+  "/admin/wallet-adjustment",
+  requireAuth,
+  requireRole("SUPER_ADMIN"),
+  async (request, response) => {
+    try {
+      const memberUid = asText(request.body.memberUid, "Member");
+      const adjustmentFils = asSignedWholeNumber(request.body.adjustmentFils, "Wallet adjustment");
+      const note = asText(request.body.note, "Correction note");
+      const target = await db.collection("members").doc(memberUid).get();
+
+      if (!target.exists) throw new Error("Member not found.");
+      const targetData = target.data()!;
+      if (targetData.active === false || !targetData.flightId || !["PLAYER", "LEVEL_ADMIN", "SUPER_ADMIN"].includes(String(targetData.role || ""))) {
+        throw new Error("A wallet can be corrected only for an active member assigned to a flight.");
+      }
+
+      const ledgerRef = db.collection("walletLedger").doc();
+      let balanceBeforeFils = 0;
+      let balanceAfterFils = 0;
+
+      await db.runTransaction(async transaction => {
+        const wallet = walletRef(memberUid);
+        const current = await transaction.get(wallet);
+        balanceBeforeFils = current.exists ? Number(current.data()!.balanceFils || 0) : 0;
+        balanceAfterFils = balanceBeforeFils + adjustmentFils;
+
+        if (balanceAfterFils < 0) {
+          throw new Error("This correction would make the member wallet negative. Enter a smaller deduction.");
+        }
+
+        transaction.set(
+          wallet,
+          {
+            memberUid,
+            balanceFils: balanceAfterFils,
+            updatedAt: FieldValue.serverTimestamp(),
+            updatedBy: request.member!.uid
+          },
+          { merge: true }
+        );
+
+        transaction.set(ledgerRef, {
+          memberUid,
+          flightId: targetData.flightId,
+          direction: adjustmentFils > 0 ? "CREDIT" : "DEBIT",
+          creditSource: "SUPER_ADMIN_WALLET_CORRECTION",
+          amountFils: Math.abs(adjustmentFils),
+          adjustmentFils,
+          balanceBeforeFils,
+          balanceAfterFils,
+          description: note,
+          createdAt: FieldValue.serverTimestamp(),
+          createdBy: request.member!.uid
+        });
+      });
+
+      response.json({
+        success: true,
+        ledgerId: ledgerRef.id,
+        balanceBeforeFils,
+        balanceAfterFils
+      });
+    } catch (error) {
+      response.status(400).json({
+        message: error instanceof Error ? error.message : "Could not correct wallet credit."
+      });
+    }
+  }
+);
+
 /* A Player submits one Cash or Benefit claim for one due charge; duplicate claims are blocked. */
 router.post("/charges/:chargeId/payment-claim", requireAuth, async (request, response) => {
   try {
@@ -749,6 +829,27 @@ router.get("/overview", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), 
       .filter(row => row.direction === "CREDIT" && memberInScope(String(row.memberUid)))
       .sort(newestFirst);
 
+    const creditedMembers = wallets.docs
+      .filter(doc => memberInScope(doc.id))
+      .map(doc => {
+        const member = memberByUid.get(doc.id) || {};
+        const flightId = String(member.flightId || "");
+        const flight = flightRows.find(row => row.id === flightId);
+        const balanceFils = Number(doc.data().balanceFils || 0);
+        return {
+          memberUid: doc.id,
+          memberName: member.fullName || member.displayName || member.memberId || doc.id,
+          memberId: member.memberId || "",
+          phone: member.phone || "",
+          flightId,
+          flightName: flight?.name || "—",
+          balanceFils,
+          status: balanceFils < 1000 ? "DUE" : "CREDIT AVAILABLE",
+          updatedAt: doc.data().updatedAt || null
+        };
+      })
+      .sort((a, b) => String(a.memberName).localeCompare(String(b.memberName)));
+
     const completedSessions = sessions.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
       .filter(rowInScope)
@@ -777,7 +878,8 @@ router.get("/overview", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), 
       monthCostFils: completedSessions
         .filter(row => String(row.month || "") === new Date().toISOString().slice(0, 7))
         .reduce((sum, row) => sum + Number(row.totalDayCostFils || 0), 0),
-      credits,
+      credits: creditedMembers,
+      creditHistory: credits,
       pendingPayments: pendingPayments.sort(newestFirst),
       paid: paid.sort(newestFirst),
       unpaid: unpaid.sort(newestFirst),
