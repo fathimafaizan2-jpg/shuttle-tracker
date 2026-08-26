@@ -194,6 +194,18 @@ export async function walletView() {
   );
   const paymentKind = row => row.method === "WALLET_CREDIT" ? "Used wallet credit" : "Cash / Benefit game payment";
   const adminContact = data.flightAdminContact || {};
+  const paymentByChargeId = new Map(paymentRows.filter(row => row.chargeId).map(row => [row.chargeId, row]));
+  const chargeDetails = (row = null) => {
+    const payment = row ? paymentByChargeId.get(row.id) : null;
+    const displayPayable = row ? bhd(Number(row.amountDueFils || 0) || Number(row.totalChargeFils || 0)) : "—";
+    const gameDateTime = row?.gameStartAt ? dateTime(row.gameStartAt) : "Awaiting completed game";
+    const shuttlesUsed = row ? String(Number(row.actualShuttlesUsed || 0)) : "—";
+    const finalPlayers = row ? String(Number(row.finalPresentCount || 0)) : "—";
+    const paymentId = row?.paymentCode || payment?.paymentCode || payment?.id || "";
+    const paymentMethod = row?.paymentMethod || payment?.method || "";
+    const paymentControls = !row ? `<div class="actions"><button class="primary" disabled>Use credit</button><button class="pill" disabled>Cash / Benefit pay</button><button class="pill" disabled>WhatsApp payment message</button></div>` : Number(row.amountDueFils || 0) > 0 && payment?.status === "PENDING" ? `<div class="actions"><span class="tag amber">CASH / BENEFIT PENDING</span><button class="pill" data-paid-whatsapp="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-payment-code="${escapeHtml(paymentId)}" data-payment-method="${escapeHtml(paymentMethod || "CASH / BENEFIT")}" data-charge-amount="${escapeHtml(bhd(row.totalChargeFils))}">WhatsApp payment message</button></div>` : Number(row.amountDueFils || 0) > 0 ? `<div class="actions"><button class="primary" data-credit-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(displayPayable)}">Use credit</button><button class="pill" data-manual-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(displayPayable)}">Cash / Benefit pay</button></div>` : `<div class="actions"><span class="tag blue">${escapeHtml(String(row.status || "PAID").replaceAll("_", " "))}</span><button class="pill" data-paid-whatsapp="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-payment-code="${escapeHtml(paymentId)}" data-payment-method="${escapeHtml(paymentMethod || "WALLET CREDIT")}" data-charge-amount="${escapeHtml(bhd(row.totalChargeFils))}">WhatsApp payment message</button></div>`;
+    return `<article class="card"><div class="page-head"><div><h3>Game charge${row ? ` · ${escapeHtml(row.flightName || "Assigned flight")}` : ""}</h3><p class="note">${row ? "Final game details and your personal amount payable." : "These boxes will update after Flight Admin finishes the game and confirms final PRESENT attendance."}</p></div>${row ? `<span class="tag ${Number(row.amountDueFils || 0) > 0 ? "red" : "blue"}">${Number(row.amountDueFils || 0) > 0 ? "PAYMENT REQUIRED" : "PAID"}</span>` : "<span class='tag amber'>AWAITING GAME</span>"}</div><div class="grid two"><div class="field"><label>Game date / time</label><div class="session"><b>${escapeHtml(gameDateTime)}</b></div></div><div class="field"><label>Shuttlecocks used</label><div class="session"><b>${escapeHtml(shuttlesUsed)}</b></div></div><div class="field"><label>Final players attended</label><div class="session"><b>${escapeHtml(finalPlayers)}</b></div></div><div class="field"><label>Amount payable</label><div class="session"><b>${escapeHtml(displayPayable)}</b></div></div></div><div class="field"><label>Payment method</label><p class="note">${paymentId ? `Payment ID: <b>${escapeHtml(paymentId)}</b> · ${escapeHtml(String(paymentMethod || "Recorded payment").replaceAll("_", " "))}` : row ? "Choose Use Credit or Cash / Benefit Pay below." : "Payment buttons will activate after this charge is created."}</p></div>${paymentControls}</article>`;
+  };
 
   return `
     <div class="page-head">
@@ -212,13 +224,7 @@ export async function walletView() {
     <section class="card">
       <h3>Shuttlecock charges</h3>
       <p class="note">A charge appears only after your Flight Admin confirms the final PRESENT attendance and actual shuttlecocks used. Wallet credit is refilled only when Super Admin records verified payment at the club desk.</p>
-      ${chargeRows.map(row => {
-        const due = Number(row.amountDueFils || 0);
-        const claimPending = pendingChargeIds.has(row.id);
-        const notificationToggle = `<label class="pill"><input id="notifyFlightAdmin-${escapeHtml(row.id)}" type="checkbox" /> Open WhatsApp payment draft</label>`;
-        const paidCode = row.paymentCode ? `<p>Payment ID: <b>${escapeHtml(row.paymentCode)}</b></p>` : "";
-        return `<div class="session"><div class="grow"><b>${escapeHtml(row.flightName || "Club game")}</b><p>${escapeHtml(dateTime(row.createdAt))} · Total ${bhd(row.totalChargeFils)} · Amount payable ${bhd(due)}</p>${paidCode}</div>${due > 0 && !claimPending ? `<div class="actions"><span class="tag red">UNPAID · ${escapeHtml(day(row.createdAt))}</span>${notificationToggle}<button class="primary" data-credit-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(bhd(due))}">Use credit · ${bhd(due)}</button><button class="pill" data-manual-charge="${escapeHtml(row.id)}" data-admin-phone="${escapeHtml(adminContact.phone || "")}" data-admin-name="${escapeHtml(adminContact.name || "Flight Admin")}" data-charge-amount="${escapeHtml(bhd(due))}">Cash / Benefit pay</button></div>` : claimPending ? "<span class='tag amber'>CASH / BENEFIT PENDING</span>" : `<span class='tag blue'>${escapeHtml(String(row.status || "PAID").replaceAll("_", " "))}</span>`}</div>`;
-      }).join("") || "<p class='note'>No completed-game shuttlecock charges yet.</p>"}
+      ${chargeRows.length ? chargeRows.map(chargeDetails).join("") : chargeDetails()}
     </section>
 
     <section class="card">
@@ -256,9 +262,7 @@ export function businessSubmissionForm() {
 }
 
 export function bindBusinessSubmission() {
-  const maybeOpenPaymentWhatsapp = (button, text) => {
-    const toggle = document.getElementById(`notifyFlightAdmin-${button.dataset.creditCharge || button.dataset.manualCharge}`);
-    if (!toggle?.checked) return;
+  const openPaymentWhatsapp = (button, text) => {
     const phone = String(button.dataset.adminPhone || "").replace(/\D/g, "");
     if (!phone) return notify("Payment recorded, but no Flight Admin phone number is saved.");
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(`Hello ${button.dataset.adminName || "Flight Admin"}, ${text}`)}`, "_blank", "noopener");
@@ -269,7 +273,7 @@ export function bindBusinessSubmission() {
       const result = await api(`/finance/charges/${encodeURIComponent(button.dataset.creditCharge)}/pay-with-credit`, { method: "POST" });
       const remaining = bhd(result.remainingBalanceFils || 0);
       notify(`Charge paid from credit. Payment ID: ${result.paymentCode}. Remaining credit: ${remaining}.`);
-      maybeOpenPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} from my verified club credit. Payment ID: ${result.paymentCode}. My remaining credit is ${remaining}. Please note it for my flight.`);
+      openPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} from my verified club credit. Payment ID: ${result.paymentCode}. My remaining credit is ${remaining}. Please note it for my flight.`);
       window.dispatchEvent(new CustomEvent("indianclub:render"));
     } catch (error) { notify(error.message); }
   });
@@ -282,9 +286,13 @@ export function bindBusinessSubmission() {
     try {
       const result = await api(`/finance/charges/${encodeURIComponent(button.dataset.manualCharge)}/payment-claim`, { method: "POST", body: { method, reference } });
       notify(`Cash / Benefit settlement sent to your Flight Admin for confirmation. Payment ID: ${result.paymentCode}.`);
-      maybeOpenPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} by ${method}. Payment ID: ${result.paymentCode}. Reference: ${reference}. Please verify my payment for the flight.`);
+      openPaymentWhatsapp(button, `I have paid ${button.dataset.chargeAmount} by ${method}. Payment ID: ${result.paymentCode}. Reference: ${reference}. Please verify my payment for the flight.`);
       window.dispatchEvent(new CustomEvent("indianclub:render"));
     } catch (error) { notify(error.message); }
+  });
+
+  document.querySelectorAll("[data-paid-whatsapp]").forEach(button => button.onclick = () => {
+    openPaymentWhatsapp(button, `My shuttlecock payment of ${button.dataset.chargeAmount} is recorded by ${button.dataset.paymentMethod}. Payment ID: ${button.dataset.paymentCode}. Please note it for my flight.`);
   });
 
   document.querySelectorAll("[data-log-section]").forEach(button => button.onclick = () => {
