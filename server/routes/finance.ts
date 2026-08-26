@@ -660,17 +660,26 @@ router.get("/overview", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), 
     const requestedFlightId = queryText(request.query.flightId);
     const isFlightAdmin = request.member!.role === "LEVEL_ADMIN";
 
-    const [wallets, payments, charges, sessions, members, flights, ledger] = await Promise.all([
+    const [wallets, payments, charges, sessions, members, activities, ledger] = await Promise.all([
       db.collection("wallets").get(),
       db.collection("payments").get(),
       db.collection("sessionCharges").get(),
       db.collection("sessions").where("status", "==", "COMPLETED").get(),
       db.collection("members").get(),
-      db.collection("flights").get(),
+      db.collection("activities").get(),
       db.collection("walletLedger").get()
     ]);
 
-    const flightRows = flights.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const flightRows = (await Promise.all(activities.docs.map(async activity => {
+      const activityData = activity.data();
+      const flights = await activity.ref.collection("flights").get();
+      return flights.docs.map(flight => ({
+        id: flight.id,
+        ...flight.data(),
+        activityId: String(flight.data().activityId || activity.id),
+        activityName: String(flight.data().activityName || activityData.name || "Activity")
+      }));
+    }))).flat();
     let permittedFlightIds: Set<string> | null = null;
 
     if (isFlightAdmin) {
