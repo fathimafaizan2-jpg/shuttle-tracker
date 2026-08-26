@@ -29,6 +29,9 @@ const asSignedWholeNumber = (value: unknown, label: string) => {
   return number;
 };
 
+const makePaymentCode = (prefix: string, sourceId: string) =>
+  `ICB-${prefix}-${String(sourceId).replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase()}`;
+
 const queryText = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
 function asDate(value: unknown) {
@@ -277,6 +280,8 @@ router.post("/charges/:chargeId/pay-with-credit", requireAuth, async (request, r
   try {
     const chargeId = asText(request.params.chargeId, "Charge ID");
     const charge = await db.collection("sessionCharges").doc(chargeId).get();
+    const creditPaymentId = `credit_${chargeId}`;
+    const creditPaymentCode = makePaymentCode("CR", chargeId);
 
     if (!charge.exists) {
       return response.status(404).json({ message: "Charge not found." });
@@ -323,6 +328,9 @@ router.post("/charges/:chargeId/pay-with-credit", requireAuth, async (request, r
         amountDueFils: 0,
         coveredByCreditFils: Number(liveCharge.data()!.coveredByCreditFils || 0) + due,
         status: "PAID_BY_CREDIT",
+        paymentId: creditPaymentId,
+        paymentCode: creditPaymentCode,
+        paymentMethod: "WALLET_CREDIT",
         paidAt: FieldValue.serverTimestamp()
       });
 
@@ -333,12 +341,29 @@ router.post("/charges/:chargeId/pay-with-credit", requireAuth, async (request, r
         direction: "DEBIT",
         amountFils: due,
         description: `Credit payment for ${liveCharge.data()!.flightName}`,
+        paymentId: creditPaymentId,
+        paymentCode: creditPaymentCode,
         createdAt: FieldValue.serverTimestamp(),
         createdBy: request.member!.uid
       });
+
+      transaction.set(db.collection("payments").doc(creditPaymentId), {
+        kind: "SESSION_SETTLEMENT",
+        chargeId,
+        memberUid: request.member!.uid,
+        flightId: liveCharge.data()!.flightId,
+        amountFils: due,
+        method: "WALLET_CREDIT",
+        paymentCode: creditPaymentCode,
+        status: "VERIFIED",
+        submittedAt: FieldValue.serverTimestamp(),
+        verifiedAt: FieldValue.serverTimestamp(),
+        verifiedBy: request.member!.uid,
+        source: "PLAYER_USE_CREDIT"
+      });
     });
 
-    response.json({ success: true, message: "Shuttlecock charge paid using wallet credit.", remainingBalanceFils });
+    response.json({ success: true, message: "Shuttlecock charge paid using wallet credit.", remainingBalanceFils, paymentId: creditPaymentId, paymentCode: creditPaymentCode });
   } catch (error) {
     response.status(400).json({
       message: error instanceof Error ? error.message : "Could not pay using credit."
@@ -486,7 +511,8 @@ router.post("/charges/:chargeId/payment-claim", requireAuth, async (request, res
     }
 
     const chargeRefToPay = db.collection("sessionCharges").doc(chargeId);
-    const paymentRef = db.collection("payments").doc(`settlement_${chargeId}`);
+    const paymentRef = db.collection("payments").doc(`cash_benefit_${chargeId}`);
+    const paymentCode = makePaymentCode("CB", chargeId);
 
     await db.runTransaction(async transaction => {
       const [charge, existingPayment] = await Promise.all([
@@ -517,12 +543,13 @@ router.post("/charges/:chargeId/payment-claim", requireAuth, async (request, res
         amountFils: Number(chargeData.amountDueFils),
         method,
         reference,
+        paymentCode,
         status: "PENDING",
         submittedAt: FieldValue.serverTimestamp()
       });
     });
 
-    response.status(201).json({ id: paymentRef.id, status: "PENDING" });
+    response.status(201).json({ id: paymentRef.id, paymentCode, status: "PENDING" });
   } catch (error) {
     response.status(400).json({
       message: error instanceof Error ? error.message : "Could not submit payment claim."
@@ -530,37 +557,7 @@ router.post("/charges/:chargeId/payment-claim", requireAuth, async (request, res
   }
 });
 
-/* A Player may submit a refill request, but only Super Admin can turn it into wallet credit. */
-router.post("/wallet/topup-claim", requireAuth, async (request, response) => {
-  try {
-    const amountFils = asWholeNumber(request.body.amountFils, "Top-up amount", 1);
-    const method = asText(request.body.method, "Payment method").toUpperCase();
-    const reference = asText(request.body.reference, "Payment reference");
-
-    if (!["CASH", "BENEFIT"].includes(method)) {
-      throw new Error("Payment method must be CASH or BENEFIT.");
-    }
-
-    const payment = await db.collection("payments").add({
-      kind: "CREDIT_TOPUP",
-      memberUid: request.member!.uid,
-      flightId: request.member!.flightId || null,
-      amountFils,
-      method,
-      reference,
-      status: "PENDING",
-      submittedAt: FieldValue.serverTimestamp()
-    });
-
-    response.status(201).json({ id: payment.id, status: "PENDING" });
-  } catch (error) {
-    response.status(400).json({
-      message: error instanceof Error ? error.message : "Could not submit top-up claim."
-    });
-  }
-});
-
-/* Flight Admin confirms Cash/Benefit settlement only for the assigned flight. Super Admin is the only credit approver. */
+/* Flight Admin confirms Cash/Benefit settlement only for the assigned flight. */
 router.post(
   "/payments/:paymentId/verify",
   requireAuth,
@@ -604,6 +601,8 @@ router.post(
             amountDueFils: 0,
             status: "PAID_MANUAL",
             verifiedPaymentId: paymentId,
+            paymentCode: data.paymentCode || paymentId,
+            paymentMethod: data.method,
             paidAt: FieldValue.serverTimestamp()
           });
         }
