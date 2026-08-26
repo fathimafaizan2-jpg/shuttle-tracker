@@ -188,6 +188,10 @@ export async function walletView() {
   const data = await api("/finance/mine");
   const paymentRows = data.payments || [];
   const chargeRows = data.charges || [];
+  const day = value => {
+    const date = clubDate(value);
+    return date ? date.toLocaleDateString("en-BH", { dateStyle: "medium", timeZone: "Asia/Bahrain" }) : "Date unavailable";
+  };
   const pendingChargeIds = new Set(
     paymentRows
       .filter(row => row.kind === "SESSION_SETTLEMENT" && row.status === "PENDING")
