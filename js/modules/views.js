@@ -58,10 +58,34 @@ function notify(message) {
 }
 
 export async function playerDashboard(member = state.member) {
-  const [data, personalSessions] = await Promise.all([api("/members/dashboard"), api("/timetable/mine")]);
+  const safelyLoad = async (path, fallback) => {
+    try { return await api(path); }
+    catch (error) {
+      console.warn(`Home dashboard data unavailable for ${path}:`, error);
+      return fallback;
+    }
+  };
+  const [dashboardData, personalSessions, walletData] = await Promise.all([
+    safelyLoad("/members/dashboard", {}),
+    safelyLoad("/timetable/mine", []),
+    safelyLoad("/finance/mine", {})
+  ]);
+  const data = {
+    walletFils: Number(dashboardData.walletFils ?? walletData.balanceFils ?? 0),
+    attendedCount: Number(dashboardData.attendedCount ?? 0),
+    pendingFils: Number(dashboardData.pendingFils ?? walletData.unpaidFils ?? 0),
+    arrearsFils: Number(dashboardData.arrearsFils ?? walletData.arrearsFils ?? 0)
+  };
+  const now = Date.now();
   const next = (personalSessions || [])
-    .filter(session => session.status === "SCHEDULED" && Number.isFinite(new Date(session.startAt).getTime()) && new Date(session.startAt).getTime() >= Date.now())
+    .filter(session => {
+      if (session.status !== "SCHEDULED") return false;
+      const startAt = new Date(session.startAt).getTime();
+      const endAt = new Date(session.endAt || session.startAt).getTime();
+      return Number.isFinite(startAt) && Number.isFinite(endAt) && endAt >= now;
+    })
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())[0] || null;
+  const gameStatus = next && new Date(next.startAt).getTime() <= now ? "TODAY'S GAME" : "UPCOMING GAME";
 
   return `
     <div class="page-head">
@@ -69,7 +93,7 @@ export async function playerDashboard(member = state.member) {
         <h2>Welcome, ${escapeHtml(member.fullName)}</h2>
         <p>${escapeHtml(member.flightName || "Your flight will be assigned by Super Admin.")}</p>
       </div>
-      ${next ? "<span class='tag blue'>UPCOMING GAME</span>" : ""}
+      ${next ? `<span class='tag blue'>${gameStatus}</span>` : ""}
     </div>
 
     <div class="grid metrics">
@@ -86,7 +110,7 @@ export async function playerDashboard(member = state.member) {
           <div class="session">
             <div class="datebox">${new Date(next.startAt).getDate()}<small>${new Date(next.startAt).toLocaleString("en", { month: "short" })}</small></div>
             <div class="grow"><b>${escapeHtml(next.flightName)}</b><p>${new Date(next.startAt).toLocaleDateString("en-BH", { weekday: "long", dateStyle: "medium", timeZone: "Asia/Bahrain" })}</p><p>${dateTime(next.startAt)} · 2 courts</p></div>
-            <span class="tag blue">UPCOMING</span>
+            <span class="tag blue">${gameStatus}</span>
           </div>
         ` : "<p class='note'>No upcoming game has been published for your flight.</p>"}
       </article>
