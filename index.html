@@ -29,17 +29,27 @@
 
     <section id="publicNotice" class="card public-notice">
       <span class="tag red">OFFICIAL NOTICE</span>
-      <h3 id="publicNoticeTitle">Welcome to Indian Club Bahrain</h3>
-      <p id="publicNoticeBody" class="note">
-        Club notices, approved sponsor offers, and Indi Mart listings will appear here.
-      </p>
+      <div class="notice-layout">
+        <div>
+          <h3 id="publicNoticeTitle">Welcome to Indian Club Bahrain</h3>
+          <p id="publicNoticeBody" class="note">
+            Club notices, approved sponsor offers, and Indi Mart listings will appear here.
+          </p>
+        </div>
+        <img id="publicNoticeImage" class="public-notice-image hidden" alt="Official Indian Club Bahrain notice" />
+      </div>
     </section>
 
     <section class="card sponsor-section">
       <h3>Featured sponsors and offers</h3>
-      <div id="publicSponsorCarousel" class="ad-carousel">
-        <p class="note">Approved sponsor offers will appear here.</p>
+      <div class="sponsor-carousel-shell">
+        <button id="sponsorPrevious" class="carousel-arrow carousel-prev" type="button" aria-label="Previous featured sponsor">‹</button>
+        <div id="publicSponsorCarousel" class="sponsor-carousel">
+          <p class="sponsor-empty">Approved sponsor offers will appear here.</p>
+        </div>
+        <button id="sponsorNext" class="carousel-arrow carousel-next" type="button" aria-label="Next featured sponsor">›</button>
       </div>
+      <div id="publicSponsorDots" class="carousel-dots" aria-label="Featured sponsor slides"></div>
     </section>
 
     <section class="public-entry-grid">
@@ -98,9 +108,12 @@
       <div class="field"><label for="bizName">Business name</label><input id="bizName" /></div>
       <div class="field"><label for="bizOwner">Owner name</label><input id="bizOwner" /></div>
       <div class="field"><label for="bizPhone">Phone / WhatsApp</label><input id="bizPhone" /></div>
-      <div class="field"><label for="bizCategory">Category</label><input id="bizCategory" /></div>
+      <div class="field"><label for="bizCategory">Category</label><select id="bizCategory"><option>Restaurant & Catering</option><option>Groceries & Food</option><option>Fashion & Beauty</option><option>Health & Wellness</option><option>Education & Training</option><option>Home Services</option><option>Travel & Transport</option><option>Professional Services</option><option>Retail & Electronics</option><option>Community Services</option><option selected>Other</option></select></div>
       <div class="field"><label for="bizDescription">Offer / description</label><textarea id="bizDescription" rows="4"></textarea></div>
-      <button id="submitBusiness" class="primary">Submit to Super Admin</button>
+      <div class="grid two"><div class="field"><label for="bizAddress">Location / address</label><input id="bizAddress" placeholder="Area, building, or shop location" /></div><div class="field"><label for="bizWebsite">Website link (optional)</label><input id="bizWebsite" type="url" placeholder="https://..." /></div><div class="field"><label for="bizDestination">Flyer destination link</label><input id="bizDestination" type="url" placeholder="WhatsApp, catalogue, social page, or map" /></div><div class="field"><label for="bizOffer">Featured offer text (optional)</label><input id="bizOffer" placeholder="Example: 10% club offer" /></div></div>
+      <div class="field"><label for="bizFlyer">Google Drive flyer / poster image link (optional)</label><input id="bizFlyer" type="url" placeholder="Set Drive to Anyone with the link, then paste its sharing link" /></div>
+      <div class="actions"><button id="previewPublicBusinessFlyer" class="pill" type="button">Preview flyer</button><button id="submitBusiness" class="primary">Submit to Super Admin</button></div>
+      <div id="publicBusinessFlyerPreview" class="image-link-preview hidden"></div>
     </section>
 
     <footer class="footer"><b>Indian Club Bahrain</b> Powered by <b>A1 Groups</b></footer>
@@ -240,11 +253,54 @@
     import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness } from "./js/modules/auth.js";
     import { state, navigate, startSignedInApp, setLanguage } from "./js/router.js";
     import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, walletView, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
-    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, bindAdminViews } from "./js/modules/adminViews.js";
+    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, advertisingApprovalView, bindAdminViews } from "./js/modules/adminViews.js";
     import {flightAdminSessionControlView,flightAdminShuttleStockView,flightAdminReportsView,bindFlightAdminViews} from "./js/modules/flightAdminViews.js";
 
     const $ = id => document.getElementById(id );
     const publicApiBase = window.INDIAN_CLUB_API_URL;
+    const escapeHtml = value => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    let publicSponsors = [];
+    let activeSponsorIndex = 0;
+    let sponsorTimer = null;
+
+    function publicImageUrl(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      try {
+        const url = new URL(raw);
+        const id = url.hostname.endsWith("drive.google.com") ? (url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || url.searchParams.get("id")) : null;
+        return id ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600` : url.toString();
+      } catch { return ""; }
+    }
+
+    function renderFeaturedSponsor() {
+      const carousel = $("publicSponsorCarousel");
+      const dots = $("publicSponsorDots");
+      if (!publicSponsors.length) {
+        carousel.innerHTML = "<p class='sponsor-empty'>Approved sponsor offers will appear here.</p>";
+        dots.innerHTML = "";
+        return;
+      }
+      activeSponsorIndex = (activeSponsorIndex + publicSponsors.length) % publicSponsors.length;
+      const sponsor = publicSponsors[activeSponsorIndex];
+      const image = publicImageUrl(sponsor.flyerUrl);
+      const destination = sponsor.destinationUrl || sponsor.website || "";
+      const inner = `${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(sponsor.businessName)} sponsor flyer" />` : "<div class='directory-flyer directory-flyer-empty'><span>FEATURED OFFER</span></div>"}<div class="sponsor-slide-copy"><span class="tag blue">FEATURED SPONSOR</span><h3>${escapeHtml(sponsor.businessName)}</h3><p>${escapeHtml(sponsor.description || "Approved Indian Club Bahrain sponsor")}</p>${sponsor.discountText ? `<p class="sponsor-offer">${escapeHtml(sponsor.discountText)}</p>` : ""}</div>`;
+      carousel.innerHTML = destination ? `<a class="sponsor-slide" href="${escapeHtml(destination)}" target="_blank" rel="noopener">${inner}</a>` : `<article class="sponsor-slide">${inner}</article>`;
+      dots.innerHTML = publicSponsors.map((item, index) => `<button class="carousel-dot ${index === activeSponsorIndex ? "active" : ""}" data-sponsor-index="${index}" type="button" aria-label="Show ${escapeHtml(item.businessName)}"></button>`).join("");
+      document.querySelectorAll("[data-sponsor-index]").forEach(button => button.onclick = () => { activeSponsorIndex = Number(button.dataset.sponsorIndex || 0); renderFeaturedSponsor(); });
+    }
+
+    function renderPublicDirectory(businesses) {
+      const list = $("publicDirectoryList");
+      if (!businesses.length) {
+        list.innerHTML = "<strong>Indi Mart is being prepared.</strong><p>Businesses can submit a listing for Super Admin approval.</p><button id='directoryBusinessButton' class='primary'>List Your Business</button>";
+        $("directoryBusinessButton").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
+        return;
+      }
+      list.classList.remove("directory-empty");
+      list.innerHTML = `<div class="directory-grid">${businesses.map(business => { const image = publicImageUrl(business.flyerUrl); const destination = business.destinationUrl || business.website || ""; return `<article class="card directory-card">${image ? (destination ? `<a class="directory-flyer" href="${escapeHtml(destination)}" target="_blank" rel="noopener"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></a>` : `<div class="directory-flyer"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></div>`) : "<div class='directory-flyer directory-flyer-empty'>INDI MART</div>"}<div class="directory-card-body"><span class="tag blue">${escapeHtml(business.category || "Business")}</span><h3>${escapeHtml(business.businessName)}</h3><p>${escapeHtml(business.description || "")}</p>${business.discountText ? `<p class="directory-offer">${escapeHtml(business.discountText)}</p>` : ""}<p class="note"><b>Contact:</b> ${escapeHtml(business.phone || "Not provided")}</p>${business.address ? `<p class="note"><b>Location:</b> ${escapeHtml(business.address)}</p>` : ""}${destination ? `<a class="primary directory-link" href="${escapeHtml(destination)}" target="_blank" rel="noopener">View offer / contact</a>` : ""}</div></article>`; }).join("")}</div>`;
+    }
 
     function toast(message) {
       const box = $("toast");
@@ -310,8 +366,16 @@
         else if (state.page === "timetable") html = await playerTimetable();
         else if (state.page === "attendance") {
           const sessions = await api("/timetable/mine");
-          const next = sessions.filter(s => new Date(s.startAt).getTime() >= Date.now()).sort((a, b) => new Date(a.startAt) - new Date(b.startAt))[0];
-          html = next ? await attendanceView(next.id) : "<section class='card'><h2>Attendance</h2><p class='note'>No upcoming session is published for your flight.</p></section>";
+          const now = Date.now();
+          const currentOrNext = sessions
+            .filter(session => {
+              if (session.status !== "SCHEDULED") return false;
+              const startAt = new Date(session.startAt).getTime();
+              const endAt = new Date(session.endAt || session.startAt).getTime();
+              return Number.isFinite(startAt) && Number.isFinite(endAt) && endAt >= now;
+            })
+            .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())[0];
+          html = currentOrNext ? await attendanceView(currentOrNext.id) : "<section class='card'><h2>Attendance</h2><p class='note'>No current or upcoming session is published for your flight. Super Admin must publish the current Master Timetable month after saving its weekly slots.</p></section>";
         }
         else if (state.page === "logs") html = await playerActivityLog();
         else if (state.page === "wallet") html = await walletView();
@@ -319,6 +383,7 @@
         else if (state.page === "master") html = await superAdminTimetableView();
         else if (state.page === "flights") html = await activitiesAndFlightsView();
         else if (state.page === "finance") html = await financeAdminView();
+        else if (state.page === "ads") html = await advertisingApprovalView();
         else if (state.page === "audit") html = await auditHistoryView();
         else if (state.page === "sessions") html = await flightAdminSessionControlView();
         else if (state.page === "stock") html = await flightAdminShuttleStockView();
@@ -337,21 +402,34 @@
 
     async function loadPublicHub() {
       try {
-        const [noticeResponse, sponsorResponse] = await Promise.all([
+        const [noticeResponse, sponsorResponse, directoryResponse] = await Promise.all([
           fetch(`${publicApiBase}/business/public/notices`),
-          fetch(`${publicApiBase}/business/public/sponsors`)
+          fetch(`${publicApiBase}/business/public/sponsors`),
+          fetch(`${publicApiBase}/business/public/directory`)
         ]);
-        if (!noticeResponse.ok || !sponsorResponse.ok) return;
+        if (!noticeResponse.ok || !sponsorResponse.ok || !directoryResponse.ok) return;
         const notices = await noticeResponse.json();
         const sponsors = await sponsorResponse.json();
+        const businesses = await directoryResponse.json();
         if (notices[0]) {
           $("publicNoticeTitle").textContent = notices[0].title;
           $("publicNoticeBody").textContent = notices[0].body;
           $("tickerTrack").textContent = notices.map(notice => notice.title).join(" • ");
+          const noticeImage = publicImageUrl(notices[0].imageUrl);
+          if (noticeImage) {
+            $("publicNoticeImage").src = noticeImage;
+            $("publicNoticeImage").classList.remove("hidden");
+          } else {
+            $("publicNoticeImage").removeAttribute("src");
+            $("publicNoticeImage").classList.add("hidden");
+          }
         }
-        if (sponsors.length) {
-          $("publicSponsorCarousel").innerHTML = sponsors.map(sponsor => `<article class="ad-card"><h3>${sponsor.businessName}</h3><p>${sponsor.discountText || "Approved sponsor"}</p></article>`).join("");
-        }
+        publicSponsors = Array.isArray(sponsors) ? sponsors.slice(0, 10) : [];
+        activeSponsorIndex = 0;
+        renderFeaturedSponsor();
+        renderPublicDirectory(Array.isArray(businesses) ? businesses : []);
+        if (sponsorTimer) clearInterval(sponsorTimer);
+        if (publicSponsors.length > 1) sponsorTimer = setInterval(() => { activeSponsorIndex += 1; renderFeaturedSponsor(); }, 5000);
       } catch {}
     }
 
@@ -365,6 +443,15 @@
     $("openBusiness").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
     $("directoryBusinessButton").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
     $("closeBusinessForm").onclick = () => $("businessForm").classList.add("hidden");
+    $("sponsorPrevious").onclick = () => { if (!publicSponsors.length) return; activeSponsorIndex -= 1; renderFeaturedSponsor(); };
+    $("sponsorNext").onclick = () => { if (!publicSponsors.length) return; activeSponsorIndex += 1; renderFeaturedSponsor(); };
+    $("previewPublicBusinessFlyer").onclick = () => {
+      const preview = $("publicBusinessFlyerPreview");
+      const image = publicImageUrl($("bizFlyer").value);
+      if (!image) return toast("Paste a valid Google Drive or public image link first.");
+      preview.innerHTML = `<img src="${escapeHtml(image)}" alt="Business flyer preview" /><p class="note">Preview only. Your business stays private until Super Admin approves it.</p>`;
+      preview.classList.remove("hidden");
+    };
     $("languageSelector").onchange = event => setLanguage(event.target.value);
 
     $("submitBusiness").onclick = async () => {
@@ -375,6 +462,11 @@
           phone: $("bizPhone").value.trim(),
           category: $("bizCategory").value.trim(),
           description: $("bizDescription").value.trim(),
+          address: $("bizAddress").value.trim(),
+          website: $("bizWebsite").value.trim(),
+          destinationUrl: $("bizDestination").value.trim(),
+          flyerUrl: $("bizFlyer").value.trim(),
+          discountText: $("bizOffer").value.trim(),
           packageId: "community-standard"
         });
         toast(`Submitted. Save reference code: ${response.referenceCode}`);
