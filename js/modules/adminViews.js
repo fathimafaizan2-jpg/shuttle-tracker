@@ -34,6 +34,11 @@ let selectedFinanceCreditMemberId = "";
 let selectedRosterActivityId = "";
 let selectedRosterFlightId = "";
 let latestInvitation = null;
+let selectedAuditCategory = "ALL";
+let selectedAuditActivityId = "";
+let selectedAuditFlightId = "";
+let selectedAuditDate = "";
+let selectedAuditMember = "";
 
 function requireSuperAdmin() {
   if (state.member?.role !== "SUPER_ADMIN") throw new Error("Only Super Admin can access this module.");
@@ -48,6 +53,72 @@ function financeRows(rows, emptyText, options = {}) {
   return `<div class="table-wrap"><table class="schedule"><thead><tr><th>Player</th>${dates ? "<th>Date</th>" : ""}<th>Flight</th><th>Amount</th><th>Status</th>${reminders ? "<th>Action</th>" : ""}</tr></thead><tbody>${rows.map(row => { const amountFils = due ? row.amountDueFils : (row.balanceFils ?? row.totalChargeFils ?? row.amountFils ?? 0); const status = row.status || (Number(row.balanceFils || 0) < 1000 ? "DUE" : "CREDIT AVAILABLE"); return `<tr><td><b>${escapeHtml(row.memberName || row.memberId || row.memberUid)}</b>  
 <small>${escapeHtml(row.memberId || "")}</small></td>${dates ? `<td>${escapeHtml(recordDate(row.updatedAt || row.paidAt || row.createdAt || row.dueAt))}</td>` : ""}<td>${escapeHtml(row.flightName || "—")}</td><td>${bhd(amountFils)}</td><td><span class="tag ${String(status).startsWith("PAID") || status === "CREDIT AVAILABLE" ? "blue" : String(status) === "DUE" ? "red" : "amber"}">${escapeHtml(status)}</span></td>${reminders ? `<td><button class="pill" data-whatsapp-reminder="${escapeHtml(row.phone || "")}" data-whatsapp-name="${escapeHtml(row.memberName || "Member")}" data-whatsapp-amount="${escapeHtml(bhd(row.amountDueFils))}">WhatsApp reminder</button></td>` : ""}</tr>`; }).join("")}</tbody></table></div>`;
 }
+
+function auditDateKey(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en", { timeZone: "Asia/Bahrain", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const valueFor = type => parts.find(part => part.type === type)?.value || "";
+  return `${valueFor("year")}-${valueFor("month")}-${valueFor("day")}`;
+}
+
+function auditPrint(sectionId, title) {
+  const section = document.getElementById(sectionId);
+  if (!section) return notify("The current log is not ready to print.");
+  const printWindow = window.open("", "_blank", "width=960,height=720");
+  if (!printWindow) return notify("Allow pop-ups to print this page.");
+  printWindow.opener = null;
+  printWindow.document.write(`<!doctype html><html><head><title>${escapeHtml(title)}</title><style>body{font-family:Arial,sans-serif;padding:28px;color:#172554}.card{border:1px solid #cbd5e1;border-radius:12px;padding:20px}.table-wrap{overflow:visible}.schedule{width:100%;border-collapse:collapse;margin-top:16px}.schedule th,.schedule td{border:1px solid #cbd5e1;padding:9px;text-align:left;vertical-align:top}.tag{font-size:10px;font-weight:700}button,input,select{display:none}</style></head><body>${section.outerHTML}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
+function auditScopeOptions(records) {
+  const activities = [...new Map(records.filter(row => row.activityId).map(row => [row.activityId, row.activityName || row.activityId])).entries()];
+  const flights = records.filter(row => row.flightId && (!selectedAuditActivityId || row.activityId === selectedAuditActivityId));
+  const flightOptions = [...new Map(flights.map(row => [row.flightId, row.flightName || row.flightId])).entries()];
+  const memberOptions = [...new Set(records.flatMap(row => [row.subject, row.actor]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)));
+  return { activities, flightOptions, memberOptions };
+}
+
+async function superAdminAuditLogView(options = {}) {
+  requireSuperAdmin();
+  const records = await api("/members/audit");
+  const title = options.title || "Audit History";
+  const description = options.description || "Read-only club history of member, attendance, payment, game, and stock actions.";
+  const permittedCategories = options.categories || ["MEMBER", "ATTENDANCE", "WALLET / PAYMENT", "SESSION CONTROL", "SHUTTLE STOCK"];
+  if (!permittedCategories.includes(selectedAuditCategory) && selectedAuditCategory !== "ALL") selectedAuditCategory = "ALL";
+  const { activities, flightOptions, memberOptions } = auditScopeOptions(records);
+  if (selectedAuditActivityId && !activities.some(([id]) => id === selectedAuditActivityId)) selectedAuditActivityId = "";
+  if (selectedAuditFlightId && !flightOptions.some(([id]) => id === selectedAuditFlightId)) selectedAuditFlightId = "";
+  const displayedRecords = records.filter(row => {
+    if (!permittedCategories.includes(row.category)) return false;
+    if (selectedAuditCategory !== "ALL" && row.category !== selectedAuditCategory) return false;
+    if (selectedAuditActivityId && row.activityId !== selectedAuditActivityId) return false;
+    if (selectedAuditFlightId && row.flightId !== selectedAuditFlightId) return false;
+    if (selectedAuditDate && auditDateKey(row.createdAt) !== selectedAuditDate && auditDateKey(row.sessionDate) !== selectedAuditDate) return false;
+    if (selectedAuditMember && row.subject !== selectedAuditMember && row.actor !== selectedAuditMember) return false;
+    return true;
+  });
+  const categoryButtons = ["ALL", ...permittedCategories].map(category => `<button class="${selectedAuditCategory === category ? "primary" : "pill"}" data-audit-category="${escapeHtml(category)}">${escapeHtml(category === "ALL" ? "All actions" : category)}</button>`).join("");
+  return `<div class="page-head"><div><span class="tag blue">SUPER ADMIN · READ ONLY</span><h2>${escapeHtml(title)}</h2><p>${escapeHtml(description)}</p></div><button class="pill" data-print-audit-log>Print current log</button></div>
+    <section class="card"><h3>Filter this log</h3><div class="actions">${categoryButtons}</div><div class="grid two"><div class="field"><label for="auditActivityFilter">Activity</label><select id="auditActivityFilter"><option value="">All activities</option>${activities.map(([id, name]) => `<option value="${escapeHtml(id)}" ${id === selectedAuditActivityId ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}</select></div><div class="field"><label for="auditFlightFilter">Flight / Level</label><select id="auditFlightFilter"><option value="">All levels</option>${flightOptions.map(([id, name]) => `<option value="${escapeHtml(id)}" ${id === selectedAuditFlightId ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}</select></div><div class="field"><label for="auditDateFilter">Date</label><input id="auditDateFilter" type="date" value="${escapeHtml(selectedAuditDate)}" /></div><div class="field"><label for="auditMemberFilter">Member name</label><select id="auditMemberFilter"><option value="">All members and admins</option>${memberOptions.map(name => `<option value="${escapeHtml(name)}" ${name === selectedAuditMember ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}</select></div></div></section>
+    <section id="superAdminAuditPrint" class="card table-wrap"><div class="page-head"><div><h3>${displayedRecords.length} matching action${displayedRecords.length === 1 ? "" : "s"}</h3><p class="note">Player and Flight Admin activity retains the date, level, member, action, and actor.</p></div></div><table class="schedule"><thead><tr><th>Date</th><th>Category</th><th>Action</th><th>Member / Flight</th><th>Details</th><th>By</th></tr></thead><tbody>${displayedRecords.map(row => `<tr><td>${escapeHtml(recordDate(row.createdAt))}${row.sessionDate ? `<br><small>Game: ${escapeHtml(recordDate(row.sessionDate))}</small>` : ""}</td><td><span class="tag blue">${escapeHtml(row.category || "—")}</span></td><td>${escapeHtml(row.action || "—")}</td><td><b>${escapeHtml(row.subject || "—")}</b><br><small>${escapeHtml(row.activityName || "Club")} · ${escapeHtml(row.flightName || "All levels")}</small></td><td>${escapeHtml(row.detail || "—")}</td><td>${escapeHtml(row.actor || "System")}</td></tr>`).join("") || "<tr><td colspan='6'>No actions match the selected filters.</td></tr>"}</tbody></table></section>`;
+}
+
+export async function superAdminHomeView() {
+  requireSuperAdmin();
+  const records = await api("/members/audit");
+  const latest = records.slice(0, 5);
+  const count = category => records.filter(row => row.category === category).length;
+  return `<div class="page-head"><div><span class="tag blue">SUPER ADMIN</span><h2>Club Oversight</h2><p>Review Player and Flight Admin history by activity, level, date, member, and action without changing the personal Player dashboard.</p></div></div><div class="grid metrics"><article class="card metric"><span>Member actions</span><b>${count("MEMBER")}</b><i>Registration and profile records</i></article><article class="card metric"><span>Wallet actions</span><b>${count("WALLET / PAYMENT")}</b><i>Credits and payment records</i></article><article class="card metric"><span>Completed sessions</span><b>${count("SESSION CONTROL")}</b><i>Final game records</i></article><article class="card metric"><span>Stock actions</span><b>${count("SHUTTLE STOCK")}</b><i>Shuttle stock audit</i></article></div><section class="card"><h3>Open a filtered club log</h3><div class="actions"><button class="primary" data-go-page="logs">Player & Admin Activity</button><button class="pill" data-go-page="wallet">Wallet & Payments</button><button class="pill" data-go-page="sessions">Session Control Logs</button><button class="pill" data-go-page="stock">Shuttle Stock Logs</button><button class="pill" data-go-page="audit">All Audit History</button></div></section><section class="card"><h3>Most recent club actions</h3>${latest.map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.action || "Club action")}</b><p>${escapeHtml(row.subject || "Club")} · ${escapeHtml(recordDate(row.createdAt))}</p></div><span class="tag blue">${escapeHtml(row.category || "AUDIT")}</span></div>`).join("") || "<p class='note'>No club actions have been recorded yet.</p>"}</section>`;
+}
+
+export async function superAdminActivityLogView() { return superAdminAuditLogView({ title: "Player & Flight Admin Activity", description: "Registration, profile, and attendance activity by Players and Flight Admins.", categories: ["MEMBER", "ATTENDANCE"] }); }
+export async function superAdminWalletLogView() { return superAdminAuditLogView({ title: "Player Wallet & Payment Log", description: "Read-only Player credit, charge, and Cash / Benefit payment activity across all levels.", categories: ["WALLET / PAYMENT"] }); }
+export async function superAdminSessionLogView() { return superAdminAuditLogView({ title: "Flight Admin Session Control Log", description: "Final attendance and completed-game records from every level.", categories: ["ATTENDANCE", "SESSION CONTROL"] }); }
+export async function superAdminStockLogView() { return superAdminAuditLogView({ title: "Flight Admin Shuttle Stock Log", description: "Read-only stock and completed-game shuttle-usage history across all levels.", categories: ["SHUTTLE STOCK"] }); }
 
 export async function activitiesAndFlightsView() {
   requireSuperAdmin();
@@ -119,9 +190,7 @@ export async function financeAdminView() {
 }
 
 export async function auditHistoryView() {
-  requireSuperAdmin();
-  const records = await api("/members/audit");
-  return `<div class="page-head"><div><span class="tag blue">SUPER ADMIN</span><h2>Audit History</h2><p>Read-only history of member, attendance, payment, and game-stock actions.</p></div><button class="pill" data-print-audit>Print audit</button></div><section class="card table-wrap"><table class="schedule"><thead><tr><th>Date</th><th>Category</th><th>Action</th><th>Subject</th><th>Details</th><th>By</th></tr></thead><tbody>${(records || []).map(row => `<tr><td>${escapeHtml(recordDate(row.createdAt))}</td><td>${escapeHtml(row.category || "—")}</td><td>${escapeHtml(row.action || "—")}</td><td>${escapeHtml(row.subject || "—")}</td><td>${escapeHtml(row.detail || "—")}${row.sessionDate ? `<br><small>Game: ${escapeHtml(recordDate(row.sessionDate))}</small>` : ""}</td><td>${escapeHtml(row.actor || "—")}</td></tr>`).join("") || "<tr><td colspan='6'>No audit records have been recorded yet.</td></tr>"}</tbody></table></section>`;
+  return superAdminAuditLogView();
 }
 
 export async function advertisingApprovalView() {
@@ -170,6 +239,12 @@ export function bindAdminViews() {
   const financeFlight = document.getElementById("financeFlightFilter"); if (financeFlight) financeFlight.onchange = () => { selectedFinanceFlightId = financeFlight.value && [...financeFlight.options].some(option => option.value === financeFlight.value) ? financeFlight.value : ""; selectedFinanceCreditMemberId = ""; refresh(); };
   const financeCreditMember = document.getElementById("financeCreditMember"); if (financeCreditMember) financeCreditMember.onchange = () => { selectedFinanceCreditMemberId = financeCreditMember.value; const selectedOption = financeCreditMember.options[financeCreditMember.selectedIndex]; const preview = document.getElementById("financeSelectedMemberPreview"); const addButton = document.getElementById("addFinanceCredit"); const deductButton = document.getElementById("deductFinanceCredit"); const balance = Number(selectedOption?.dataset.walletBalance || 0); if (preview) preview.innerHTML = selectedFinanceCreditMemberId ? `Selected member: <b>${escapeHtml(selectedOption.textContent || "selected member")}</b><br>Current wallet credit: <b id="financeCurrentCredit">${bhd(balance)}</b>` : "Choose the exact member before adding or deducting credit."; if (addButton) addButton.disabled = !selectedFinanceCreditMemberId; if (deductButton) deductButton.disabled = !selectedFinanceCreditMemberId; };
   document.querySelectorAll("[data-finance-tab]").forEach(button => button.onclick = () => { selectedFinanceTab = button.dataset.financeTab || "credits"; refresh(); });
+  document.querySelectorAll("[data-audit-category]").forEach(button => button.onclick = () => { selectedAuditCategory = button.dataset.auditCategory || "ALL"; refresh(); });
+  const auditActivity = document.getElementById("auditActivityFilter"); if (auditActivity) auditActivity.onchange = () => { selectedAuditActivityId = auditActivity.value; selectedAuditFlightId = ""; refresh(); };
+  const auditFlight = document.getElementById("auditFlightFilter"); if (auditFlight) auditFlight.onchange = () => { selectedAuditFlightId = auditFlight.value; refresh(); };
+  const auditDate = document.getElementById("auditDateFilter"); if (auditDate) auditDate.onchange = () => { selectedAuditDate = auditDate.value; refresh(); };
+  const auditMember = document.getElementById("auditMemberFilter"); if (auditMember) auditMember.onchange = () => { selectedAuditMember = auditMember.value; refresh(); };
+  document.querySelectorAll("[data-print-audit-log]").forEach(button => button.onclick = () => auditPrint("superAdminAuditPrint", "Indian Club Bahrain filtered audit log"));
   const addCredit = document.getElementById("addFinanceCredit"); if (addCredit) addCredit.onclick = async () => { try { const memberUid = document.getElementById("financeCreditMember").value, amountFils = Math.round(Number(document.getElementById("financeCreditAmount").value) * 1000), note = document.getElementById("financeCreditNote").value.trim(); if (!memberUid) throw new Error("Choose a member."); if (!Number.isInteger(amountFils) || amountFils < 1) throw new Error("Enter a valid credit amount."); await api("/finance/admin/wallet-credit", { method: "POST", body: { memberUid, amountFils, note } }); notify("Verified wallet credit added to the selected member."); refresh(); } catch (error) { notify(error.message); } };
   const deductCredit = document.getElementById("deductFinanceCredit"); if (deductCredit) deductCredit.onclick = async () => { try { const memberUid = document.getElementById("financeCreditMember").value, deductionFils = Math.round(Number(document.getElementById("financeCreditDeduction").value) * 1000), note = document.getElementById("financeCreditAdjustmentNote").value.trim(); if (!memberUid) throw new Error("Choose a member."); if (!Number.isInteger(deductionFils) || deductionFils < 1) throw new Error("Enter a valid deduction amount."); if (!note) throw new Error("Enter the reason for this manual deduction."); const result = await api("/finance/admin/wallet-adjustment", { method: "POST", body: { memberUid, adjustmentFils: -deductionFils, note } }); notify(`Credit deducted. Current wallet credit: ${bhd(result.balanceAfterFils)}.`); refresh(); } catch (error) { notify(error.message); } };
   document.querySelectorAll("[data-verify-payment]").forEach(button => button.onclick = async () => { try { await api(`/finance/payments/${encodeURIComponent(button.dataset.verifyPayment)}/verify`, { method: "POST" }); notify("Cash / Benefit payment confirmed."); refresh(); } catch (error) { notify(error.message); } });
