@@ -1,4 +1,4 @@
-const CACHE_NAME = "indian-club-shell-v3";
+const CACHE_NAME = "indian-club-shell-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,7 +8,8 @@ const APP_SHELL = [
   "./js/router.js",
   "./js/modules/auth.js",
   "./js/modules/views.js",
-  "./js/modules/adminViews.js"
+  "./js/modules/adminViews.js",
+  "./js/modules/flightAdminViews.js"
 ];
 
 self.addEventListener("install", event => {
