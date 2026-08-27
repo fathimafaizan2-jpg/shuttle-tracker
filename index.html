@@ -354,15 +354,7 @@
       document.querySelectorAll(".nav[data-page]").forEach(button => button.classList.toggle("active", button.dataset.page === state.page));
       try {
         let html = "";
-        if (state.page === "home" && state.member.role === "LEVEL_ADMIN") {
-          try {
-            html = await playerDashboard(state.member);
-          } catch (error) {
-            html = `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${state.member.flightName || "Assigned flight"}</span><h2>Welcome, ${state.member.fullName || "Flight Admin"}</h2><p>Your personal wallet and game dashboard is refreshing. Use the left sidebar for Attendance, Session Control, Shuttle Stock, Finance, and Reports.</p></div></div>`;
-            console.warn("Flight Admin dashboard load fallback:", error);
-          }
-        }
-        else if (state.page === "home") { try { html = await playerDashboard(state.member); } catch (error) { html = `<div class="page-head"><div><span class="tag blue">INDIAN CLUB BAHRAIN</span><h2>Welcome, ${state.member.fullName || "Member"}</h2><p>Your dashboard is ready. Use the menu to open timetable, attendance, Wallet & Payments, and your activity log.</p></div></div><section class="card"><h3>Dashboard temporarily unavailable</h3><p class="note">Your account is signed in. Open <b>My Timetable</b> or <b>Wallet & Payments</b> from the menu while the dashboard data refreshes.</p></section>`; console.warn("Dashboard load fallback:", error); } }
+        if (state.page === "home") html = await playerDashboard(state.member);
         else if (state.page === "timetable") html = await playerTimetable();
         else if (state.page === "attendance") {
           const sessions = await api("/timetable/mine");
