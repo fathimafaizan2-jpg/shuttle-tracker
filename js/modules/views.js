@@ -164,6 +164,24 @@ export async function attendanceView(sessionId) {
 }
 
 let activityLogSection = "games";
+let indiMartCategory = "";
+let showIndiMartBusinessForm = false;
+
+const businessCategories = ["All categories", "Restaurant & Catering", "Groceries & Food", "Fashion & Beauty", "Health & Wellness", "Education & Training", "Home Services", "Travel & Transport", "Professional Services", "Retail & Electronics", "Community Services", "Other"];
+const categoryOptions = (selected = "", includeAll = false) => businessCategories
+  .filter(category => includeAll || category !== "All categories")
+  .map(category => `<option value="${escapeHtml(category === "All categories" ? "" : category)}" ${String(selected) === String(category === "All categories" ? "" : category) ? "selected" : ""}>${escapeHtml(category)}</option>`)
+  .join("");
+
+function imagePreviewUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    const fileId = url.hostname.endsWith("drive.google.com") ? (url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || url.searchParams.get("id")) : null;
+    return fileId ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w1600` : url.toString();
+  } catch { return ""; }
+}
 
 export async function playerActivityLog() {
   const log = await api("/members/activity-log");
@@ -254,14 +272,65 @@ export async function credentialsView() {
 
 export async function publicIndiMart() {
   const businesses = await api("/business/public/directory");
-  return `<div class="page-head"><div><h2>Indi Mart</h2><p>Approved Indian community businesses in Bahrain.</p></div></div><section class="card"><button id="showPublicBusinessForm" class="primary">List your business</button><button id="showBusinessUpdate" class="pill" style="margin-left:8px">Update existing advertisement</button></section><section class="grid">${businesses.map(b => `<article class="card"><h3>${escapeHtml(b.businessName)}</h3><p class="note">${escapeHtml(b.category)}</p><p>${escapeHtml(b.description)}</p><p><b>Contact:</b> ${escapeHtml(b.phone)}</p>${b.website ? `<a href="${escapeHtml(b.website)}" target="_blank" rel="noopener">Visit website</a>` : ""}</article>`).join("") || "<article class='card'><p class='note'>No approved listings currently.</p></article>"}</section>`;
+  const categories = [...new Set(businesses.map(row => String(row.category || "Other")).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const selectedCategory = categories.includes(indiMartCategory) ? indiMartCategory : "";
+  if (indiMartCategory && !selectedCategory) indiMartCategory = "";
+  const shown = selectedCategory ? businesses.filter(row => row.category === selectedCategory) : businesses;
+  const card = business => {
+    const destination = business.destinationUrl || business.website || "";
+    const image = imagePreviewUrl(business.flyerUrl);
+    const imageMarkup = image ? (destination
+      ? `<a class="directory-flyer" href="${escapeHtml(destination)}" target="_blank" rel="noopener"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></a>`
+      : `<div class="directory-flyer"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></div>`)
+      : `<div class="directory-flyer directory-flyer-empty"><span>INDI MART</span></div>`;
+    return `<article class="card directory-card">${imageMarkup}<div class="directory-card-body"><div class="page-head"><div><span class="tag blue">${escapeHtml(business.category || "Business")}</span><h3>${escapeHtml(business.businessName)}</h3></div></div><p>${escapeHtml(business.description)}</p>${business.discountText ? `<p class="directory-offer"><b>Offer:</b> ${escapeHtml(business.discountText)}</p>` : ""}<p class="note"><b>Contact:</b> ${escapeHtml(business.phone || "Not provided")}</p>${business.address ? `<p class="note"><b>Location:</b> ${escapeHtml(business.address)}</p>` : ""}<div class="actions">${destination ? `<a class="primary directory-link" href="${escapeHtml(destination)}" target="_blank" rel="noopener">View offer / contact</a>` : ""}${business.website && business.website !== destination ? `<a class="pill directory-link" href="${escapeHtml(business.website)}" target="_blank" rel="noopener">Website</a>` : ""}</div></div></article>`;
+  };
+  const memberForm = `<section class="card indi-mart-submission"><div class="page-head"><div><span class="tag amber">MEMBER BUSINESS SUBMISSION</span><h3>List your business</h3><p class="note">Your request and flyer link go to Super Admin for approval before anyone can see it.</p></div><button id="closeMemberBusinessForm" class="pill">Back to directory</button></div><p class="business-lock">Google Drive flyer: set the image to <b>Anyone with the link</b>, paste the Drive sharing link below, and use Preview before submitting. The flyer can open your website, WhatsApp catalogue, social page, or map link.</p><div class="grid two"><div class="field"><label for="memberBizName">Business name</label><input id="memberBizName" maxlength="100" placeholder="Business name" /></div><div class="field"><label for="memberBizOwner">Owner name</label><input id="memberBizOwner" maxlength="100" value="${escapeHtml(state.member?.fullName || "")}" /></div><div class="field"><label for="memberBizPhone">Phone / WhatsApp</label><input id="memberBizPhone" maxlength="40" value="${escapeHtml(state.member?.phone || "")}" /></div><div class="field"><label for="memberBizCategory">Category</label><select id="memberBizCategory">${categoryOptions("Other")}</select></div></div><div class="field"><label for="memberBizDescription">Offer / description</label><textarea id="memberBizDescription" maxlength="800" placeholder="Describe the business, service, or current offer."></textarea></div><div class="grid two"><div class="field"><label for="memberBizAddress">Location / address</label><input id="memberBizAddress" maxlength="200" placeholder="Area, building, or shop location" /></div><div class="field"><label for="memberBizWebsite">Website link (optional)</label><input id="memberBizWebsite" type="url" maxlength="1800" placeholder="https://..." /></div><div class="field"><label for="memberBizDestination">Flyer destination link</label><input id="memberBizDestination" type="url" maxlength="1800" placeholder="WhatsApp, website, catalogue, social page, or map link" /></div><div class="field"><label for="memberBizOffer">Featured offer text (optional)</label><input id="memberBizOffer" maxlength="200" placeholder="10% club member offer" /></div></div><div class="field"><label for="memberBizFlyer">Google Drive flyer / poster image link (optional)</label><input id="memberBizFlyer" type="url" maxlength="1800" placeholder="Paste Google Drive sharing link" /></div><div class="actions"><button id="previewMemberBusinessFlyer" class="pill" type="button">Preview flyer</button><button id="submitMemberBusiness" class="primary" type="button">Submit for Super Admin approval</button></div><div id="memberBusinessFlyerPreview" class="image-link-preview hidden"></div></section>`;
+  return `<div class="page-head"><div><span class="tag blue">INDIAN CLUB BAHRAIN</span><h2>Indi Mart</h2><p>Approved Indian community businesses, offers, and services in Bahrain.</p></div></div>${showIndiMartBusinessForm ? memberForm : `<section class="card"><div class="page-head"><div><h3>Community Directory</h3><p class="note">Choose a category or open a business card for its offer, contact, catalogue, location, or website.</p></div><div class="actions"><button id="showPublicBusinessForm" class="primary">List your business</button><button id="showBusinessUpdate" class="pill">Update existing advertisement</button></div></div><div class="field"><label for="indiMartCategory">Business category</label><select id="indiMartCategory"><option value="">All categories</option>${categories.map(category => `<option value="${escapeHtml(category)}" ${category === selectedCategory ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select></div></section><section class="grid directory-grid">${shown.map(card).join("") || "<article class='card'><p class='note'>No approved businesses are available in this category yet.</p></article>"}</section>`}`;
 }
 
 export function businessSubmissionForm() {
-  return `<section class="card"><h2>List Your Business</h2><p class="business-lock">This request enters Super Admin approval. It does not create club login access.</p><div class="field"><label>Business name</label><input id="publicBizName"></div><div class="field"><label>Phone</label><input id="publicBizPhone"></div><div class="field"><label>Category</label><input id="publicBizCategory"></div><div class="field"><label>Description</label><textarea id="publicBizDescription"></textarea></div><button id="publicBizSubmit" class="primary">Submit for approval</button></section>`;
+  showIndiMartBusinessForm = true;
+  return "";
 }
 
 export function bindBusinessSubmission() {
+  const category = document.getElementById("indiMartCategory");
+  if (category) category.onchange = () => { indiMartCategory = category.value; window.dispatchEvent(new CustomEvent("indianclub:render")); };
+  const showBusinessForm = document.getElementById("showPublicBusinessForm");
+  if (showBusinessForm) showBusinessForm.onclick = () => { showIndiMartBusinessForm = true; window.dispatchEvent(new CustomEvent("indianclub:render")); };
+  const closeBusinessForm = document.getElementById("closeMemberBusinessForm");
+  if (closeBusinessForm) closeBusinessForm.onclick = () => { showIndiMartBusinessForm = false; window.dispatchEvent(new CustomEvent("indianclub:render")); };
+  const previewBusiness = document.getElementById("previewMemberBusinessFlyer");
+  if (previewBusiness) previewBusiness.onclick = () => {
+    const preview = document.getElementById("memberBusinessFlyerPreview");
+    const url = imagePreviewUrl(document.getElementById("memberBizFlyer")?.value);
+    if (!url) return notify("Paste a valid Google Drive or public image link first.");
+    preview.innerHTML = `<img src="${escapeHtml(url)}" alt="Flyer preview" /><p class="note">Preview only. Super Admin approval is still required before publication.</p>`;
+    preview.classList.remove("hidden");
+  };
+  const submitBusiness = document.getElementById("submitMemberBusiness");
+  if (submitBusiness) submitBusiness.onclick = async () => {
+    try {
+      const result = await api("/business/public/submit", { method: "POST", body: {
+        businessName: document.getElementById("memberBizName").value.trim(),
+        ownerName: document.getElementById("memberBizOwner").value.trim(),
+        phone: document.getElementById("memberBizPhone").value.trim(),
+        category: document.getElementById("memberBizCategory").value,
+        description: document.getElementById("memberBizDescription").value.trim(),
+        address: document.getElementById("memberBizAddress").value.trim(),
+        website: document.getElementById("memberBizWebsite").value.trim(),
+        destinationUrl: document.getElementById("memberBizDestination").value.trim(),
+        flyerUrl: document.getElementById("memberBizFlyer").value.trim(),
+        discountText: document.getElementById("memberBizOffer").value.trim(),
+        packageId: "community-standard"
+      }});
+      showIndiMartBusinessForm = false;
+      notify(`Business submitted. Save reference code: ${result.referenceCode}`);
+      window.dispatchEvent(new CustomEvent("indianclub:render"));
+    } catch (error) { notify(error.message || "Could not submit business."); }
+  };
+
   const openPaymentWhatsapp = (button, text) => {
     const phone = String(button.dataset.adminPhone || "").replace(/\D/g, "");
     if (!phone) return notify("Payment recorded, but no Flight Admin phone number is saved.");
