@@ -8,7 +8,23 @@ const recordDate = value => {
   const date = value?._seconds ? new Date(Number(value._seconds) * 1000) : new Date(value);
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("en-BH", { dateStyle: "medium" });
 };
-
+const inputDate = value => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bahrain", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const part = type => parts.find(item => item.type === type)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
+const imageUrl = value => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    const id = url.hostname.endsWith("drive.google.com") ? (url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || url.searchParams.get("id")) : null;
+    return id ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600` : url.toString();
+  } catch { return ""; }
+};
 let selectedMasterMonth = new Date().toISOString().slice(0, 7);
 let selectedMasterActivityId = "";
 let selectedFinanceActivityId = "";
@@ -108,6 +124,23 @@ export async function auditHistoryView() {
   return `<div class="page-head"><div><span class="tag blue">SUPER ADMIN</span><h2>Audit History</h2><p>Read-only history of member, attendance, payment, and game-stock actions.</p></div><button class="pill" data-print-audit>Print audit</button></div><section class="card table-wrap"><table class="schedule"><thead><tr><th>Date</th><th>Category</th><th>Action</th><th>Subject</th><th>Details</th><th>By</th></tr></thead><tbody>${(records || []).map(row => `<tr><td>${escapeHtml(recordDate(row.createdAt))}</td><td>${escapeHtml(row.category || "—")}</td><td>${escapeHtml(row.action || "—")}</td><td>${escapeHtml(row.subject || "—")}</td><td>${escapeHtml(row.detail || "—")}${row.sessionDate ? `<br><small>Game: ${escapeHtml(recordDate(row.sessionDate))}</small>` : ""}</td><td>${escapeHtml(row.actor || "—")}</td></tr>`).join("") || "<tr><td colspan='6'>No audit records have been recorded yet.</td></tr>"}</tbody></table></section>`;
 }
 
+export async function advertisingApprovalView() {
+  requireSuperAdmin();
+  const data = await api("/business/admin/pending");
+  const businesses = data.businesses || [];
+  const pending = businesses.filter(row => row.status === "PENDING_APPROVAL");
+  const published = businesses.filter(row => row.status === "PUBLISHED");
+  const other = businesses.filter(row => !["PENDING_APPROVAL", "PUBLISHED"].includes(row.status));
+  const defaultFeatureStart = inputDate(new Date());
+  const defaultFeatureEnd = inputDate(new Date(Date.now() + (6 * 24 * 60 * 60 * 1000)));
+  const adCard = business => {
+    const image = imageUrl(business.flyerUrl);
+    const tone = business.status === "PUBLISHED" ? "blue" : business.status === "PENDING_APPROVAL" ? "amber" : "red";
+    return `<article class="card advertising-card"><div class="page-head"><div><span class="tag ${tone}">${escapeHtml(String(business.status).replaceAll("_", " "))}</span><h3>${escapeHtml(business.businessName)}</h3><p class="note">BIZ reference: ${escapeHtml(business.referenceCode || "—")} · Submitted ${escapeHtml(recordDate(business.createdAt))}</p></div>${image ? `<a class="pill" href="${escapeHtml(image)}" target="_blank" rel="noopener">Open image / save local backup</a>` : ""}</div>${image ? `<img class="approval-image" src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer preview" />` : "<div class='approval-image approval-image-empty'>No flyer image link supplied</div>"}<div class="grid two"><div class="field"><label for="adCategory-${escapeHtml(business.id)}">Category</label><input id="adCategory-${escapeHtml(business.id)}" value="${escapeHtml(business.category || "Other")}" /></div><div class="field"><label for="adOffer-${escapeHtml(business.id)}">Featured offer text</label><input id="adOffer-${escapeHtml(business.id)}" value="${escapeHtml(business.discountText || "")}" placeholder="Example: 10% club offer" /></div><div class="field"><label for="adFlyer-${escapeHtml(business.id)}">Google Drive flyer image link</label><input id="adFlyer-${escapeHtml(business.id)}" value="${escapeHtml(business.flyerUrl || "")}" placeholder="Google Drive sharing link" /></div><div class="field"><label for="adDestination-${escapeHtml(business.id)}">Click-through business link</label><input id="adDestination-${escapeHtml(business.id)}" value="${escapeHtml(business.destinationUrl || business.website || "")}" placeholder="Website, WhatsApp, catalogue, social page, or map" /></div><div class="field"><label for="adWebsite-${escapeHtml(business.id)}">Website link</label><input id="adWebsite-${escapeHtml(business.id)}" value="${escapeHtml(business.website || "")}" placeholder="Optional website" /></div><div class="field"><label for="adAddress-${escapeHtml(business.id)}">Location / address</label><input id="adAddress-${escapeHtml(business.id)}" value="${escapeHtml(business.address || "")}" placeholder="Area, building, or shop location" /></div></div><div class="advertising-feature-window"><label class="pill"><input id="adFeatured-${escapeHtml(business.id)}" type="checkbox" ${business.featured ? "checked" : ""} /> Feature on front page</label><div class="field"><label for="adFeatureStart-${escapeHtml(business.id)}">Featured start date</label><input id="adFeatureStart-${escapeHtml(business.id)}" type="date" value="${escapeHtml(inputDate(business.featureStartAt) || defaultFeatureStart)}" /></div><div class="field"><label for="adFeatureEnd-${escapeHtml(business.id)}">Featured end date</label><input id="adFeatureEnd-${escapeHtml(business.id)}" type="date" value="${escapeHtml(inputDate(business.featureEndAt) || defaultFeatureEnd)}" /></div></div><div class="actions"><button class="primary" data-save-ad="${escapeHtml(business.id)}">Save advertisement</button>${business.status === "PENDING_APPROVAL" ? `<button class="primary" data-ad-decision="PUBLISH" data-ad-id="${escapeHtml(business.id)}">Approve & publish</button><button class="pill" data-ad-decision="REJECT" data-ad-id="${escapeHtml(business.id)}">Reject</button>` : business.status === "PUBLISHED" ? `<button class="pill" data-ad-decision="UNPUBLISH" data-ad-id="${escapeHtml(business.id)}">Unpublish</button>` : ""}</div></article>`;
+  };
+  return `<div class="page-head"><div><span class="tag blue">SUPER ADMIN</span><h2>Advertising Approval</h2><p>Review Indi Mart submissions, publish approved businesses, manage up to ten current featured ads, and publish official notices.</p></div></div><section class="card"><h3>Create official notice</h3><p class="note">An optional public Google Drive image can be displayed with the club announcement. Use the image preview button before publishing.</p><div class="field"><label for="noticeTitle">Notice title</label><input id="noticeTitle" maxlength="160" placeholder="Club notice or announcement title" /></div><div class="field"><label for="noticeBody">Notice message</label><textarea id="noticeBody" maxlength="1200" placeholder="Write the official club notice."></textarea></div><div class="field"><label for="noticeImageUrl">Google Drive announcement image link (optional)</label><input id="noticeImageUrl" type="url" maxlength="1800" placeholder="Paste Google Drive sharing link" /></div><div class="actions"><button id="previewNoticeImage" class="pill" type="button">Preview notice image</button><button id="publishOfficialNotice" class="primary" type="button">Publish official notice</button></div><div id="noticeImagePreview" class="image-link-preview hidden"></div></section><section class="card"><h3>Pending business approvals</h3><p class="note">Review every business, open the image if you want to save a local backup, then approve, reject, or edit the listing.</p><div class="advertising-list">${pending.map(adCard).join("") || "<p class='note'>No business submission is awaiting approval.</p>"}</div></section><section class="card"><h3>Business update requests</h3>${(data.updateRequests || []).map(row => `<div class="session"><div class="grow"><b>${escapeHtml(row.referenceCode || "Business update")}</b><p>${escapeHtml(row.requestedBusinessName || "Existing business")} · ${escapeHtml(row.requestedCategory || "No category change")} · ${escapeHtml(recordDate(row.createdAt))}</p></div><div class="actions"><button class="primary" data-update-request-decision="APPROVE" data-update-request-id="${escapeHtml(row.id)}">Approve update</button><button class="pill" data-update-request-decision="REJECT" data-update-request-id="${escapeHtml(row.id)}">Reject</button></div></div>`).join("") || "<p class='note'>No advertiser update request is awaiting approval.</p>"}</section><section class="card"><h3>Published directory and featured ads</h3><p class="note">Maximum ten featured ads may overlap. When a feature end date passes, the business stays in Indi Mart but automatically leaves the landing-page carousel.</p><div class="advertising-list">${published.map(adCard).join("") || "<p class='note'>No business has been published yet.</p>"}</div></section>${other.length ? `<section class="card"><h3>Unpublished or rejected businesses</h3><div class="advertising-list">${other.map(adCard).join("")}</div></section>` : ""}<section class="card"><h3>Official notice history</h3>${(data.notices || []).map(notice => `<div class="session"><div class="grow"><b>${escapeHtml(notice.title)}</b><p>${escapeHtml(recordDate(notice.publishedAt || notice.createdAt))} · ${notice.published ? "Published" : "Draft"}</p></div>${notice.imageUrl ? `<a class="pill" href="${escapeHtml(imageUrl(notice.imageUrl))}" target="_blank" rel="noopener">Open image / save backup</a>` : ""}<button class="pill" data-toggle-notice="${escapeHtml(notice.id)}" data-notice-published="${notice.published}">${notice.published ? "Unpublish" : "Publish"}</button></div>`).join("") || "<p class='note'>No official notices have been created yet.</p>"}</section>`;
+}
+
 export function bindAdminViews() {
   const createActivity = document.getElementById("createActivity");
   if (createActivity) createActivity.onclick = async () => { try { await api("/activities", { method: "POST", body: { name: document.getElementById("newActivityName").value.trim() } }); notify("Activity created."); refresh(); } catch (error) { notify(error.message); } };
@@ -142,4 +175,86 @@ export function bindAdminViews() {
   document.querySelectorAll("[data-verify-payment]").forEach(button => button.onclick = async () => { try { await api(`/finance/payments/${encodeURIComponent(button.dataset.verifyPayment)}/verify`, { method: "POST" }); notify("Cash / Benefit payment confirmed."); refresh(); } catch (error) { notify(error.message); } });
   document.querySelectorAll("[data-whatsapp-reminder]").forEach(button => button.onclick = () => { const phone = String(button.dataset.whatsappReminder || "").replace(/\D/g, ""); if (!phone) return notify("This Player has no phone number saved."); const message = encodeURIComponent(`Hello ${button.dataset.whatsappName}, a club shuttlecock amount of ${button.dataset.whatsappAmount} is unpaid. Please pay using wallet credit, Cash, or Benefit. Thank you.`); window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener" ); });
   document.querySelectorAll("[data-print-finance], [data-print-audit]").forEach(button => button.onclick = () => window.print());
+
+  const previewNoticeImage = document.getElementById("previewNoticeImage");
+  if (previewNoticeImage) previewNoticeImage.onclick = () => {
+    const preview = document.getElementById("noticeImagePreview");
+    const url = imageUrl(document.getElementById("noticeImageUrl").value);
+    if (!url) return notify("Paste a valid Google Drive or public image link first.");
+    preview.innerHTML = `<img src="${escapeHtml(url)}" alt="Official notice image preview" />`;
+    preview.classList.remove("hidden");
+  };
+  const publishOfficialNotice = document.getElementById("publishOfficialNotice");
+  if (publishOfficialNotice) publishOfficialNotice.onclick = async () => {
+    try {
+      await api("/business/admin/notices", { method: "POST", body: {
+        title: document.getElementById("noticeTitle").value.trim(),
+        body: document.getElementById("noticeBody").value.trim(),
+        imageUrl: document.getElementById("noticeImageUrl").value.trim(),
+        published: true
+      }});
+      notify("Official notice published.");
+      refresh();
+    } catch (error) { notify(error.message); }
+  };
+  document.querySelectorAll("[data-toggle-notice]").forEach(button => button.onclick = async () => {
+    try {
+      await api(`/business/admin/notices/${encodeURIComponent(button.dataset.toggleNotice)}`, { method: "PATCH", body: { published: button.dataset.noticePublished !== "true" } });
+      notify("Official notice updated.");
+      refresh();
+    } catch (error) { notify(error.message); }
+  });
+  document.querySelectorAll("[data-ad-decision]").forEach(button => button.onclick = async () => {
+    try {
+      const id = button.dataset.adId;
+      const note = String(prompt(`Optional note for ${button.dataset.adDecision.toLowerCase()}:`) || "").trim();
+      await api(`/business/admin/${encodeURIComponent(id)}/decision`, { method: "POST", body: { decision: button.dataset.adDecision, note } });
+      if (button.dataset.adDecision === "PUBLISH") {
+        const featured = document.getElementById(`adFeatured-${id}`).checked;
+        const body = {
+          category: document.getElementById(`adCategory-${id}`).value.trim(),
+          discountText: document.getElementById(`adOffer-${id}`).value.trim(),
+          flyerUrl: document.getElementById(`adFlyer-${id}`).value.trim(),
+          destinationUrl: document.getElementById(`adDestination-${id}`).value.trim(),
+          website: document.getElementById(`adWebsite-${id}`).value.trim(),
+          address: document.getElementById(`adAddress-${id}`).value.trim(),
+          featured,
+          featureStartDate: document.getElementById(`adFeatureStart-${id}`).value,
+          featureEndDate: document.getElementById(`adFeatureEnd-${id}`).value
+        };
+        if (featured && (!body.featureStartDate || !body.featureEndDate)) throw new Error("The business was published, but both featured dates are needed before it can be featured.");
+        await api(`/business/admin/${encodeURIComponent(id)}`, { method: "PATCH", body });
+      }
+      notify(`Business ${String(button.dataset.adDecision).toLowerCase()}ed.`);
+      refresh();
+    } catch (error) { notify(error.message); }
+  });
+  document.querySelectorAll("[data-save-ad]").forEach(button => button.onclick = async () => {
+    try {
+      const id = button.dataset.saveAd;
+      const featured = document.getElementById(`adFeatured-${id}`).checked;
+      const body = {
+        category: document.getElementById(`adCategory-${id}`).value.trim(),
+        discountText: document.getElementById(`adOffer-${id}`).value.trim(),
+        flyerUrl: document.getElementById(`adFlyer-${id}`).value.trim(),
+        destinationUrl: document.getElementById(`adDestination-${id}`).value.trim(),
+        website: document.getElementById(`adWebsite-${id}`).value.trim(),
+        address: document.getElementById(`adAddress-${id}`).value.trim(),
+        featured,
+        featureStartDate: document.getElementById(`adFeatureStart-${id}`).value,
+        featureEndDate: document.getElementById(`adFeatureEnd-${id}`).value
+      };
+      if (featured && (!body.featureStartDate || !body.featureEndDate)) throw new Error("Choose both featured start and end dates.");
+      await api(`/business/admin/${encodeURIComponent(id)}`, { method: "PATCH", body });
+      notify("Advertisement saved.");
+      refresh();
+    } catch (error) { notify(error.message); }
+  });
+  document.querySelectorAll("[data-update-request-decision]").forEach(button => button.onclick = async () => {
+    try {
+      await api(`/business/admin/update-requests/${encodeURIComponent(button.dataset.updateRequestId)}/decision`, { method: "POST", body: { decision: button.dataset.updateRequestDecision } });
+      notify("Business update request reviewed.");
+      refresh();
+    } catch (error) { notify(error.message); }
+  });
 }
