@@ -48,7 +48,7 @@ router.get("/session/:sessionId", requireAuth, async (request, response) => {
   try {
     const sessionId = asText(request.params.sessionId, "Session ID");
     const session = await loadSessionWithAccess(sessionId, request.member);
-    const locked = isSessionLocked(sessionStart(session));
+    const playerLocked = isSessionLocked(sessionStart(session));
 
     const [members, attendanceRows] = await Promise.all([
       db.collection("members").where("flightId", "==", session.flightId).get(),
@@ -56,7 +56,7 @@ router.get("/session/:sessionId", requireAuth, async (request, response) => {
     ]);
     const statusByMember = new Map(attendanceRows.docs.map(doc => [doc.data().memberUid, doc.data().status]));
 
-    const canCorrect = hasGameStarted(session) && ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(request.member!.role) && requireFlightAccess(session.flightId, request.member!);
+    const canCorrect = ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(request.member!.role) && requireFlightAccess(session.flightId, request.member!);
     const roster = members.docs
       .filter(doc => doc.data().active === true)
       .map(doc => ({
@@ -73,8 +73,8 @@ router.get("/session/:sessionId", requireAuth, async (request, response) => {
       flightId: session.flightId,
       flightName: session.flightName,
       startAt: sessionStart(session).toISOString(),
-      locked,
-      canRespond: !locked && canSelfRespond(request.member, session),
+      locked: playerLocked,
+      canRespond: request.member!.role === "PLAYER" && !playerLocked && canSelfRespond(request.member, session),
       canCorrect,
       myAttendance: statusByMember.get(request.member!.uid) || "NO_RESPONSE",
       roster
@@ -130,7 +130,7 @@ router.post("/respond", requireAuth, async (request, response) => {
   }
 });
 
-/* After lock, only the assigned Flight Admin or Super Admin may correct another member. */
+/* Player self-response locks before the game. The authorised Flight Admin keeps final-attendance control until settlement. */
 router.post("/session/:sessionId/correct", requireAuth, requireRole("LEVEL_ADMIN", "SUPER_ADMIN"), async (request, response) => {
   try {
     const sessionId = asText(request.params.sessionId, "Session ID");
@@ -143,10 +143,6 @@ router.post("/session/:sessionId/correct", requireAuth, requireRole("LEVEL_ADMIN
     if (!requireFlightAccess(session.flightId, request.member!)) {
       return response.status(403).json({ message: "Only the assigned Flight Admin may correct this flight." });
     }
-    if (!hasGameStarted(session)) {
-      return response.status(409).json({ message: "Flight Admin corrections become available after the scheduled game start time." });
-    }
-
     const targetMember = await db.collection("members").doc(targetMemberUid).get();
     if (!targetMember.exists || targetMember.data()!.flightId !== session.flightId) {
       return response.status(400).json({ message: "This member is not assigned to the session flight." });
