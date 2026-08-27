@@ -58,6 +58,7 @@ function notify(message) {
 }
 
 export async function playerDashboard(member = state.member) {
+  const signedInMember = member && typeof member === "object" ? member : {};
   const safelyLoad = async (path, fallback) => {
     try { return await api(path); }
     catch (error) {
@@ -77,9 +78,10 @@ export async function playerDashboard(member = state.member) {
     arrearsFils: Number(dashboardData.arrearsFils ?? walletData.arrearsFils ?? 0)
   };
   const now = Date.now();
-  const next = (personalSessions || [])
+  const safeSessions = Array.isArray(personalSessions) ? personalSessions : [];
+  const next = safeSessions
     .filter(session => {
-      if (session.status !== "SCHEDULED") return false;
+      if (!session || typeof session !== "object" || session.status !== "SCHEDULED") return false;
       const startAt = new Date(session.startAt).getTime();
       const endAt = new Date(session.endAt || session.startAt).getTime();
       return Number.isFinite(startAt) && Number.isFinite(endAt) && endAt >= now;
@@ -90,8 +92,8 @@ export async function playerDashboard(member = state.member) {
   return `
     <div class="page-head">
       <div>
-        <h2>Welcome, ${escapeHtml(member.fullName)}</h2>
-        <p>${escapeHtml(member.flightName || "Your flight will be assigned by Super Admin.")}</p>
+        <h2>Welcome, ${escapeHtml(signedInMember.fullName || "Member")}</h2>
+        <p>${escapeHtml(signedInMember.flightName || "Your flight will be assigned by Super Admin.")}</p>
       </div>
       ${next ? `<span class='tag blue'>${gameStatus}</span>` : ""}
     </div>
@@ -179,7 +181,7 @@ export async function attendanceView(sessionId) {
   return `<div class="page-head"><div><h2>Attendance</h2><p>Your response is fixed to the next game day for your flight in the club timetable.</p></div>${session.locked ? "<span class='tag red'>PLAYER RESPONSES LOCKED</span>" : "<span class='tag blue'>RESPONSES OPEN</span>"}</div>
     <section class="card">
       <h3>${escapeHtml(session.flightName)} · ${escapeHtml(weekdayTime(session.startAt))}, ${escapeHtml(dateTime(session.startAt))}</h3>
-      <p class="note">You can update only your own response until 15 minutes before game start. After the game begins, your Flight Admin can correct actual attendance with an audit reason.</p>
+      <p class="note">Players can update only their own response until 15 minutes before game start. Your assigned Flight Admin can correct final attendance with an audit reason until the game is settled.</p>
       <div class="session"><div class="grow"><b>My attendance</b></div>${attendanceBadge(session.myAttendance)}</div>
       ${session.canRespond ? `<div class="actions"><button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I am coming</button><button class="pill" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">I am not coming</button></div>` : ""}
     </section>
@@ -283,15 +285,17 @@ export async function walletView() {
 
 export async function credentialsView() {
   const member = await api("/members/me");
+  const profileImage = imagePreviewUrl(member.profilePhotoUrl);
   return `<div class="page-head"><div><span class="tag blue">MY ACCOUNT</span><h2>Update Credentials</h2><p>Keep your Member ID and phone number current. You may also update your email or password securely.</p></div></div>
     <section class="card"><div class="grid two">
+      <div class="field"><label for="credentialFullName">Full name</label><input id="credentialFullName" value="${escapeHtml(member.fullName || "")}" autocomplete="name" placeholder="Your full name" /></div>
       <div class="field"><label for="credentialMemberId">Member ID</label><input id="credentialMemberId" value="${escapeHtml(member.memberId || "")}" placeholder="ICB-PL-001" /></div>
       <div class="field"><label for="credentialPhone">Phone number</label><div class="phone-field"><select id="credentialCountryCode" aria-label="Country code">${countryCodeOptions(member.phone)}</select><input id="credentialPhone" type="tel" inputmode="tel" autocomplete="tel" value="${escapeHtml(localPhoneNumber(member.phone))}" placeholder="Phone number" /></div></div>
       <div class="field"><label for="credentialEmail">Email address</label><input id="credentialEmail" type="email" autocomplete="email" value="${escapeHtml(member.email || "")}" /></div>
       <div class="field"><label for="credentialCurrentPassword">Current password <small>(required only to change email or password)</small></label><div class="password-field"><input id="credentialCurrentPassword" type="password" autocomplete="current-password" /><button type="button" class="password-toggle" data-toggle-password="credentialCurrentPassword">Show</button></div></div>
       <div class="field"><label for="credentialNewPassword">New password <small>(leave blank to keep your current password)</small></label><div class="password-field"><input id="credentialNewPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /><button type="button" class="password-toggle" data-toggle-password="credentialNewPassword">Show</button></div></div>
       <div class="field"><label for="credentialConfirmPassword">Confirm new password</label><div class="password-field"><input id="credentialConfirmPassword" type="password" autocomplete="new-password" /><button type="button" class="password-toggle" data-toggle-password="credentialConfirmPassword">Show</button></div></div>
-    </div><div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div><p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p></section>`;
+    </div><section class="profile-photo-card"><div><h3>Profile photo</h3><p class="note">Upload your photo to Google Drive, set it to <b>Anyone with the link</b>, then paste the public image link below. The image is shown only as your club profile photo.</p></div><div class="field"><label for="credentialProfilePhoto">Google Drive profile photo link</label><input id="credentialProfilePhoto" type="url" maxlength="1800" value="${escapeHtml(member.profilePhotoUrl || "")}" placeholder="Paste a public Google Drive image link" /></div><div class="actions"><button id="previewProfilePhoto" class="pill" type="button">Preview photo</button></div><div id="profilePhotoPreview" class="profile-photo-preview ${profileImage ? "" : "hidden"}">${profileImage ? `<img src="${escapeHtml(profileImage)}" alt="Profile photo preview" />` : ""}</div></section><div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div><p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p></section>`;
 }
 
 export async function publicIndiMart() {
@@ -419,18 +423,32 @@ export function bindBusinessSubmission() {
   });
 
   const saveCredentials = document.getElementById("saveCredentials");
+  const previewProfilePhoto = document.getElementById("previewProfilePhoto");
+  if (previewProfilePhoto) previewProfilePhoto.onclick = () => {
+    const preview = document.getElementById("profilePhotoPreview");
+    const image = imagePreviewUrl(document.getElementById("credentialProfilePhoto")?.value);
+    if (!image) return notify("Paste a valid public Google Drive or HTTPS image link first.");
+    preview.innerHTML = `<img src="${escapeHtml(image)}" alt="Profile photo preview" />`;
+    preview.classList.remove("hidden");
+  };
   if (saveCredentials) saveCredentials.onclick = async () => {
     try {
       const newPassword = document.getElementById("credentialNewPassword").value;
       const confirmation = document.getElementById("credentialConfirmPassword").value;
       if (newPassword !== confirmation) throw new Error("The new password and confirmation do not match.");
       await updateMyCredentials({
+        fullName: document.getElementById("credentialFullName").value.trim(),
         memberId: document.getElementById("credentialMemberId").value.trim(),
         phone: `${document.getElementById("credentialCountryCode").value} ${document.getElementById("credentialPhone").value.trim()}`.trim(),
         email: document.getElementById("credentialEmail").value.trim(),
         currentPassword: document.getElementById("credentialCurrentPassword").value,
-        newPassword
+        newPassword,
+        profilePhotoUrl: document.getElementById("credentialProfilePhoto").value.trim()
       });
+      if (state.member) {
+        state.member.fullName = document.getElementById("credentialFullName").value.trim() || state.member.fullName;
+        state.member.profilePhotoUrl = document.getElementById("credentialProfilePhoto").value.trim() || null;
+      }
       notify("Your credentials have been updated.");
       window.dispatchEvent(new CustomEvent("indianclub:render"));
     } catch (error) { notify(error.message); }
