@@ -77,20 +77,36 @@
       <button id="openBusiness" class="business-mini-button">List your business</button>
     </div>
 
-    <section id="publicDirectory" class="card hidden">
-      <div class="page-head">
+    <section id="publicDirectory" class="public-directory-panel hidden">
+      <div class="page-head public-directory-title">
         <div>
-          <span class="tag blue">PUBLIC INDI MART</span>
-          <h2>Indian Community Directory</h2>
-          <p>Approved local businesses, offers, and community services in Bahrain.</p>
+          <span class="tag blue">INDIAN CLUB BAHRAIN</span>
+          <h2>Indi Mart</h2>
+          <p>Approved Indian community businesses, offers, and services in Bahrain.</p>
         </div>
         <button id="closeDirectory" class="pill">Back</button>
       </div>
-      <div id="publicDirectoryList" class="directory-empty">
-        <strong>Indi Mart is being prepared.</strong>
-        <p>Businesses can submit a listing for Super Admin approval.</p>
-        <button id="directoryBusinessButton" class="primary">List Your Business</button>
-      </div>
+      <section class="card directory-control-card">
+        <div class="page-head">
+          <div>
+            <h3>Community Directory</h3>
+            <p>Choose a category or open a business card for its offer, contact, catalogue, location, or website.</p>
+          </div>
+          <div class="actions directory-actions">
+            <button id="openPublicDirectoryBusiness" class="primary" type="button">List your business</button>
+            <button id="publicDirectoryUpdate" class="pill" type="button">Update existing advertisement</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="publicDirectoryCategory">Business category</label>
+          <select id="publicDirectoryCategory" aria-label="Business category">
+            <option value="">All categories</option>
+          </select>
+        </div>
+      </section>
+      <section id="publicDirectoryList" class="directory-results" aria-live="polite">
+        <article class="card directory-category-empty"><p>No approved businesses are available in this category yet.</p></article>
+      </section>
     </section>
 
     <section id="businessForm" class="card hidden">
@@ -228,11 +244,10 @@
         <button class="nav" data-page="attendance">Attendance</button>
         <button class="nav" data-page="logs">My Activity Log</button>
         <button class="nav" data-page="wallet">Wallet & Payments</button>
-        <button class="nav" data-page="profile">Update Credentials</button>
         <div class="nav-group admin-nav">FLIGHT ADMIN</div>
         <button class="nav admin-nav" data-page="sessions">Session Control</button>
         <button class="nav admin-nav" data-page="stock">Shuttle Stock</button>
-        <button class="nav admin-nav" data-page="reports">Reports & Sheets Export</button>
+        <button class="nav admin-nav flight-only-nav" data-page="reports">Reports & Sheets Export</button>
         <div class="nav-group super-nav">SUPER ADMIN</div>
         <button class="nav super-nav" data-page="master">Master Timetable</button>
         <button class="nav super-nav" data-page="flights">Activities, Flights & Members</button>
@@ -241,6 +256,7 @@
         <button class="nav super-nav" data-page="audit">Audit History</button>
         <div class="nav-group">COMMUNITY</div>
         <button class="nav" data-page="bazaar">Indi Mart</button>
+        <button class="nav" data-page="profile">Update Credentials</button>
       </aside>
       <section id="view"></section>
     </div>
@@ -248,12 +264,14 @@
   </main>
 
   <div id="toast" class="toast hidden" role="status"></div>
+  <div id="appLoading" class="app-loading hidden" role="status" aria-live="polite"><div class="app-loading-card"><span class="loading-spinner" aria-hidden="true"></span><strong id="appLoadingText">Loading…</strong></div></div>
+  <section id="accountError" class="account-error hidden" role="alert" aria-live="assertive"><div class="account-error-card"><span class="tag red">ACCOUNT ACTION REQUIRED</span><h2 id="accountErrorTitle">Account problem</h2><p id="accountErrorMessage"></p><button id="closeAccountError" class="primary" type="button">Try again</button></div></section>
   <script>window.INDIAN_CLUB_API_URL = "https://indian-club-api.onrender.com/api";</script>
   <script type="module">
-    import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness } from "./js/modules/auth.js";
-    import { state, navigate, startSignedInApp, setLanguage } from "./js/router.js";
+    import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness, submitBusinessUpdateRequest } from "./js/modules/auth.js";
+    import { state, navigate, startSignedInApp, setLanguage, watchAuthentication } from "./js/router.js";
     import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, walletView, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
-    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, advertisingApprovalView, bindAdminViews } from "./js/modules/adminViews.js";
+    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, advertisingApprovalView, superAdminHomeView, superAdminActivityLogView, superAdminWalletLogView, superAdminSessionLogView, superAdminStockLogView, bindAdminViews } from "./js/modules/adminViews.js";
     import {flightAdminSessionControlView,flightAdminShuttleStockView,flightAdminReportsView,bindFlightAdminViews} from "./js/modules/flightAdminViews.js";
 
     const $ = id => document.getElementById(id );
@@ -262,6 +280,11 @@
     let publicSponsors = [];
     let activeSponsorIndex = 0;
     let sponsorTimer = null;
+    const publicDirectoryCategories = [
+      "Restaurant & Catering", "Groceries & Food", "Fashion & Beauty", "Health & Wellness",
+      "Education & Training", "Home Services", "Travel & Transport", "Professional Services",
+      "Retail & Electronics", "Community Services", "Other"
+    ];
 
     function publicImageUrl(value) {
       const raw = String(value || "").trim();
@@ -293,13 +316,28 @@
 
     function renderPublicDirectory(businesses) {
       const list = $("publicDirectoryList");
-      if (!businesses.length) {
-        list.innerHTML = "<strong>Indi Mart is being prepared.</strong><p>Businesses can submit a listing for Super Admin approval.</p><button id='directoryBusinessButton' class='primary'>List Your Business</button>";
-        $("directoryBusinessButton").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
-        return;
-      }
-      list.classList.remove("directory-empty");
-      list.innerHTML = `<div class="directory-grid">${businesses.map(business => { const image = publicImageUrl(business.flyerUrl); const destination = business.destinationUrl || business.website || ""; return `<article class="card directory-card">${image ? (destination ? `<a class="directory-flyer" href="${escapeHtml(destination)}" target="_blank" rel="noopener"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></a>` : `<div class="directory-flyer"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></div>`) : "<div class='directory-flyer directory-flyer-empty'>INDI MART</div>"}<div class="directory-card-body"><span class="tag blue">${escapeHtml(business.category || "Business")}</span><h3>${escapeHtml(business.businessName)}</h3><p>${escapeHtml(business.description || "")}</p>${business.discountText ? `<p class="directory-offer">${escapeHtml(business.discountText)}</p>` : ""}<p class="note"><b>Contact:</b> ${escapeHtml(business.phone || "Not provided")}</p>${business.address ? `<p class="note"><b>Location:</b> ${escapeHtml(business.address)}</p>` : ""}${destination ? `<a class="primary directory-link" href="${escapeHtml(destination)}" target="_blank" rel="noopener">View offer / contact</a>` : ""}</div></article>`; }).join("")}</div>`;
+      const categorySelect = $("publicDirectoryCategory");
+      const categories = [...new Set([
+        ...publicDirectoryCategories,
+        ...businesses.map(business => String(business.category || "Other").trim()).filter(Boolean)
+      ])].sort((a, b) => a.localeCompare(b));
+      const previousCategory = categories.includes(categorySelect.value) ? categorySelect.value : "";
+      categorySelect.innerHTML = `<option value="">All categories</option>${categories.map(category => `<option value="${escapeHtml(category)}" ${category === previousCategory ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}`;
+
+      const drawResults = selectedCategory => {
+        const shown = selectedCategory ? businesses.filter(business => String(business.category || "Other") === selectedCategory) : businesses;
+        if (!shown.length) {
+          const noResultsMessage = selectedCategory
+            ? `No approved businesses are available in the ${escapeHtml(selectedCategory)} category yet.`
+            : "No approved businesses are available in this category yet.";
+          list.innerHTML = `<article class="card directory-category-empty"><p>${noResultsMessage}</p></article>`;
+          return;
+        }
+        list.innerHTML = `<div class="directory-grid">${shown.map(business => { const image = publicImageUrl(business.flyerUrl); const destination = business.destinationUrl || business.website || ""; return `<article class="card directory-card">${image ? (destination ? `<a class="directory-flyer" href="${escapeHtml(destination)}" target="_blank" rel="noopener"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></a>` : `<div class="directory-flyer"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></div>`) : "<div class='directory-flyer directory-flyer-empty'>INDI MART</div>"}<div class="directory-card-body"><span class="tag blue">${escapeHtml(business.category || "Business")}</span><h3>${escapeHtml(business.businessName)}</h3><p>${escapeHtml(business.description || "")}</p>${business.discountText ? `<p class="directory-offer">${escapeHtml(business.discountText)}</p>` : ""}<p class="note"><b>Contact:</b> ${escapeHtml(business.phone || "Not provided")}</p>${business.address ? `<p class="note"><b>Location:</b> ${escapeHtml(business.address)}</p>` : ""}${destination ? `<a class="primary directory-link" href="${escapeHtml(destination)}" target="_blank" rel="noopener">View offer / contact</a>` : ""}</div></article>`; }).join("")}</div>`;
+      };
+
+      categorySelect.onchange = () => drawResults(categorySelect.value);
+      drawResults(previousCategory);
     }
 
     function toast(message) {
@@ -308,6 +346,24 @@
       box.classList.remove("hidden");
       window.setTimeout(() => box.classList.add("hidden"), 3000);
     }
+
+    let loadingRequests = 0;
+    function setLoading(active, label = "Loading…") {
+      const overlay = $("appLoading");
+      const copy = $("appLoadingText");
+      if (!overlay || !copy) return;
+      loadingRequests = active ? loadingRequests + 1 : Math.max(0, loadingRequests - 1);
+      copy.textContent = label;
+      overlay.classList.toggle("hidden", loadingRequests === 0);
+    }
+
+    function showAccountError(title, message) {
+      $("accountErrorTitle").textContent = title;
+      $("accountErrorMessage").textContent = message || "Please check the account details and try again.";
+      $("accountError").classList.remove("hidden");
+    }
+
+    function clearAccountError() { $("accountError").classList.add("hidden"); }
 
     function hidePublicPanels() {
       ["businessForm", "publicDirectory"].forEach(id => $(id).classList.add("hidden"));
@@ -326,6 +382,7 @@
     function openLoginOverlay() {
       hidePublicPanels();
       closeSignupOverlay();
+      clearAccountError();
       $("login").classList.remove("hidden");
       document.body.classList.add("login-active");
     }
@@ -333,6 +390,7 @@
     function openSignupOverlay() {
       hidePublicPanels();
       closeLoginOverlay();
+      clearAccountError();
       $("signup").classList.remove("hidden");
       document.body.classList.add("login-active");
     }
@@ -340,12 +398,22 @@
     function updateNavigation() {
       const isAdmin = ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(state.member?.role);
       const isSuper = state.member?.role === "SUPER_ADMIN";
+      const isFlightAdmin = state.member?.role === "LEVEL_ADMIN";
       document.querySelectorAll(".admin-nav").forEach(item => item.classList.toggle("hidden", !isAdmin));
       document.querySelectorAll(".super-nav").forEach(item => item.classList.toggle("hidden", !isSuper));
+      document.querySelectorAll(".flight-only-nav").forEach(item => item.classList.toggle("hidden", !isFlightAdmin));
       $("memberName").textContent = state.member?.fullName || "Member";
       $("roleLabel").textContent = state.member?.role?.replace("_", " ") || "";
       $("sideRole").textContent = isSuper ? "All activities" : (state.member?.flightName || "No flight assigned");
-      $("avatar").textContent = (state.member?.fullName || "IC").split(" ").map(word => word[0]).join("").slice(0, 2);
+      const profilePhoto = publicImageUrl(state.member?.profilePhotoUrl);
+      $("avatar").innerHTML = profilePhoto ? `<img src="${escapeHtml(profilePhoto)}" alt="${escapeHtml(state.member?.fullName || "Member")} profile photo" />` : escapeHtml((state.member?.fullName || "IC").split(" ").map(word => word[0]).join("").slice(0, 2));
+    }
+
+    function emergencyHomeDashboard(member) {
+      const safeMember = member && typeof member === "object" ? member : {};
+      return `<div class="page-head"><div><h2>Welcome, ${escapeHtml(safeMember.fullName || "Member")}</h2><p>${escapeHtml(safeMember.flightName || "Your flight will be assigned by Super Admin.")}</p></div></div>
+        <div class="grid metrics"><article class="card metric"><span>Wallet credit</span><b>BHD 0.000</b><i>Available verified credit</i></article><article class="card metric"><span>Sessions attended</span><b>0</b><i>All recorded sessions</i></article><article class="card metric"><span>Pending amount</span><b>BHD 0.000</b><i>Cash / Benefit pending</i></article><article class="card metric"><span>Arrears</span><b>BHD 0.000</b><i>Due after 24 hours</i></article></div>
+        <div class="grid two"><article class="card"><h3>Upcoming game</h3><p class="note">No upcoming game has been published for your flight.</p></article><article class="card wallet"><span>Credit rule</span><div class="balance">BHD 0.000</div><p>Only final PRESENT attendees are charged after Flight Admin records actual shuttlecocks used.</p></article></div>`;
     }
 
     async function renderPage() {
@@ -354,7 +422,7 @@
       document.querySelectorAll(".nav[data-page]").forEach(button => button.classList.toggle("active", button.dataset.page === state.page));
       try {
         let html = "";
-        if (state.page === "home") html = await playerDashboard(state.member);
+        if (state.page === "home") html = state.member.role === "SUPER_ADMIN" ? await superAdminHomeView() : await playerDashboard(state.member);
         else if (state.page === "timetable") html = await playerTimetable();
         else if (state.page === "attendance") {
           const sessions = await api("/timetable/mine");
@@ -369,16 +437,16 @@
             .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())[0];
           html = currentOrNext ? await attendanceView(currentOrNext.id) : "<section class='card'><h2>Attendance</h2><p class='note'>No current or upcoming session is published for your flight. Super Admin must publish the current Master Timetable month after saving its weekly slots.</p></section>";
         }
-        else if (state.page === "logs") html = await playerActivityLog();
-        else if (state.page === "wallet") html = await walletView();
+        else if (state.page === "logs") html = state.member.role === "SUPER_ADMIN" ? await superAdminActivityLogView() : await playerActivityLog();
+        else if (state.page === "wallet") html = state.member.role === "SUPER_ADMIN" ? await superAdminWalletLogView() : await walletView();
         else if (state.page === "bazaar") html = await publicIndiMart();
         else if (state.page === "master") html = await superAdminTimetableView();
         else if (state.page === "flights") html = await activitiesAndFlightsView();
         else if (state.page === "finance") html = await financeAdminView();
         else if (state.page === "ads") html = await advertisingApprovalView();
         else if (state.page === "audit") html = await auditHistoryView();
-        else if (state.page === "sessions") html = await flightAdminSessionControlView();
-        else if (state.page === "stock") html = await flightAdminShuttleStockView();
+        else if (state.page === "sessions") html = state.member.role === "SUPER_ADMIN" ? await superAdminSessionLogView() : await flightAdminSessionControlView();
+        else if (state.page === "stock") html = state.member.role === "SUPER_ADMIN" ? await superAdminStockLogView() : await flightAdminShuttleStockView();
         else if (state.page === "reports") html = await flightAdminReportsView();
         else if (state.page === "profile") html = await credentialsView();
         else html = `<section class="card"><h2>${state.page}</h2><p class="note">This module is controlled by its protected server route.</p></section>`;
@@ -388,7 +456,12 @@
         bindFlightAdminViews();
         document.querySelectorAll("[data-go-page]").forEach(button => button.onclick = () => navigate(button.dataset.goPage));
       } catch (error) {
-        $("view").innerHTML = `<section class="card"><h2>Unable to load this page</h2><p class="note">${error.message || "Please try again later."}</p></section>`;
+        if (state.page === "home") {
+          console.warn("Home dashboard rendering fallback:", error);
+          $("view").innerHTML = emergencyHomeDashboard(state.member);
+        } else {
+          $("view").innerHTML = `<section class="card"><h2>Unable to load this page</h2><p class="note">${error.message || "Please try again later."}</p></section>`;
+        }
       }
     }
 
@@ -433,7 +506,16 @@
     $("openDirectory").onclick = () => { hidePublicPanels(); $("publicDirectory").classList.remove("hidden"); };
     $("closeDirectory").onclick = () => $("publicDirectory").classList.add("hidden");
     $("openBusiness").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
-    $("directoryBusinessButton").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
+    $("openPublicDirectoryBusiness").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
+    $("publicDirectoryUpdate").onclick = async () => {
+      const referenceCode = prompt("Enter your BIZ reference code");
+      const phone = prompt("Enter the phone number used in the request");
+      if (!referenceCode || !phone) return;
+      try {
+        await submitBusinessUpdateRequest({ referenceCode, phone });
+        toast("Your update request was sent to Super Admin for approval.");
+      } catch (error) { toast(error.message || "Could not submit the update request."); }
+    };
     $("closeBusinessForm").onclick = () => $("businessForm").classList.add("hidden");
     $("sponsorPrevious").onclick = () => { if (!publicSponsors.length) return; activeSponsorIndex -= 1; renderFeaturedSponsor(); };
     $("sponsorNext").onclick = () => { if (!publicSponsors.length) return; activeSponsorIndex += 1; renderFeaturedSponsor(); };
@@ -487,7 +569,7 @@
         openLoginOverlay();
         toast("Account activated. Sign in with your new email and password.");
       } catch (error) {
-        toast(error.message || "Could not activate your account.");
+        showAccountError("Account could not be created", error.message || "Check the registration details and try again.");
       }
     };
 
@@ -496,7 +578,7 @@
         await sendMyPasswordReset($("loginEmail").value);
         toast("Password reset email sent. Check your inbox and spam folder.");
       } catch (error) {
-        toast(error.message || "Could not send password reset email.");
+        showAccountError("Password reset could not start", error.message || "Check the email address and try again.");
       }
     };
 
@@ -509,7 +591,7 @@
         $("app").classList.remove("hidden");
         await renderPage();
       } catch (error) {
-        toast(error.message || "Unable to sign in.");
+        showAccountError("Sign-in unsuccessful", error.message || "Check your email address and password, then try again.");
       }
     };
 
@@ -520,6 +602,7 @@
       hidePublicPanels();
       toast("Signed out");
     };
+    $("closeAccountError").onclick = clearAccountError;
 
     document.querySelectorAll(".nav[data-page]").forEach(button => {
       button.onclick = () => navigate(button.dataset.page);
@@ -536,6 +619,7 @@
 
     window.addEventListener("indianclub:render", renderPage);
     window.addEventListener("indianclub:toast", event => toast(event.detail));
+    window.addEventListener("indianclub:loading", event => setLoading(Boolean(event.detail?.active), event.detail?.label || "Loading…"));
     window.addEventListener("indianclub:navigate", event => {
       if (!state.member) return;
       if (navigate(event.detail.page)) renderPage();
@@ -543,9 +627,24 @@
 
     window.setTimeout(async () => {
       $("splash").classList.add("hidden");
-      $("publicLanding").classList.remove("hidden");
+      if (!state.member) $("publicLanding").classList.remove("hidden");
       await loadPublicHub();
     }, 850);
+
+    watchAuthentication({
+      onSignedIn: async () => {
+        closeLoginOverlay();
+        closeSignupOverlay();
+        $("publicLanding").classList.add("hidden");
+        $("app").classList.remove("hidden");
+        await renderPage();
+      },
+      onSignedOut: () => {
+        $("app").classList.add("hidden");
+        $("publicLanding").classList.remove("hidden");
+      },
+      onError: error => showAccountError("Account access needs attention", error?.message || "Your saved session could not be restored. Please sign in again.")
+    });
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./sw.js").catch(() => undefined);
