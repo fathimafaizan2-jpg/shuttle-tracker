@@ -22,6 +22,18 @@ function optionalText(value: unknown, max = 160) {
   return text || null;
 }
 
+function optionalImageUrl(value: unknown) {
+  const text = optionalText(value, 1800);
+  if (!text) return null;
+  try {
+    const url = new URL(text);
+    if (url.protocol !== "https:") throw new Error();
+    return url.toString();
+  } catch {
+    throw new Error("Profile photo must be a valid HTTPS Google Drive or image link.");
+  }
+}
+
 function emailText(value: unknown) {
   const email = asText(value, "Email address", 150).toLowerCase();
   if (!/^\S+@\S+\.\S+$/.test(email)) {
@@ -91,6 +103,16 @@ async function emailAvailable(email: string, exceptUid?: string) {
   return existing.docs.every(doc => doc.id === exceptUid);
 }
 
+async function firebaseEmailAvailable(email: string, exceptUid?: string) {
+  try {
+    const user = await adminAuth.getUserByEmail(email);
+    return user.uid === exceptUid;
+  } catch (error: any) {
+    if (error?.code === "auth/user-not-found") return true;
+    throw error;
+  }
+}
+
 function publicMember(id: string, row: FirebaseFirestore.DocumentData) {
   return {
     uid: id,
@@ -104,6 +126,7 @@ function publicMember(id: string, row: FirebaseFirestore.DocumentData) {
     activityName: row.activityName || null,
     flightId: row.flightId || null,
     flightName: row.flightName || null,
+    profilePhotoUrl: row.profilePhotoUrl || null,
     createdAt: toIso(row.createdAt),
     updatedAt: toIso(row.updatedAt)
   };
@@ -122,9 +145,9 @@ router.get("/me", requireAuth, async (request, response) => {
 router.post("/me/validate-email", requireAuth, async (request, response) => {
   try {
     const email = emailText(request.body.email);
-    if (!(await emailAvailable(email, request.member!.uid))) {
+    if (!(await emailAvailable(email, request.member!.uid)) || !(await firebaseEmailAvailable(email, request.member!.uid))) {
       return response.status(409).json({
-        message: "This email address is already used by another club account."
+        message: "This email address is already registered. Use a different email address."
       });
     }
     response.json({ available: true });
@@ -301,13 +324,18 @@ router.patch("/me", requireAuth, async (request, response) => {
 
     if (request.body.email !== undefined) {
       const email = emailText(request.body.email);
-      if (email !== request.member!.email.toLowerCase()) {
+      const authUser = await adminAuth.getUser(request.member!.uid);
+      if (email !== String(authUser.email || "").toLowerCase()) {
         throw new Error("Sign in again before updating your email address.");
       }
-      if (!(await emailAvailable(email, request.member!.uid))) {
-        throw new Error("This email address is already used by another club account.");
+      if (!(await emailAvailable(email, request.member!.uid)) || !(await firebaseEmailAvailable(email, request.member!.uid))) {
+        throw new Error("This email address is already registered. Use a different email address.");
       }
       update.email = email;
+    }
+
+    if (request.body.profilePhotoUrl !== undefined) {
+      update.profilePhotoUrl = optionalImageUrl(request.body.profilePhotoUrl);
     }
 
     await db.collection("members").doc(request.member!.uid).update(update);
@@ -342,20 +370,55 @@ router.get("/", requireAuth, requireRole("SUPER_ADMIN"), async (request, respons
 
 router.get("/audit", requireAuth, requireRole("SUPER_ADMIN"), async (_request, response) => {
   try {
-    const [memberAudit, attendanceAudit, inventoryAudit, members, sessions] = await Promise.all([
+    const [memberAudit, attendanceAudit, inventoryAudit, walletLedger, payments, members, sessions] = await Promise.all([
       db.collection("memberAudit").get(),
       db.collection("attendanceAudit").get(),
       db.collection("inventoryAudit").get(),
+      db.collection("walletLedger").get(),
+      db.collection("payments").get(),
       db.collection("members").get(),
       db.collection("sessions").get()
     ]);
     const memberRows = new Map(members.docs.map(doc => [doc.id, doc.data()]));
     const sessionRows = new Map(sessions.docs.map(doc => [doc.id, doc.data()]));
     const actorName = (uid: unknown) => memberRows.get(String(uid || ""))?.fullName || String(uid || "System");
+    const memberDetails = (uid: unknown) => memberRows.get(String(uid || "")) || {};
+    const sessionDetails = (sessionId: unknown) => sessionRows.get(String(sessionId || "")) || {};
+    const scope = (row: FirebaseFirestore.DocumentData, session: FirebaseFirestore.DocumentData = {}, targetUid?: unknown) => {
+      const target = memberDetails(targetUid || row.memberUid || row.targetMemberUid);
+      return {
+        memberUid: String(targetUid || row.memberUid || row.targetMemberUid || ""),
+        flightId: String(row.flightId || session.flightId || target.flightId || ""),
+        flightName: String(row.flightName || session.flightName || target.flightName || ""),
+        activityId: String(row.activityId || session.activityId || target.activityId || ""),
+        activityName: String(row.activityName || session.activityName || target.activityName || "")
+      };
+    };
     const records = [
-      ...memberAudit.docs.map(doc => ({ id: doc.id, category: "MEMBER", action: doc.data().action || "MEMBER_EVENT", subject: actorName(doc.data().targetMemberUid), detail: doc.data().flightId ? `Flight ${doc.data().flightId}` : "", actor: actorName(doc.data().actionBy), createdAt: toIso(doc.data().createdAt) })),
-      ...attendanceAudit.docs.map(doc => ({ id: doc.id, category: "ATTENDANCE", action: doc.data().actionRole === "PLAYER" ? "PLAYER RESPONSE" : "ADMIN CORRECTION", subject: actorName(doc.data().targetMemberUid), detail: `${doc.data().previousStatus || "NO_RESPONSE"} → ${doc.data().newStatus || "—"}${doc.data().reason ? ` · ${doc.data().reason}` : ""}`, actor: actorName(doc.data().actionBy), createdAt: toIso(doc.data().createdAt), sessionDate: toIso(sessionRows.get(String(doc.data().sessionId))?.startAt) })),
-      ...inventoryAudit.docs.map(doc => ({ id: doc.id, category: "GAME / STOCK", action: doc.data().action || "STOCK EVENT", subject: sessionRows.get(String(doc.data().sessionId))?.flightName || doc.data().flightId || "Flight", detail: `${doc.data().attendeeCount || 0} attendees · ${doc.data().actualShuttlesUsed || 0} shuttles used · ${doc.data().totalDayCostFils || 0} fils`, actor: actorName(doc.data().actionBy), createdAt: toIso(doc.data().createdAt), sessionDate: toIso(sessionRows.get(String(doc.data().sessionId))?.startAt) }))
+      ...memberAudit.docs.map(doc => {
+        const row = doc.data();
+        return { id: doc.id, category: "MEMBER", action: row.action || "MEMBER_EVENT", subject: actorName(row.targetMemberUid), detail: row.flightId ? `Flight ${row.flightId}` : "", actor: actorName(row.actionBy), createdAt: toIso(row.createdAt), ...scope(row, {}, row.targetMemberUid) };
+      }),
+      ...attendanceAudit.docs.map(doc => {
+        const row = doc.data(), session = sessionDetails(row.sessionId);
+        return { id: doc.id, category: "ATTENDANCE", action: row.actionRole === "PLAYER" ? "PLAYER RESPONSE" : "ADMIN CORRECTION", subject: actorName(row.targetMemberUid), detail: `${row.previousStatus || "NO_RESPONSE"} → ${row.newStatus || "—"}${row.reason ? ` · ${row.reason}` : ""}`, actor: actorName(row.actionBy), createdAt: toIso(row.createdAt), sessionDate: toIso(session.startAt), ...scope(row, session, row.targetMemberUid) };
+      }),
+      ...inventoryAudit.docs.map(doc => {
+        const row = doc.data(), session = sessionDetails(row.sessionId);
+        return { id: doc.id, category: "SHUTTLE STOCK", action: row.action || "STOCK EVENT", subject: session.flightName || row.flightName || row.flightId || "Flight", detail: `${row.attendeeCount || 0} attendees · ${row.actualShuttlesUsed || 0} shuttles used · ${row.totalDayCostFils || 0} fils`, actor: actorName(row.actionBy), createdAt: toIso(row.createdAt), sessionDate: toIso(session.startAt), ...scope(row, session) };
+      }),
+      ...walletLedger.docs.map(doc => {
+        const row = doc.data();
+        return { id: doc.id, category: "WALLET / PAYMENT", action: row.kind || row.direction || "WALLET ENTRY", subject: actorName(row.memberUid), detail: `${row.description || "Wallet transaction"} · ${Number(row.amountFils || 0)} fils`, actor: actorName(row.createdBy || row.updatedBy), createdAt: toIso(row.createdAt), ...scope(row, {}, row.memberUid) };
+      }),
+      ...payments.docs.map(doc => {
+        const row = doc.data();
+        return { id: doc.id, category: "WALLET / PAYMENT", action: row.status || "PAYMENT", subject: actorName(row.memberUid), detail: `${row.method || "Payment"} · ${Number(row.amountFils || 0)} fils · ${row.paymentCode || doc.id}`, actor: actorName(row.verifiedBy || row.memberUid), createdAt: toIso(row.verifiedAt || row.submittedAt || row.createdAt), ...scope(row, {}, row.memberUid) };
+      }),
+      ...sessions.docs.filter(doc => doc.data().status === "COMPLETED").map(doc => {
+        const row = doc.data();
+        return { id: doc.id, category: "SESSION CONTROL", action: "GAME COMPLETED", subject: row.flightName || row.flightId || "Flight", detail: `${Number(row.attendeeCount || 0)} final attendees · ${Number(row.actualShuttlesUsed || 0)} shuttlecocks used · ${Number(row.totalDayCostFils || 0)} fils`, actor: actorName(row.completedBy), createdAt: toIso(row.completedAt || row.startAt), sessionDate: toIso(row.startAt), ...scope(row, row) };
+      })
     ].sort((a, b) => timeValue(b.createdAt) - timeValue(a.createdAt));
     response.json(records);
   } catch (error) {
@@ -445,8 +508,8 @@ router.post("/activate-registered", async (request, response) => {
       throw new Error("This Member ID is already used.");
     }
 
-    if (!(await emailAvailable(email))) {
-      throw new Error("This email address is already used.");
+    if (!(await emailAvailable(email)) || !(await firebaseEmailAvailable(email))) {
+      throw new Error("This email address is already registered. Use a different email address.");
     }
 
     const matches = await db
@@ -519,8 +582,11 @@ router.post("/activate-registered", async (request, response) => {
       await adminAuth.deleteUser(authUid).catch(() => undefined);
     }
 
+    const code = (error as any)?.code;
     response.status(400).json({
-      message: error instanceof Error ? error.message : "Could not activate your account."
+      message: code === "auth/email-already-exists"
+        ? "This email address is already registered. Use a different email address."
+        : error instanceof Error ? error.message : "Could not activate your account."
     });
   }
 });
