@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from "../auth.js";
 
 const router = Router();
 const MAX_ACTIVE_FEATURED_ADS = 10;
+const DEFAULT_CAROUSEL_LIMIT = 10;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const BAHRAIN_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -208,13 +209,18 @@ router.get("/public/notices", async (_request, response) => {
 /* PUBLIC: maximum 10 currently active, approved front-page sponsor advertisements. */
 router.get("/public/sponsors", async (_request, response) => {
   try {
-    const sponsors = await db.collection("businesses").where("status", "==", "PUBLISHED").get();
+    const [sponsors, settings] = await Promise.all([
+      db.collection("businesses").where("status", "==", "PUBLISHED").get(),
+      db.collection("siteSettings").doc("advertising").get()
+    ]);
+    const configuredLimit = Number(settings.data()?.carouselLimit);
+    const carouselLimit = Number.isInteger(configuredLimit) ? Math.min(MAX_ACTIVE_FEATURED_ADS, Math.max(1, configuredLimit)) : DEFAULT_CAROUSEL_LIMIT;
     const now = new Date();
     response.json(sponsors.docs
       .filter(doc => featureIsLive(doc.data(), now))
       .map(businessRow)
-      .sort((a, b) => String(a.featureEndAt || "").localeCompare(String(a.featureEndAt || "")))
-      .slice(0, MAX_ACTIVE_FEATURED_ADS));
+      .sort((a, b) => String(a.featureEndAt || "").localeCompare(String(b.featureEndAt || "")))
+      .slice(0, carouselLimit));
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not load featured sponsors." });
   }
@@ -292,18 +298,34 @@ router.post("/public/update-request", async (request, response) => {
 /* SUPER ADMIN: current and pending advertisements for approval, editing, or expiry management. */
 router.get("/admin/pending", requireAuth, requireRole("SUPER_ADMIN"), async (_request, response) => {
   try {
-    const [businesses, updates, notices] = await Promise.all([
+    const [businesses, updates, notices, settings] = await Promise.all([
       db.collection("businesses").get(),
       db.collection("businessUpdateRequests").where("status", "==", "PENDING_APPROVAL").get(),
-      db.collection("officialNotices").get()
+      db.collection("officialNotices").get(),
+      db.collection("siteSettings").doc("advertising").get()
     ]);
     response.json({
       businesses: businesses.docs.map(businessRow).sort((a, b) => String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""))),
       updateRequests: updates.docs.map(doc => ({ id: doc.id, ...doc.data(), createdAt: toIso(doc.data().createdAt) })),
-      notices: notices.docs.map(noticeRow).sort((a, b) => String(b.publishedAt || b.createdAt || "").localeCompare(String(a.publishedAt || a.createdAt || "")))
+      notices: notices.docs.map(noticeRow).sort((a, b) => String(b.publishedAt || b.createdAt || "").localeCompare(String(a.publishedAt || a.createdAt || ""))),
+      carouselLimit: Number.isInteger(Number(settings.data()?.carouselLimit)) ? Math.min(MAX_ACTIVE_FEATURED_ADS, Math.max(1, Number(settings.data()?.carouselLimit))) : DEFAULT_CAROUSEL_LIMIT,
+      maxCarouselLimit: MAX_ACTIVE_FEATURED_ADS
     });
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not load advertising approval." });
+  }
+});
+
+router.patch("/admin/carousel-settings", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
+  try {
+    const carouselLimit = Number(request.body.carouselLimit);
+    if (!Number.isInteger(carouselLimit) || carouselLimit < 1 || carouselLimit > MAX_ACTIVE_FEATURED_ADS) {
+      throw new Error(`Carousel count must be a whole number between 1 and ${MAX_ACTIVE_FEATURED_ADS}.`);
+    }
+    await db.collection("siteSettings").doc("advertising").set({ carouselLimit, updatedBy: request.member!.uid, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    response.json({ success: true, carouselLimit, maxCarouselLimit: MAX_ACTIVE_FEATURED_ADS });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not update carousel settings." });
   }
 });
 
