@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { db, Timestamp } from "../firebaseAdmin.js";
+import { db } from "../firebaseAdmin.js";
+import type { Timestamp as FirestoreTimestamp } from "firebase-admin/firestore";
 import { requireAuth, requireFlightAccess, requireRole } from "../auth.js";
 
 const router = Router();
 
 function toDate(value: unknown) {
-  if (value && typeof (value as Timestamp).toDate === "function") return (value as Timestamp).toDate();
+  if (value && typeof (value as FirestoreTimestamp).toDate === "function") return (value as FirestoreTimestamp).toDate();
   return new Date(value as string);
 }
 
