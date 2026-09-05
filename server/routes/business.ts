@@ -1,11 +1,23 @@
 import { Router } from "express";
 import { randomBytes } from "node:crypto";
-import { db, FieldValue, Timestamp } from "../firebaseAdmin.js";
+import { db, FieldValue, Timestamp, storageBucket } from "../firebaseAdmin.js";
 import { requireAuth, requireRole } from "../auth.js";
 
 const router = Router();
 const MAX_ACTIVE_FEATURED_ADS = 10;
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const BAHRAIN_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+function imageExtension(contentType: string) {
+  return contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg";
+}
+
+function hasImageSignature(buffer: Buffer, contentType: string) {
+  if (contentType === "image/png") return buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  if (contentType === "image/jpeg") return buffer.subarray(0, 3).equals(Buffer.from([255, 216, 255]));
+  return buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP";
+}
 
 const text = (value: unknown, label: string, max = 300) => {
   const result = String(value || "").trim();
@@ -141,6 +153,37 @@ function validateFeatureWindow(body: Record<string, unknown>) {
   if (featureEndAt.getTime() < featureStartAt.getTime()) throw new Error("Featured end date must be on or after the start date.");
   return { featured: true, featureStartAt, featureEndAt };
 }
+
+/* SUPER ADMIN: upload one approved image to Firebase/Google Cloud Storage.
+   Users submit text and URLs only; they never receive a bucket write path. */
+router.post("/admin/upload-image", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
+  try {
+    const contentType = String(request.headers["content-type"] || "").split(";")[0].toLowerCase();
+    const body = Buffer.isBuffer(request.body) ? request.body : Buffer.from([]);
+    if (!ALLOWED_IMAGE_TYPES.has(contentType)) throw new Error("Only PNG, JPEG, or WebP images are allowed.");
+    if (!body.length || body.length > MAX_IMAGE_BYTES) throw new Error("Image must be between 1 byte and 2 MB.");
+    if (!hasImageSignature(body, contentType)) throw new Error("The uploaded file is not a valid image.");
+
+    const originalName = String(request.headers["x-file-name"] || "image").replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) || "image";
+    const objectName = `club-media/${new Date().getUTCFullYear()}/${request.member!.uid}/${Date.now()}-${randomBytes(6).toString("hex")}-${originalName.replace(/\\.[^.]+$/, "")}.${imageExtension(contentType)}`;
+    const file = storageBucket.file(objectName);
+    await file.save(body, {
+      resumable: false,
+      metadata: {
+        contentType,
+        cacheControl: "public,max-age=3600"
+      },
+      validation: "md5"
+    });
+    const [signedUrl] = await file.getSignedUrl({
+      action: "read",
+      expires: Date.now() + 1000 * 60 * 60 * 24 * 365
+    });
+    response.status(201).json({ success: true, objectName, imageUrl: signedUrl, size: body.length, contentType });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not upload image." });
+  }
+});
 
 /* PUBLIC: approved Indi Mart entries for all visitors. */
 router.get("/public/directory", async (_request, response) => {
