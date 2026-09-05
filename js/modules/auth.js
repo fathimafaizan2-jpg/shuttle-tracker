@@ -83,10 +83,12 @@ export async function api(path, options = {}) {
   beginLoading(options.loadingLabel || "Loading…");
   try {
     const token = await getIdToken(Boolean(options.forceRefresh));
+    const isBinaryBody = typeof Blob !== "undefined" && options.body instanceof Blob;
+    const headers = { Authorization: `Bearer ${token}`, ...(isBinaryBody ? {} : { "Content-Type": "application/json" }), ...(options.headers || {}) };
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method,
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(options.headers || {}) },
-      body: options.body ? JSON.stringify(options.body) : undefined
+      headers,
+      body: isBinaryBody ? options.body : options.body ? JSON.stringify(options.body) : undefined
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(messageFromResponse(data, "Request failed."));
