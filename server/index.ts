@@ -52,6 +52,12 @@ app.use((request, response, next) => {
   next();
 });
 
+/* Image bytes must be parsed before the global JSON parser. The route still enforces Super Admin membership. */
+app.use("/api/business/admin/upload-image", express.raw({
+  type: ["image/png", "image/jpeg", "image/webp"],
+  limit: "2mb"
+}));
+
 app.use(express.json({ limit: "250kb" }));
 app.use(express.urlencoded({ extended: false }));
 
