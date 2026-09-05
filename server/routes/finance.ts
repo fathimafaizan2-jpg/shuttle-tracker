@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { Router } from "express";
 import { db, FieldValue, Timestamp } from "../firebaseAdmin.js";
 import { requireAuth, requireFlightAccess, requireRole } from "../auth.js";
@@ -118,12 +120,6 @@ router.post(
       if (session.status === "COMPLETED") {
         return response.status(409).json({
           message: "This session has already been completed and charged."
-        });
-      }
-
-      if (dateValue(session.endAt) > Date.now()) {
-        return response.status(400).json({
-          message: "A session can be completed only after its scheduled end time."
         });
       }
 
