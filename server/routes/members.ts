@@ -1,4 +1,3 @@
-// server/routes/members.ts
 import { Router } from "express";
 import { adminAuth, db, FieldValue, Timestamp } from "../firebaseAdmin.js";
 import { requireAuth, requireRole, type ClubRole } from "../auth.js";
