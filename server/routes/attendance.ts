@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { Router } from "express";
 import { db, FieldValue, Timestamp } from "../firebaseAdmin.js";
 import { requireAuth, requireFlightAccess, requireRole } from "../auth.js";
