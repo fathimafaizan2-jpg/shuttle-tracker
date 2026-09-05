@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import { getStorage } from "firebase-admin/storage";
 import { readFileSync } from "node:fs";
 
 type FirebaseServiceAccount = {
@@ -49,7 +50,8 @@ function initializeFirebaseAdmin() {
       projectId: account.project_id,
       clientEmail: account.client_email,
       privateKey: account.private_key.replace(/\\n/g, "\n")
-    })
+    }),
+    storageBucket: process.env.GCS_BUCKET_NAME?.trim() || `${account.project_id}.firebasestorage.app`
   });
 }
 
@@ -58,4 +60,5 @@ export const adminAuth = admin.auth(firebaseAdminApp);
 export const db = admin.firestore(firebaseAdminApp);
 export const FieldValue = admin.firestore.FieldValue;
 export const Timestamp = admin.firestore.Timestamp;
+export const storageBucket = getStorage(firebaseAdminApp).bucket();
 export const FILS_PER_BHD = 1000;
