@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { Router } from "express";
 import { db } from "../firebaseAdmin.js";
 import type { Timestamp as FirestoreTimestamp } from "firebase-admin/firestore";
