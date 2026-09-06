@@ -40,7 +40,7 @@ app.use((request, response, next) => {
 
   if (origin && allowedOrigins.has(origin)) {
     response.setHeader("Access-Control-Allow-Origin", origin);
-    response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-File-Name");
     response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
     response.setHeader("Vary", "Origin");
   }
@@ -54,6 +54,10 @@ app.use((request, response, next) => {
 
 /* Image bytes must be parsed before the global JSON parser. The route still enforces Super Admin membership. */
 app.use("/api/business/admin/upload-image", express.raw({
+  type: ["image/png", "image/jpeg", "image/webp"],
+  limit: "2mb"
+}));
+app.use("/api/members/me/profile-photo", express.raw({
   type: ["image/png", "image/jpeg", "image/webp"],
   limit: "2mb"
 }));
