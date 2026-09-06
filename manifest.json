@@ -1,7 +1,7 @@
 {
   "name": "Indian Club Bahrain",
   "short_name": "Indian Club",
-  "description": "Indian Club Bahrain shuttle tracker, club operations and Indi Mart community directory.",
+  "description": "Indian Club Bahrain shuttle tracker, club operations and BaZaar community directory.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
