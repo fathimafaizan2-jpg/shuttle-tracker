@@ -33,7 +33,7 @@
         <div>
           <h3 id="publicNoticeTitle">Welcome to Indian Club Bahrain</h3>
           <p id="publicNoticeBody" class="note">
-            Club notices, approved sponsor offers, and Indi Mart listings will appear here.
+            Club notices, approved sponsor offers, and BaZaar listings will appear here.
           </p>
         </div>
         <img id="publicNoticeImage" class="public-notice-image hidden" alt="Official Indian Club Bahrain notice" />
@@ -66,7 +66,7 @@
         <span class="entry-icon">IM</span>
         <span>
           <strong>Community Directory</strong>
-          <small>Discover approved Indi Mart businesses</small>
+          <small>Discover approved BaZaar businesses</small>
         </span>
         <b>→</b>
       </button>
@@ -81,7 +81,7 @@
       <div class="page-head public-directory-title">
         <div>
           <span class="tag blue">INDIAN CLUB BAHRAIN</span>
-          <h2>Indi Mart</h2>
+          <h2>BaZaar</h2>
           <p>Approved Indian community businesses, offers, and services in Bahrain.</p>
         </div>
         <button id="closeDirectory" class="pill">Back</button>
@@ -114,7 +114,7 @@
         <div>
           <span class="tag amber">PUBLIC SUBMISSION</span>
           <h2>List Your Business</h2>
-          <p>Submit your Indi Mart request for Super Admin review.</p>
+          <p>Submit your BaZaar request for Super Admin review.</p>
         </div>
         <button id="closeBusinessForm" class="pill">Back</button>
       </div>
@@ -255,7 +255,7 @@
         <button class="nav super-nav" data-page="ads">Advertising Approval</button>
         <button class="nav super-nav" data-page="audit">Audit History</button>
         <div class="nav-group">COMMUNITY</div>
-        <button class="nav" data-page="bazaar">Indi Mart</button>
+        <button class="nav" data-page="bazaar">BaZaar</button>
         <button class="nav" data-page="profile">Update Credentials</button>
       </aside>
       <section id="view"></section>
@@ -412,7 +412,7 @@
     function emergencyHomeDashboard(member) {
       const safeMember = member && typeof member === "object" ? member : {};
       return `<div class="page-head"><div><h2>Welcome, ${escapeHtml(safeMember.fullName || "Member")}</h2><p>${escapeHtml(safeMember.flightName || "Your flight will be assigned by Super Admin.")}</p></div></div>
-        <div class="grid metrics"><article class="card metric"><span>Wallet credit</span><b>BHD 0.000</b><i>Available verified credit</i></article><article class="card metric"><span>Sessions attended</span><b>0</b><i>All recorded sessions</i></article><article class="card metric"><span>Pending amount</span><b>BHD 0.000</b><i>Cash / Benefit pending</i></article><article class="card metric"><span>Arrears</span><b>BHD 0.000</b><i>Due after 24 hours</i></article></div>
+        <div class="grid metrics"><article class="card metric"><span>Sessions attended</span><b>0</b><i>All recorded sessions</i></article><article class="card metric"><span>Pending amount</span><b>BHD 0.000</b><i>Cash / Benefit pending</i></article><article class="card metric"><span>Arrears</span><b>BHD 0.000</b><i>Due after 24 hours</i></article></div>
         <div class="grid two"><article class="card"><h3>Upcoming game</h3><p class="note">No upcoming game has been published for your flight.</p></article><article class="card wallet"><span>Credit rule</span><div class="balance">BHD 0.000</div><p>Only final PRESENT attendees are charged after Flight Admin records actual shuttlecocks used.</p></article></div>`;
     }
 
