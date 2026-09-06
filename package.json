@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Indian Club Bahrain shuttle tracker, club operations and public Indi Mart directory.",
+  "description": "Indian Club Bahrain shuttle tracker, club operations and public BaZaar directory.",
   "main": "server/index.ts",
   "scripts": {
     "dev": "tsx watch server/index.ts",
