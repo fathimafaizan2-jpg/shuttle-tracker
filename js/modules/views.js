@@ -1,4 +1,4 @@
-import { api, submitBusinessUpdateRequest, updateMyCredentials } from "./auth.js";
+import { api, submitBusinessUpdateRequest, updateMyCredentials, uploadProfilePhoto } from "./auth.js";
 import { state } from "../router.js";
 
 const escapeHtml = value => String(value ?? "")
@@ -99,7 +99,6 @@ export async function playerDashboard(member = state.member) {
     </div>
 
     <div class="grid metrics">
-      <article class="card metric"><span>Wallet credit</span><b>${bhd(data.walletFils)}</b><i>Available verified credit</i></article>
       <article class="card metric"><span>Sessions attended</span><b>${Number(data.attendedCount || 0)}</b><i>All recorded sessions</i></article>
       <article class="card metric"><span>Pending amount</span><b>${bhd(data.pendingFils)}</b><i>Cash / Benefit pending</i></article>
       <article class="card metric"><span>Arrears</span><b>${bhd(data.arrearsFils)}</b><i>Due after 24 hours</i></article>
@@ -295,7 +294,7 @@ export async function credentialsView() {
       <div class="field"><label for="credentialCurrentPassword">Current password <small>(required only to change email or password)</small></label><div class="password-field"><input id="credentialCurrentPassword" type="password" autocomplete="current-password" /><button type="button" class="password-toggle" data-toggle-password="credentialCurrentPassword">Show</button></div></div>
       <div class="field"><label for="credentialNewPassword">New password <small>(leave blank to keep your current password)</small></label><div class="password-field"><input id="credentialNewPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /><button type="button" class="password-toggle" data-toggle-password="credentialNewPassword">Show</button></div></div>
       <div class="field"><label for="credentialConfirmPassword">Confirm new password</label><div class="password-field"><input id="credentialConfirmPassword" type="password" autocomplete="new-password" /><button type="button" class="password-toggle" data-toggle-password="credentialConfirmPassword">Show</button></div></div>
-    </div><section class="profile-photo-card"><div><h3>Profile photo</h3><p class="note">Upload your photo to Google Drive, set it to <b>Anyone with the link</b>, then paste the public image link below. The image is shown only as your club profile photo.</p></div><div class="field"><label for="credentialProfilePhoto">Google Drive profile photo link</label><input id="credentialProfilePhoto" type="url" maxlength="1800" value="${escapeHtml(member.profilePhotoUrl || "")}" placeholder="Paste a public Google Drive image link" /></div><div class="actions"><button id="previewProfilePhoto" class="pill" type="button">Preview photo</button></div><div id="profilePhotoPreview" class="profile-photo-preview ${profileImage ? "" : "hidden"}">${profileImage ? `<img src="${escapeHtml(profileImage)}" alt="Profile photo preview" />` : ""}</div></section><div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div><p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p></section>`;
+    </div><section class="profile-photo-card"><div><h3>Profile photo</h3><p class="note">Choose a PNG, JPEG, or WebP image below 2 MB. The authenticated app uploads it to the private club Storage bucket and shows it only as your profile photo.</p></div><input id="credentialProfilePhoto" type="hidden" value="${escapeHtml(member.profilePhotoUrl || "")}" /><div class="field"><label for="credentialProfilePhotoFile">Choose profile photo</label><input id="credentialProfilePhotoFile" type="file" accept="image/png,image/jpeg,image/webp" /></div><div class="actions"><button id="uploadProfilePhoto" class="pill" type="button">Upload profile photo</button></div><div id="profilePhotoPreview" class="profile-photo-preview ${profileImage ? "" : "hidden"}">${profileImage ? `<img src="${escapeHtml(profileImage)}" alt="Profile photo preview" />` : ""}</div></section><div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div><p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p></section>`;
 }
 
 export async function publicIndiMart() {
@@ -423,13 +422,19 @@ export function bindBusinessSubmission() {
   });
 
   const saveCredentials = document.getElementById("saveCredentials");
-  const previewProfilePhoto = document.getElementById("previewProfilePhoto");
-  if (previewProfilePhoto) previewProfilePhoto.onclick = () => {
-    const preview = document.getElementById("profilePhotoPreview");
-    const image = imagePreviewUrl(document.getElementById("credentialProfilePhoto")?.value);
-    if (!image) return notify("Paste a valid public Google Drive or HTTPS image link first.");
-    preview.innerHTML = `<img src="${escapeHtml(image)}" alt="Profile photo preview" />`;
-    preview.classList.remove("hidden");
+  const uploadProfilePhotoButton = document.getElementById("uploadProfilePhoto");
+  if (uploadProfilePhotoButton) uploadProfilePhotoButton.onclick = async () => {
+    try {
+      const file = document.getElementById("credentialProfilePhotoFile")?.files?.[0];
+      const image = await uploadProfilePhoto(file);
+      document.getElementById("credentialProfilePhoto").value = image;
+      const preview = document.getElementById("profilePhotoPreview");
+      preview.innerHTML = `<img src="${escapeHtml(image)}" alt="Profile photo preview" />`;
+      preview.classList.remove("hidden");
+      if (state.member) state.member.profilePhotoUrl = image;
+      notify("Profile photo uploaded.");
+      window.dispatchEvent(new CustomEvent("indianclub:render"));
+    } catch (error) { notify(error.message); }
   };
   if (saveCredentials) saveCredentials.onclick = async () => {
     try {
