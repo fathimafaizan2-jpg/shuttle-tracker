@@ -338,12 +338,29 @@ router.post("/admin/:businessId/decision", requireAuth, requireRole("SUPER_ADMIN
     const business = await db.collection("businesses").doc(businessId).get();
     if (!business.exists) throw new Error("Business record no longer exists.");
 
-    const status = decision === "PUBLISH" ? "PUBLISHED" : decision === "REJECT" ? "REJECTED" : "UNPUBLISHED";
-    await business.ref.update({ status, approvalNote: note, approvedBy: request.member!.uid, approvedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+    const status = decision === "PUBLISH" ? "PUBLISHED" : decision === "REJECT" ? "REJECTED" : "PUBLISHED";
+    const update: Record<string, unknown> = { status, approvalNote: note, approvedBy: request.member!.uid, approvedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
+    if (decision === "UNPUBLISH") Object.assign(update, { featured: false, featureStartAt: null, featureEndAt: null });
+    await business.ref.update(update);
     await db.collection("businessAudit").add({ businessId, action: `SUPER_ADMIN_${decision}`, note, actionBy: request.member!.uid, createdAt: FieldValue.serverTimestamp() });
     response.json({ success: true, status });
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not update business decision." });
+  }
+});
+
+router.delete("/admin/:businessId", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
+  try {
+    const businessId = text(request.params.businessId, "Business ID", 120);
+    const reference = db.collection("businesses").doc(businessId);
+    const existing = await reference.get();
+    if (!existing.exists) throw new Error("Business record no longer exists.");
+    if (Boolean(existing.data()?.featured)) throw new Error("Remove the advertisement from the carousel before deleting it.");
+    await db.collection("businessAudit").add({ businessId, action: "SUPER_ADMIN_DELETED", actionBy: request.member!.uid, createdAt: FieldValue.serverTimestamp() });
+    await reference.delete();
+    response.json({ success: true, deleted: true });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not delete advertisement." });
   }
 });
 
