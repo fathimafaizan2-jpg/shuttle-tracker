@@ -149,6 +149,14 @@ async function reauthenticate(currentPassword) {
   await reauthenticateWithCredential(current, EmailAuthProvider.credential(current.email, currentPassword));
 }
 
+export async function uploadProfilePhoto(file) {
+  if (!file) throw new Error("Choose a PNG, JPEG, or WebP profile photo first.");
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) throw new Error("Only PNG, JPEG, or WebP profile photos are allowed.");
+  if (file.size > 2 * 1024 * 1024) throw new Error("Profile photo must be 2 MB or smaller.");
+  const result = await api("/members/me/profile-photo", { method: "POST", body: file, confirm: false, loadingLabel: "Uploading profile photo…", headers: { "Content-Type": file.type, "X-File-Name": file.name } });
+  return result.profilePhotoUrl;
+}
+
 export async function updateMyCredentials(payload) {
   const current = firebaseAuth.currentUser;
   if (!current?.email) throw new Error("Please sign in again.");
