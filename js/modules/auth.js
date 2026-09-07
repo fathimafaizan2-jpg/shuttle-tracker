@@ -157,6 +157,11 @@ export async function uploadProfilePhoto(file) {
   return result.profilePhotoUrl;
 }
 
+export async function deleteProfilePhoto() {
+  const result = await api("/members/me/profile-photo", { method: "DELETE", confirm: false, loadingLabel: "Deleting profile photo…" });
+  return result.profilePhotoUrl || null;
+}
+
 export async function updateMyCredentials(payload) {
   const current = firebaseAuth.currentUser;
   if (!current?.email) throw new Error("Please sign in again.");
