@@ -271,6 +271,88 @@ router.post(
   }
 );
 
+/* Assigned Level Admin can correct shuttle usage after completion and recalculate charges. */
+router.post(
+  "/session/:sessionId/recalculate",
+  requireAuth,
+  requireRole("LEVEL_ADMIN"),
+  async (request, response) => {
+    try {
+      const sessionId = asText(request.params.sessionId, "Session ID");
+      const actualShuttlesUsed = asWholeNumber(request.body.actualShuttlesUsed, "Actual shuttlecocks used");
+      const session = await loadSessionForAdmin(sessionId, request.member);
+      if (session.status !== "COMPLETED") throw new Error("Complete the game once before using recalculation.");
+
+      const stockRef = db.collection("inventory").doc(session.flightId);
+      const attendanceQuery = db.collection("attendance").where("sessionId", "==", sessionId).where("status", "==", "PRESENT");
+      const chargeQuery = db.collection("sessionCharges").where("sessionId", "==", sessionId);
+      let recalculated: ReturnType<typeof calculateShuttleCost> | null = null;
+      let previousShuttlesUsed = Number(session.actualShuttlesUsed || 0);
+      let tubePriceFils = Number(session.tubePriceFils || 0);
+      let shuttlesPerTube = Number(session.shuttlesPerTube || 0);
+
+      await db.runTransaction(async transaction => {
+        const [liveSession, liveStock, presentAttendance, existingCharges] = await Promise.all([
+          transaction.get(session.ref),
+          transaction.get(stockRef),
+          transaction.get(attendanceQuery),
+          transaction.get(chargeQuery)
+        ]);
+        if (!liveSession.exists || liveSession.data()!.status !== "COMPLETED") throw new Error("This session is no longer completed.");
+        if (!liveStock.exists) throw new Error("Inventory record no longer exists.");
+
+        const liveSessionData = liveSession.data()!;
+        const currentStock = liveStock.data()!;
+        previousShuttlesUsed = Number(liveSessionData.actualShuttlesUsed || 0);
+        shuttlesPerTube = Number(currentStock.shuttlesPerTube || liveSessionData.shuttlesPerTube || 0);
+        tubePriceFils = Number(currentStock.tubePriceFils || liveSessionData.tubePriceFils || 0);
+        const currentAvailable = Number(currentStock.totalAvailableShuttles ?? (Number(currentStock.availableTubes || 0) * shuttlesPerTube + Number(currentStock.looseShuttles || 0)));
+        const restoredAvailable = currentAvailable + previousShuttlesUsed;
+        const restoredStock = {
+          availableTubes: Math.floor(restoredAvailable / shuttlesPerTube),
+          looseShuttles: restoredAvailable % shuttlesPerTube,
+          shuttlesPerTube,
+          tubePriceFils
+        };
+        const result = calculateShuttleCost(restoredStock, actualShuttlesUsed, presentAttendance.docs.map(doc => String(doc.data().memberUid)));
+        const remainingTubes = Math.floor(result.remainingShuttles / shuttlesPerTube);
+        const remainingLooseShuttles = result.remainingShuttles % shuttlesPerTube;
+        const lowStockThresholdShuttles = Number.isInteger(Number(currentStock.lowStockThresholdShuttles)) ? Math.max(0, Number(currentStock.lowStockThresholdShuttles)) : shuttlesPerTube;
+        const lowStock = result.remainingShuttles <= lowStockThresholdShuttles;
+        const costPerPlayerExactFils = result.attendeeCount ? result.totalDayCostFils / result.attendeeCount : 0;
+        const newCharges = new Map(result.charges.map(charge => [charge.memberUid, charge.amountFils]));
+        const existingByMember = new Map(existingCharges.docs.map(doc => [String(doc.data().memberUid), { ref: doc.ref, data: doc.data() }]));
+
+        transaction.update(stockRef, { availableTubes: remainingTubes, looseShuttles: remainingLooseShuttles, totalAvailableShuttles: result.remainingShuttles, lowStockThresholdShuttles, lowStock, updatedAt: FieldValue.serverTimestamp(), updatedBy: request.member!.uid });
+        transaction.update(session.ref, { actualShuttlesUsed, attendeeCount: result.attendeeCount, totalDayCostFils: result.totalDayCostFils, perPlayerCostExactFils: costPerPlayerExactFils, remainingShuttlesAfterGame: result.remainingShuttles, remainingTubesAfterGame: remainingTubes, remainingLooseShuttlesAfterGame: remainingLooseShuttles, lowStock, recalculatedAt: FieldValue.serverTimestamp(), recalculatedBy: request.member!.uid });
+
+        for (const [memberUid, amountFils] of newCharges) {
+          const existing = existingByMember.get(memberUid);
+          if (!existing) {
+            transaction.set(chargeRef(sessionId, memberUid), { sessionId, memberUid, activityId: session.activityId, activityName: session.activityName, flightId: session.flightId, flightName: session.flightName, sessionStartAt: session.startAt, gameDate: iso(session.startAt), totalChargeFils: amountFils, coveredByCreditFils: 0, amountDueFils: amountFils, dueAt: Timestamp.fromDate(arrearsDueAt(session.endAt)), status: "DUE", createdAt: FieldValue.serverTimestamp(), completedBy: request.member!.uid, recalculatedAt: FieldValue.serverTimestamp() });
+            continue;
+          }
+          const old = existing.data;
+          const covered = Number(old.coveredByCreditFils || 0);
+          const paid = String(old.status || "").startsWith("PAID") || String(old.status || "").includes("VERIFIED");
+          transaction.update(existing.ref, { totalChargeFils: amountFils, amountDueFils: paid ? 0 : Math.max(0, amountFils - covered), status: paid ? old.status : (amountFils > covered ? "DUE" : "PAID_BY_CREDIT"), recalculatedAt: FieldValue.serverTimestamp(), recalculatedBy: request.member!.uid });
+        }
+        for (const existing of existingCharges.docs) {
+          const memberUid = String(existing.data().memberUid || "");
+          if (!newCharges.has(memberUid) && !String(existing.data().status || "").startsWith("PAID") && !String(existing.data().status || "").includes("VERIFIED")) transaction.delete(existing.ref);
+        }
+        recalculated = result;
+      });
+
+      if (!recalculated) throw new Error("Could not recalculate completed game charges.");
+      await db.collection("inventoryAudit").add({ flightId: session.flightId, sessionId, action: "COMPLETED_GAME_RECALCULATED", previousShuttlesUsed, actualShuttlesUsed, attendeeCount: recalculated.attendeeCount, totalDayCostFils: recalculated.totalDayCostFils, perPlayerCostExactFils: recalculated.attendeeCount ? recalculated.totalDayCostFils / recalculated.attendeeCount : 0, actionBy: request.member!.uid, createdAt: FieldValue.serverTimestamp() });
+      response.json({ success: true, ...recalculated, previousShuttlesUsed, perPlayerCostExactFils: recalculated.attendeeCount ? recalculated.totalDayCostFils / recalculated.attendeeCount : 0 });
+    } catch (error) {
+      response.status(400).json({ message: error instanceof Error ? error.message : "Could not recalculate completed game charges." });
+    }
+  }
+);
+
 /* A Player explicitly chooses to settle one completed shuttlecock charge with existing credit. */
 router.post("/charges/:chargeId/pay-with-credit", requireAuth, async (request, response) => {
   try {
