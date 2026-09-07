@@ -1,4 +1,4 @@
-import { api, submitBusinessUpdateRequest, updateMyCredentials, uploadProfilePhoto } from "./auth.js";
+import { api, submitBusinessUpdateRequest, updateMyCredentials, uploadProfilePhoto, deleteProfilePhoto } from "./auth.js";
 import { state } from "../router.js";
 
 const escapeHtml = value => String(value ?? "")
@@ -294,7 +294,7 @@ export async function credentialsView() {
       <div class="field"><label for="credentialCurrentPassword">Current password <small>(required only to change email or password)</small></label><div class="password-field"><input id="credentialCurrentPassword" type="password" autocomplete="current-password" /><button type="button" class="password-toggle" data-toggle-password="credentialCurrentPassword">Show</button></div></div>
       <div class="field"><label for="credentialNewPassword">New password <small>(leave blank to keep your current password)</small></label><div class="password-field"><input id="credentialNewPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" /><button type="button" class="password-toggle" data-toggle-password="credentialNewPassword">Show</button></div></div>
       <div class="field"><label for="credentialConfirmPassword">Confirm new password</label><div class="password-field"><input id="credentialConfirmPassword" type="password" autocomplete="new-password" /><button type="button" class="password-toggle" data-toggle-password="credentialConfirmPassword">Show</button></div></div>
-    </div><section class="profile-photo-card"><div><h3>Profile photo</h3><p class="note">Choose a PNG, JPEG, or WebP image below 2 MB. The authenticated app uploads it to the private club Storage bucket and shows it only as your profile photo.</p></div><input id="credentialProfilePhoto" type="hidden" value="${escapeHtml(member.profilePhotoUrl || "")}" /><div class="field"><label for="credentialProfilePhotoFile">Choose profile photo</label><input id="credentialProfilePhotoFile" type="file" accept="image/png,image/jpeg,image/webp" /></div><div class="actions"><button id="uploadProfilePhoto" class="pill" type="button">Upload profile photo</button></div><div id="profilePhotoPreview" class="profile-photo-preview ${profileImage ? "" : "hidden"}">${profileImage ? `<img src="${escapeHtml(profileImage)}" alt="Profile photo preview" />` : ""}</div></section><div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div><p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p></section>`;
+    </div><section class="profile-photo-card"><div><h3>Profile photo</h3><p class="note">Choose a PNG, JPEG, or WebP image below 2 MB. The authenticated app uploads it to the private club Storage bucket and shows it only as your profile photo.</p></div><input id="credentialProfilePhoto" type="hidden" value="${escapeHtml(member.profilePhotoUrl || "")}" /><div class="field"><label for="credentialProfilePhotoFile">Choose profile photo</label><input id="credentialProfilePhotoFile" type="file" accept="image/png,image/jpeg,image/webp" /></div><div class="actions"><button id="uploadProfilePhoto" class="pill" type="button">Upload profile photo</button>${profileImage ? '<button id="deleteProfilePhoto" class="pill danger-action" type="button">Delete profile photo</button>' : ""}</div><div id="profilePhotoPreview" class="profile-photo-preview ${profileImage ? "" : "hidden"}">${profileImage ? `<img src="${escapeHtml(profileImage)}" alt="Profile photo preview" />` : ""}</div></section><div class="actions"><button id="saveCredentials" class="primary">Save credentials</button></div><p class="note">If you have forgotten your password, use the <b>Forgot password?</b> link on the Member / Admin Login screen. A reset email will be sent to your registered email address.</p></section>`;
 }
 
 export async function publicIndiMart() {
@@ -423,6 +423,16 @@ export function bindBusinessSubmission() {
 
   const saveCredentials = document.getElementById("saveCredentials");
   const uploadProfilePhotoButton = document.getElementById("uploadProfilePhoto");
+  const deleteProfilePhotoButton = document.getElementById("deleteProfilePhoto");
+  if (deleteProfilePhotoButton) deleteProfilePhotoButton.onclick = async () => {
+    try {
+      if (!window.confirm("Delete your profile photo permanently from your account?")) return;
+      await deleteProfilePhoto();
+      if (state.member) state.member.profilePhotoUrl = null;
+      notify("Profile photo deleted.");
+      window.dispatchEvent(new CustomEvent("indianclub:render"));
+    } catch (error) { notify(error.message); }
+  };
   if (uploadProfilePhotoButton) uploadProfilePhotoButton.onclick = async () => {
     try {
       const file = document.getElementById("credentialProfilePhotoFile")?.files?.[0];
