@@ -417,3 +417,27 @@ th { color: var(--muted); font-size: 11px; text-transform: uppercase; }
   .directory-category-empty { width: 100%; }
   .carousel-arrow { top: 93px; }
 }
+
+/* Formal administrative presentation: compact type, clear hierarchy, restrained actions. */
+:root { --radius: 14px; --shadow: 0 8px 22px rgba(15, 23, 42, 0.07); }
+body { font-size: 14px; }
+.card { padding: 16px; }
+.card h2 { font-size: 22px; letter-spacing: -.01em; }
+.card h3 { font-size: 15px; margin-bottom: 9px; }
+.page-head { gap: 12px; margin-bottom: 14px; }
+.page-head p, .note { font-size: 12px; line-height: 1.45; }
+.primary, .login-submit { min-height: 40px; padding: 9px 13px; font-size: 12px; }
+.pill { min-height: 34px; padding: 7px 10px; font-size: 11px; }
+.field { gap: 5px; margin-top: 12px; }
+.field input, .field textarea, .field select { min-height: 40px; padding: 8px 10px; border-radius: 9px; font-size: 13px; }
+.metric b { font-size: 22px; }
+.actions { gap: 8px; }
+.danger-action { color: #b91c1c; border-color: #fecaca; background: #fff7f7; }
+.danger-action:hover { color: #991b1b; border-color: #fca5a5; background: #fee2e2; }
+.advertising-card { border-left: 4px solid #2563eb; }
+.advertising-card .actions .primary, .advertising-card .actions .pill { white-space: nowrap; }
+@media (max-width: 640px) {
+  .card { padding: 13px; }
+  .page-head { flex-direction: column; }
+  .actions { flex-wrap: wrap; }
+}
