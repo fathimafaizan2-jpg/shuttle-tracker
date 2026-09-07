@@ -127,7 +127,9 @@ function featureIsLive(row: Record<string, unknown>, now = new Date()) {
   if (!row.featured) return false;
   const start = dateValue(row.featureStartAt);
   const end = dateValue(row.featureEndAt);
-  return Boolean(start && end && start.getTime() <= now.getTime() && end.getTime() >= now.getTime());
+  // Legacy featured records without dates remain visible until Super Admin sets a window or unfeatures them.
+  if (!start || !end) return true;
+  return start.getTime() <= now.getTime() && end.getTime() >= now.getTime();
 }
 
 async function enforceFeaturedCapacity(businessId: string, start: Date, end: Date) {
@@ -355,7 +357,6 @@ router.delete("/admin/:businessId", requireAuth, requireRole("SUPER_ADMIN"), asy
     const reference = db.collection("businesses").doc(businessId);
     const existing = await reference.get();
     if (!existing.exists) throw new Error("Business record no longer exists.");
-    if (Boolean(existing.data()?.featured)) throw new Error("Remove the advertisement from the carousel before deleting it.");
     await db.collection("businessAudit").add({ businessId, action: "SUPER_ADMIN_DELETED", actionBy: request.member!.uid, createdAt: FieldValue.serverTimestamp() });
     await reference.delete();
     response.json({ success: true, deleted: true });
