@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { Router } from "express";
 import { db, FieldValue } from "../firebaseAdmin.js";
 import { requireAuth, requireRole } from "../auth.js";
