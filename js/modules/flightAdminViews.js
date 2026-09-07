@@ -71,15 +71,15 @@ export async function flightAdminSessionControlView() {
     const attendance = attendanceBySession.get(session.id);
     const roster = attendance?.roster || [];
     const presentCount = roster.filter(person => person.status === "PRESENT").length;
-    const canCorrect = Boolean(attendance?.canCorrect) && !completed;
+    const canCorrect = Boolean(attendance?.canCorrect);
     const rosterRows = roster.map((person, index) => {
       const isPresent = person.status === "PRESENT";
       const action = canCorrect ? `<button class="${isPresent ? "pill" : "primary"}" data-session-attendance="${isPresent ? "ABSENT" : "PRESENT"}" data-session-id="${escapeHtml(session.id)}" data-member-uid="${escapeHtml(person.uid)}">${isPresent ? "Remove" : "Add"}</button>` : "";
       return `<div class="session"><b>${index + 1}.</b><div class="grow"><b>${escapeHtml(person.fullName || "Member")}</b><p>${escapeHtml(person.memberId || "")}</p></div><span class="tag ${isPresent ? "blue" : person.status === "ABSENT" ? "red" : "amber"}">${escapeHtml(String(person.status || "NO_RESPONSE").replaceAll("_", " "))}</span>${action}</div>`;
     }).join("") || "<p class='note'>No active members are assigned to this flight.</p>";
     const previewDisabled = completed || !presentCount || !Number(stock.tubePriceFils) || !Number(stock.shuttlesPerTube);
-    const calculation = completed ? `<div class="grid two"><div class="field"><label>Shuttlecocks used</label><div class="session"><b>${Number(session.actualShuttlesUsed || 0)}</b></div></div><div class="field"><label>Amount payable per person</label><div class="session"><b>${bhd(session.perPlayerCostExactFils || 0)}</b></div></div></div><p class="note">Game completed. Final charges have been created for the final PRESENT attendees.</p>` : `<div class="grid two"><div class="field"><label for="actualShuttlesUsed-${escapeHtml(session.id)}">No. of shuttlecocks used</label><input id="actualShuttlesUsed-${escapeHtml(session.id)}" data-session-cost-input="${escapeHtml(session.id)}" data-present-count="${presentCount}" data-tube-price-fils="${Number(stock.tubePriceFils || 0)}" data-shuttles-per-tube="${Number(stock.shuttlesPerTube || 0)}" type="number" min="0" step="1" placeholder="Enter number used"  /></div><div class="field"><label>Amount payable per person</label><div class="session"><b id="perPersonPreview-${escapeHtml(session.id)}">${ended ? "Enter shuttles used" : "Available after game ends"}</b></div><small>Final amount is calculated and saved by the protected game-completion process.</small></div></div><button class="primary" data-complete-flight-game="${escapeHtml(session.id)}" ${previewDisabled ? "disabled" : ""}>Update final attendance and create Player charges</button>`;
-    const attendeeSection = `<section class="card"><div class="page-head"><div><h3>No. of players attended</h3><p class="note">Final PRESENT players: <b>${presentCount}</b>. Use Add for anyone who came and Remove for anyone who did not attend. Only these final attendees receive the equal charge.</p></div><span class="tag ${presentCount ? "blue" : "amber"}">${presentCount} ATTENDED</span></div>${rosterRows}${!canCorrect && !completed ? "<p class='note'>Administrator corrections are unavailable because this account is not assigned to this flight.</p>" : ""}</section>`;
+    const calculation = completed ? `<div class="grid two"><div class="field"><label for="recalculateShuttles-${escapeHtml(session.id)}">Actual shuttlecocks used</label><input id="recalculateShuttles-${escapeHtml(session.id)}" type="number" min="0" step="1" value="${Number(session.actualShuttlesUsed || 0)}" /></div><div class="field"><label>Amount payable per person</label><div class="session"><b>${bhd(session.perPlayerCostExactFils || 0)}</b></div></div></div><div class="actions"><button class="primary" data-recalculate-flight-game="${escapeHtml(session.id)}">Recalculate charges</button></div><p class="note">Completed game. Assigned Level Admin may correct shuttle usage; the app restores the previous consumption, recalculates the equal amount, updates unpaid charges, and records the correction.</p>` : `<div class="grid two"><div class="field"><label for="actualShuttlesUsed-${escapeHtml(session.id)}">No. of shuttlecocks used</label><input id="actualShuttlesUsed-${escapeHtml(session.id)}" data-session-cost-input="${escapeHtml(session.id)}" data-present-count="${presentCount}" data-tube-price-fils="${Number(stock.tubePriceFils || 0)}" data-shuttles-per-tube="${Number(stock.shuttlesPerTube || 0)}" type="number" min="0" step="1" placeholder="Enter number used"  /></div><div class="field"><label>Amount payable per person</label><div class="session"><b id="perPersonPreview-${escapeHtml(session.id)}">${ended ? "Enter shuttles used" : "Available after game ends"}</b></div><small>Final amount is calculated and saved by the protected game-completion process.</small></div></div><button class="primary" data-complete-flight-game="${escapeHtml(session.id)}" ${previewDisabled ? "disabled" : ""}>Update final attendance and create Player charges</button>`;
+    const attendeeSection = `<section class="card"><div class="page-head"><div><h3>No. of players attended</h3><p class="note">Final PRESENT players: <b>${presentCount}</b>. Use Add for anyone who came and Remove for anyone who did not attend. Only these final attendees receive the equal charge.</p></div><span class="tag ${presentCount ? "blue" : "amber"}">${presentCount} ATTENDED</span></div>${rosterRows}${!canCorrect ? "<p class='note'>Administrator corrections are unavailable because this account is not assigned to this flight.</p>" : ""}</section>`;
     return `<article class="card"><div class="session"><div class="grow"><b>${escapeHtml(session.flightName || state.member.flightName || "Assigned flight")}</b><p>${escapeHtml(dateTime(session.startAt))} – ${escapeHtml(dateTime(session.endAt))}</p></div><span class="tag ${completed ? "blue" : ended ? "amber" : "blue"}">${completed ? "COMPLETED" : ended ? "READY TO FINISH" : "TODAY · UPCOMING"}</span></div>${attendeeSection}<section class="card"><h3>Game cost calculation</h3>${calculation}</section></article>`;
   }).join("") || emptyTodaySessionCard;
 
@@ -145,6 +145,18 @@ export function bindFlightAdminViews() {
         body: { memberUid, status, reason: reason.trim() }
       });
       notify(`Final attendance updated to ${status}.`);
+      refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  document.querySelectorAll("[data-recalculate-flight-game]").forEach(button => button.onclick = async () => {
+    try {
+      const sessionId = button.dataset.recalculateFlightGame;
+      const actualShuttlesUsed = Number(document.getElementById(`recalculateShuttles-${sessionId}`).value);
+      if (!Number.isInteger(actualShuttlesUsed) || actualShuttlesUsed < 0) throw new Error("Enter a whole number of shuttlecocks used.");
+      if (!window.confirm("Recalculate this completed game and update the player charges?")) return;
+      const result = await api(`/finance/session/${encodeURIComponent(sessionId)}/recalculate`, { method: "POST", body: { actualShuttlesUsed }, confirm: false });
+      notify(`Completed game recalculated. New total: ${bhd(result.totalDayCostFils)}.`);
       refresh();
     } catch (error) { notify(error.message); }
   });
