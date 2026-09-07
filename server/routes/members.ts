@@ -178,6 +178,25 @@ router.post("/me/profile-photo", requireAuth, async (request, response) => {
   }
 });
 
+router.delete("/me/profile-photo", requireAuth, async (request, response) => {
+  try {
+    await db.collection("members").doc(request.member!.uid).update({
+      profilePhotoUrl: null,
+      updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: request.member!.uid
+    });
+    await db.collection("memberAudit").add({
+      action: "MEMBER_PROFILE_PHOTO_DELETED",
+      memberUid: request.member!.uid,
+      actionBy: request.member!.uid,
+      createdAt: FieldValue.serverTimestamp()
+    });
+    response.json({ success: true, profilePhotoUrl: null });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not delete profile photo." });
+  }
+});
+
 router.post("/me/validate-email", requireAuth, async (request, response) => {
   try {
     const email = emailText(request.body.email);
