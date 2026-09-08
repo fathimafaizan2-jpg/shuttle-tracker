@@ -7,6 +7,7 @@ import { requireAuth, requireRole } from "../auth.js";
 const router = Router();
 const CLUB_TIME_ZONE = "Asia/Bahrain";
 const CLUB_OFFSET_MINUTES = 3 * 60;
+const CLUB_OFFSET_MS = CLUB_OFFSET_MINUTES * 60 * 1000;
 const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 type Weekday = typeof weekdays[number];
 
@@ -55,6 +56,27 @@ function timestampToIso(value: unknown) {
 
 function timestampValue(value: unknown) {
   return timestampToDate(value)?.getTime() || 0;
+}
+
+function nextWeeklyOccurrence(slot: FirebaseFirestore.DocumentData, now = new Date()) {
+  const startTime = String(slot.startTime || "");
+  const [hour, minute] = startTime.split(":").map(Number);
+  const weekdayIndex = storedWeekdayIndex(slot);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || weekdayIndex < 0) return null;
+  const clubNow = new Date(now.getTime() + CLUB_OFFSET_MS);
+  const year = clubNow.getUTCFullYear();
+  const month = clubNow.getUTCMonth();
+  const day = clubNow.getUTCDate();
+  for (let offset = 0; offset <= 30; offset += 1) {
+    const localDay = new Date(Date.UTC(year, month, day + offset));
+    if (localDay.getUTCDay() !== weekdayIndex) continue;
+    const startAt = new Date(Date.UTC(year, month, day + offset, hour, minute) - CLUB_OFFSET_MS);
+    if (startAt.getTime() < now.getTime()) continue;
+    const endParts = String(slot.endTime || startTime).split(":").map(Number);
+    const endAt = new Date(Date.UTC(year, month, day + offset, Number(endParts[0] || hour), Number(endParts[1] || minute)) - CLUB_OFFSET_MS);
+    return { startAt, endAt };
+  }
+  return null;
 }
 
 function clubParts(value: Date) {
@@ -142,12 +164,23 @@ router.get("/mine", requireAuth, async (request, response) => {
 
     const slotsById = new Map(slots.docs.map(doc => [doc.id, doc.data()]));
     const visibleSessionDocs = snapshot.docs.filter(doc => matchesCurrentWeeklySlot(doc.data(), slotsById));
-    const attendanceRows = await Promise.all(visibleSessionDocs.map(doc => db.collection("attendance").doc(`${doc.id}_${member.uid}`).get()));
+    const existingStarts = new Set(visibleSessionDocs.map(doc => String(timestampValue(doc.data().startAt))));
+    const syntheticSessions = slots.docs
+      .filter(doc => String(doc.data().flightId || "") === String(member.flightId))
+      .map(doc => {
+        const slot = doc.data();
+        const occurrence = nextWeeklyOccurrence(slot);
+        if (!occurrence || existingStarts.has(String(occurrence.startAt.getTime()))) return null;
+        return { id: `weekly_${doc.id}_${occurrence.startAt.getTime()}`, data: () => ({ ...slot, weeklySlotId: doc.id, status: "SCHEDULED", startAt: Timestamp.fromDate(occurrence.startAt), endAt: Timestamp.fromDate(occurrence.endAt), flightId: member.flightId, flightName: slot.flightName, activityId: slot.activityId, activityName: slot.activityName }) };
+      })
+      .filter(Boolean) as Array<{ id: string; data: () => FirebaseFirestore.DocumentData }>;
+    const allVisibleSessions = [...visibleSessionDocs, ...syntheticSessions];
+    const attendanceRows = await Promise.all(allVisibleSessions.map(doc => db.collection("attendance").doc(`${doc.id}_${member.uid}`).get()));
     const attendanceBySession = new Map(
       attendanceRows.filter(row => row.exists).map(row => [String(row.data()!.sessionId), row.data()!.status])
     );
 
-    response.json(visibleSessionDocs
+    response.json(allVisibleSessions
       .map(doc => {
         const session = doc.data();
         return {
