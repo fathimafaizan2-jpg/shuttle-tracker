@@ -2,7 +2,8 @@
 
 import { Router } from "express";
 import { db, FieldValue, Timestamp } from "../firebaseAdmin.js";
-import { requireAuth, requireFlightAccess, requireRole } from "../auth.js";
+import { requireAuth, requireRole } from "../auth.js";
+import { sendClubEmail, moneyFromFils } from "../email.js";
 import { arrearsDueAt, calculateShuttleCost } from "../clubLogic.js";
 
 const router = Router();
@@ -496,7 +497,15 @@ router.post(
         });
       });
 
-      response.json({ success: true, ledgerId: ledgerRef.id });
+      const targetEmail = String(targetData.email || "").trim();
+      const emailResult = targetEmail ? await sendClubEmail({
+        to: targetEmail,
+        subject: "Indian Club Bahrain wallet credit confirmed",
+        text: `A verified wallet credit of ${moneyFromFils(amountFils)} has been added to your club account. Credit reference: ${ledgerRef.id}.`,
+        referenceType: "WALLET_CREDIT",
+        referenceId: ledgerRef.id
+      }) : { status: "PENDING_CONFIGURATION" as const };
+      response.json({ success: true, ledgerId: ledgerRef.id, emailStatus: emailResult.status });
     } catch (error) {
       response.status(400).json({
         message: error instanceof Error ? error.message : "Could not add wallet credit."
