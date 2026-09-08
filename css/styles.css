@@ -441,3 +441,29 @@ body { font-size: 14px; }
   .page-head { flex-direction: column; }
   .actions { flex-wrap: wrap; }
 }
+
+.admin-section-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 10px 0;
+  background: var(--canvas);
+}
+.admin-section-nav .pill,
+.admin-section-nav .primary {
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.advertising-card,
+#adCarouselSection,
+#adNoticeSection,
+#adPendingSection,
+#adPublishedSection,
+#adNoticeHistorySection {
+  scroll-margin-top: 72px;
+}
