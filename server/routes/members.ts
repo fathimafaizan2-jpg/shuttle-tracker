@@ -5,6 +5,7 @@ import { Router } from "express";
 import { randomBytes } from "node:crypto";
 import { adminAuth, db, FieldValue, Timestamp, storageBucket } from "../firebaseAdmin.js";
 import { requireAuth, requireRole, type ClubRole } from "../auth.js";
+import { sendClubEmail } from "../email.js";
 
 const router = Router();
 const assignableRoles = new Set<ClubRole>(["PLAYER", "LEVEL_ADMIN"]);
@@ -116,6 +117,16 @@ async function emailAvailable(email: string, exceptUid?: string) {
     .get();
 
   return existing.docs.every(doc => doc.id === exceptUid);
+}
+
+async function phoneAvailable(phone: string, exceptUid?: string) {
+  const existing = await db.collection("members").get();
+  return existing.docs.every(doc => {
+    if (doc.id === exceptUid) return true;
+    const row = doc.data();
+    const stored = String(row.phoneNormalized || String(row.phone || "").replace(/\D/g, ""));
+    return stored !== phone;
+  });
 }
 
 async function firebaseEmailAvailable(email: string, exceptUid?: string) {
@@ -362,7 +373,10 @@ router.patch("/me", requireAuth, async (request, response) => {
     }
 
     if (request.body.phone !== undefined) {
+      const phone = normalizedPhone(request.body.phone);
+      if (!(await phoneAvailable(phone, request.member!.uid))) throw new Error("This phone number is already registered. It can be used again only after permanent deletion.");
       update.phone = optionalText(request.body.phone, 40);
+      update.phoneNormalized = phone;
     }
 
     if (request.body.preferredLanguage !== undefined) {
@@ -562,6 +576,9 @@ router.post("/activate-registered", async (request, response) => {
     if (!(await memberIdAvailable(memberId))) {
       throw new Error("This Member ID is already used.");
     }
+    if (!(await phoneAvailable(phoneNormalized))) {
+      throw new Error("This phone number is already registered. It can be used again only after permanent deletion.");
+    }
 
     if (!(await emailAvailable(email)) || !(await firebaseEmailAvailable(email))) {
       throw new Error("This email address is already registered. Use a different email address.");
@@ -601,6 +618,7 @@ router.post("/activate-registered", async (request, response) => {
         memberId,
         email,
         phone: fresh.data()!.phone,
+        phoneNormalized,
         role: fresh.data()!.role,
         active: true,
         activityId: fresh.data()!.activityId,
@@ -627,9 +645,18 @@ router.post("/activate-registered", async (request, response) => {
       createdAt: FieldValue.serverTimestamp()
     });
 
+    const emailResult = await sendClubEmail({
+      to: email,
+      subject: "Indian Club Bahrain membership registered",
+      text: `Welcome ${registeredName}. Your Indian Club Bahrain membership has been registered successfully. You can now sign in with your email and password.`,
+      referenceType: "MEMBER_REGISTRATION",
+      referenceId: authUid
+    });
+
     response.status(201).json({
       success: true,
       email,
+      emailStatus: emailResult.status,
       message: "Account activated. Sign in with your email and password."
     });
   } catch (error) {
@@ -643,6 +670,29 @@ router.post("/activate-registered", async (request, response) => {
         ? "This email address is already registered. Use a different email address."
         : error instanceof Error ? error.message : "Could not activate your account."
     });
+  }
+});
+
+router.get("/deleted", requireAuth, requireRole("SUPER_ADMIN"), async (_request, response) => {
+  const rows = await db.collection("deletedUsers").get();
+  response.json(rows.docs.map(doc => ({ id: doc.id, ...doc.data(), deletedAt: toIso(doc.data().deletedAt) })).sort((a, b) => timeValue(b.deletedAt) - timeValue(a.deletedAt)));
+});
+
+router.delete("/:memberUid/permanent", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
+  try {
+    const memberUid = asText(request.params.memberUid, "Member UID");
+    if (memberUid === request.member!.uid) throw new Error("You cannot permanently delete your own Super Admin account.");
+    const reference = db.collection("members").doc(memberUid);
+    const existing = await reference.get();
+    if (!existing.exists) throw new Error("Member not found.");
+    const member = existing.data()!;
+    await db.collection("deletedUsers").doc(memberUid).set({ ...member, deletedUid: memberUid, deletedAt: FieldValue.serverTimestamp(), deletedBy: request.member!.uid, originalActive: Boolean(member.active) });
+    await db.collection("memberAudit").add({ action: "MEMBER_PERMANENTLY_DELETED", targetMemberUid: memberUid, phoneNormalized: member.phoneNormalized || normalizedPhone(member.phone), actionBy: request.member!.uid, createdAt: FieldValue.serverTimestamp() });
+    await reference.delete();
+    await adminAuth.deleteUser(memberUid);
+    response.json({ success: true, deleted: true });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not permanently delete member." });
   }
 });
 
@@ -664,7 +714,10 @@ router.patch("/:memberUid", requireAuth, requireRole("SUPER_ADMIN"), async (requ
       update.fullName = asText(request.body.fullName, "Full name");
     }
     if (request.body.phone !== undefined) {
+      const phone = normalizedPhone(request.body.phone);
+      if (!(await phoneAvailable(phone, memberUid))) throw new Error("This phone number is already registered. It can be used again only after permanent deletion.");
       update.phone = optionalText(request.body.phone, 40);
+      update.phoneNormalized = phone;
     }
     if (request.body.active !== undefined) {
       update.active = Boolean(request.body.active);
