@@ -2,6 +2,7 @@ import { Router } from "express";
 import { randomBytes } from "node:crypto";
 import { db, FieldValue, Timestamp, storageBucket } from "../firebaseAdmin.js";
 import { requireAuth, requireRole } from "../auth.js";
+import { sendClubEmail } from "../email.js";
 
 const router = Router();
 const MAX_ACTIVE_FEATURED_ADS = 10;
@@ -50,6 +51,12 @@ function dateValue(value: unknown): Date | null {
 
 function businessReference() {
   return `BIZ-${new Date().getFullYear()}-${randomBytes(3).toString("hex").toUpperCase()}`;
+}
+
+function emailText(value: unknown) {
+  const email = text(value, "Email address", 150).toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Enter a valid email address.");
+  return email;
 }
 
 function normalisePublicUrl(value: unknown, label: string, max = 1800) {
@@ -234,6 +241,7 @@ router.post("/public/submit", async (request, response) => {
     const businessName = text(request.body.businessName, "Business name", 100);
     const ownerName = text(request.body.ownerName, "Owner name", 100);
     const phone = text(request.body.phone, "Phone / WhatsApp", 40);
+    const submitterEmail = emailText(request.body.email);
     const category = text(request.body.category, "Category", 80);
     const description = text(request.body.description, "Offer or description", 800);
     const flyerUrl = normalisePublicUrl(request.body.flyerUrl, "Flyer image link");
@@ -262,8 +270,15 @@ router.post("/public/submit", async (request, response) => {
       updatedAt: FieldValue.serverTimestamp()
     });
 
-    await db.collection("businessAudit").add({ businessId: created.id, action: "PUBLIC_SUBMISSION", referenceCode, createdAt: FieldValue.serverTimestamp() });
-    response.status(201).json({ success: true, referenceCode, message: "Submitted to Super Admin for approval. Save your BIZ reference code for later update requests." });
+    await db.collection("businessAudit").add({ businessId: created.id, action: "PUBLIC_SUBMISSION", referenceCode, submitterEmail, createdAt: FieldValue.serverTimestamp() });
+    const emailResult = await sendClubEmail({
+      to: submitterEmail,
+      subject: `BaZaar submission received: ${referenceCode}`,
+      text: `Thank you. Your BaZaar advertisement submission has been received. Your reference ID is ${referenceCode}. Super Admin approval is pending. Keep this ID for future updates.`,
+      referenceType: "ADVERTISEMENT",
+      referenceId: referenceCode
+    });
+    response.status(201).json({ success: true, referenceCode, emailStatus: emailResult.status, message: "Submitted to Super Admin for approval. Save your BIZ reference code for later update requests." });
   } catch (error) {
     response.status(400).json({ message: error instanceof Error ? error.message : "Could not submit business." });
   }
