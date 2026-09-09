@@ -1,9 +1,15 @@
 import { Router } from "express";
-import { db, FieldValue, Timestamp } from "../firebaseAdmin.js";
+import { db, FieldValue } from "../firebaseAdmin.js";
 import { requireAuth, requireFlightAccess, requireRole } from "../auth.js";
 import { isSessionLocked, type AttendanceStatus } from "../clubLogic.js";
 
 const router = Router();
+
+type SessionRecord = FirebaseFirestore.DocumentData & {
+  flightId: string;
+  flightName?: string;
+  startAt: FirebaseFirestore.Timestamp | Date | string | number;
+};
 const allowedStatuses = new Set<AttendanceStatus>(["PRESENT", "ABSENT"]);
 
 const asText = (value: unknown, label: string, max = 300) => {
@@ -12,17 +18,19 @@ const asText = (value: unknown, label: string, max = 300) => {
   return text;
 };
 
-function sessionStart(session: FirebaseFirestore.DocumentData): Date {
+function sessionStart(session: SessionRecord): Date {
   const value = session.startAt;
-  if (value && typeof value.toDate === "function") return value.toDate();
-  return new Date(value);
+  if (value && typeof value === "object" && "toDate" in value && typeof (value as { toDate?: unknown }).toDate === "function") {
+    return (value as FirebaseFirestore.Timestamp).toDate();
+  }
+  return value instanceof Date ? value : new Date(value as string | number);
 }
 
-function hasGameStarted(session: FirebaseFirestore.DocumentData): boolean {
+function hasGameStarted(session: SessionRecord): boolean {
   return Date.now() >= sessionStart(session).getTime();
 }
 
-function canSelfRespond(member: Express.Request["member"], session: FirebaseFirestore.DocumentData) {
+function canSelfRespond(member: Express.Request["member"], session: SessionRecord) {
   if (!member) return false;
   if (member.role === "SUPER_ADMIN") return Boolean(member.flightId && member.flightId === session.flightId);
   return member.flightId === session.flightId;
@@ -40,7 +48,7 @@ async function loadSessionWithAccess(sessionId: string, member: Express.Request[
   if (member!.role !== "SUPER_ADMIN" && member!.flightId !== session.flightId) {
     throw new Error("You may access attendance only for your assigned flight.");
   }
-  return { id: snapshot.id, ...session };
+  return { id: snapshot.id, ...session } as SessionRecord & { id: string };
 }
 
 /* Player / Flight Admin / Super Admin see roster only for their own authorised flight. */
@@ -188,7 +196,7 @@ router.get("/session/:sessionId/audit", requireAuth, requireRole("LEVEL_ADMIN", 
 
     const audit = await db.collection("attendanceAudit").where("sessionId", "==", sessionId).get();
     response.json(audit.docs
-      .map(doc => ({ id: doc.id, ...doc.data(), createdAt: (doc.data().createdAt as Timestamp)?.toDate?.().toISOString() || null }))
+      .map(doc => ({ id: doc.id, ...doc.data(), createdAt: (doc.data().createdAt as FirebaseFirestore.Timestamp)?.toDate?.().toISOString() || null }))
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
     );
   } catch (error) {
