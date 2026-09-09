@@ -425,6 +425,32 @@ router.patch("/me", requireAuth, async (request, response) => {
   }
 });
 
+router.get("/assigned-flight", requireAuth, requireRole("LEVEL_ADMIN"), async (request, response) => {
+  try {
+    if (!request.member!.flightId) throw new Error("Your account has no assigned flight.");
+    const members = await db.collection("members").where("flightId", "==", request.member!.flightId).get();
+    response.json(members.docs.filter(doc => doc.data().active === true).map(doc => publicMember(doc.id, doc.data())).sort((a, b) => String(a.fullName || "").localeCompare(String(b.fullName || ""))));
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not load your flight roster." });
+  }
+});
+
+router.post("/assigned-flight/pre-register", requireAuth, requireRole("LEVEL_ADMIN"), async (request, response) => {
+  try {
+    if (!request.member!.flightId) throw new Error("Your account has no assigned flight.");
+    const registeredName = asText(request.body.registeredName, "Registered name");
+    const phone = String(request.body.phone || "").trim();
+    const phoneNormalized = normalizedPhone(phone);
+    if (!(await phoneAvailable(phoneNormalized))) throw new Error("This phone number is already registered. It can be used again only after permanent deletion.");
+    const flight = await findFlight(request.member!.flightId);
+    const created = await db.collection("memberPreRegistrations").add({ registeredName, registeredNameNormalized: registeredName.toLowerCase(), phone, phoneNormalized, role: "PLAYER", activityId: flight.activityId, activityName: flight.activityName, flightId: flight.id, flightName: flight.name, status: "PRE_REGISTERED", createdAt: FieldValue.serverTimestamp(), createdBy: request.member!.uid, createdByRole: request.member!.role });
+    await db.collection("memberAudit").add({ action: "MEMBER_PRE_REGISTERED_BY_LEVEL_ADMIN", preRegistrationId: created.id, role: "PLAYER", flightId: flight.id, actionBy: request.member!.uid, createdAt: FieldValue.serverTimestamp() });
+    response.status(201).json({ success: true, id: created.id, registeredName, phone, role: "PLAYER", flightName: flight.name });
+  } catch (error) {
+    response.status(400).json({ message: error instanceof Error ? error.message : "Could not add Player to the flight roster." });
+  }
+});
+
 router.get("/", requireAuth, requireRole("SUPER_ADMIN"), async (request, response) => {
   const flightId = String(request.query.flightId || "").trim();
   const members = await db.collection("members").get();
