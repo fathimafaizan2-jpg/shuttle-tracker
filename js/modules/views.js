@@ -72,7 +72,7 @@ export async function playerDashboard(member = state.member) {
     safelyLoad("/finance/mine", {})
   ]);
   const data = {
-    walletFils: Number(dashboardData.walletFils ?? walletData.balanceFils ?? 0),
+    walletFils: Number(dashboardData.walletFils ?? walletData.balanceFils ?? signedInMember.walletBalanceFils ?? 0),
     attendedCount: Number(dashboardData.attendedCount ?? 0),
     pendingFils: Number(dashboardData.pendingFils ?? walletData.unpaidFils ?? 0),
     arrearsFils: Number(dashboardData.arrearsFils ?? walletData.arrearsFils ?? 0)
@@ -116,23 +116,24 @@ export async function playerDashboard(member = state.member) {
         ` : "<p class='note'>No upcoming game has been published for your flight.</p>"}
       </article>
       <article class="card wallet">
-        <span>Credit rule</span>
+        <span>Available Wallet Credit</span>
         <div class="balance">${bhd(data.walletFils)}</div>
-        <p>Only final PRESENT attendees are charged after Flight Admin records actual shuttlecocks used.</p>
+        <p>Wallet credit automatically syncs between Home & Wallet tabs. Charged only when PRESENT after game completion.</p>
       </article>
     </div>
   `;
 }
 
 export async function playerTimetable() {
-  const slots = await api("/timetable/club");
+  const slots = await api("/timetable/club").catch(() => api("/timetable/mine"));
+  const safeSlots = Array.isArray(slots) ? slots : [];
 
-  if (!slots.length) {
-    return `<div class="page-head"><div><h2>Club Timetable</h2><p>The weekly club timetable will appear after Super Admin saves the first slot.</p></div></div><section class="card"><p class="note">No weekly club timetable has been saved yet.</p></section>`;
+  if (!safeSlots.length) {
+    return `<div class="page-head"><div><h2>Club Timetable</h2><p>The weekly club timetable will appear after Super Admin publishes the month.</p></div></div><section class="card"><p class="note">No timetable slots found for your account or flight yet.</p></section>`;
   }
 
-  const slotTime = slot => `${slot.startTime} – ${slot.endTime}`;
-  const timeColumns = [...new Map(slots.map(slot => [slotTime(slot), slot])).entries()];
+  const slotTime = slot => `${slot.startTime || "18:00"} – ${slot.endTime || "20:00"}`;
+  const timeColumns = [...new Map(safeSlots.map(slot => [slotTime(slot), slot])).entries()];
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const tones = ["saffron", "sun", "rose", "lavender", "leaf", "sky"];
   const toneFor = flightName => {
@@ -141,7 +142,7 @@ export async function playerTimetable() {
   };
 
   const rows = dayNames.map((dayName, dayIndex) => {
-    const daySlots = slots.filter(slot => Number(slot.weekdayIndex) === dayIndex);
+    const daySlots = safeSlots.filter(slot => Number(slot.weekdayIndex ?? dayIndex) === dayIndex || String(slot.weekday || "").toLowerCase() === dayName.toLowerCase());
     if (!daySlots.length) return "";
 
     return `<tr>
@@ -180,11 +181,11 @@ export async function attendanceView(sessionId) {
   return `<div class="page-head"><div><h2>Attendance</h2><p>Your response is fixed to the next game day for your flight in the club timetable.</p></div>${session.locked ? "<span class='tag red'>PLAYER RESPONSES LOCKED</span>" : "<span class='tag blue'>RESPONSES OPEN</span>"}</div>
     <section class="card">
       <h3>${escapeHtml(session.flightName)} · ${escapeHtml(weekdayTime(session.startAt))}, ${escapeHtml(dateTime(session.startAt))}</h3>
-      <p class="note">Players can update only their own response until 15 minutes before game start. Your assigned Flight Admin can correct final attendance with an audit reason until the game is settled.</p>
-      <div class="session"><div class="grow"><b>My attendance</b></div>${attendanceBadge(session.myAttendance)}</div>
-      ${session.canRespond ? `<div class="actions"><button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I am coming</button><button class="pill" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">I am not coming</button></div>` : ""}
+      <p class="note">Players can update only their own response until 15 minutes before game start. Flight Admin marks manual overrides for others separately.</p>
+      <div class="session"><div class="grow"><b>My personal attendance status</b></div>${attendanceBadge(session.myAttendance)}</div>
+      ${session.canRespond ? `<div class="actions"><button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I am coming (Present)</button><button class="pill" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">I am not coming (Absent)</button></div>` : ""}
     </section>
-    <section class="card"><h3>Players coming for this game</h3><p class="note">Only members of ${escapeHtml(session.flightName)} who responded “I am coming” are shown here. Their attendance is read-only on this screen; only your own response can be changed in Attendance.</p>${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(word => word[0]).join("").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}${session.canCorrect ? `<div class="actions"><button class="pill" data-attendance-correct="PRESENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Present</button><button class="pill" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No members have responded “I am coming” yet.</p>"}</section>
+    <section class="card"><h3>Players coming for this game</h3><p class="note">Only members of ${escapeHtml(session.flightName)} who responded “I am coming” are shown here.</p>${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(word => word[0]).join("").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}${session.canCorrect && person.uid !== state.member.id ? `<div class="actions"><button class="pill" data-attendance-correct="PRESENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Present</button><button class="pill" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No members have responded “I am coming” yet.</p>"}</section>
     ${session.canCorrect ? `<section class="card"><h3>Attendance correction audit</h3>${audit.map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.previousStatus)} → ${escapeHtml(item.newStatus)}</b><p>${escapeHtml(item.reason)} · ${escapeHtml(dateTime(item.createdAt))}</p></div></div>`).join("") || "<p class='note'>No corrections have been recorded for this session.</p>"}</section>` : ""}`;
 }
 
