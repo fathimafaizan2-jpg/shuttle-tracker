@@ -412,3 +412,27 @@ th { color: var(--muted); font-size: 10px; text-transform: uppercase; }
   padding: 4px 8px;
   font-size: 10px;
 }
+/* COMPACT FORM CONTROLS & DROPDOWNS */
+.field select, .field input {
+  font-size: 12px !important;
+  min-height: 34px !important;
+  padding: 5px 8px !important;
+  border-radius: 8px !important;
+}
+
+.table-wrap table {
+  font-size: 11px !important;
+}
+
+.table-wrap th, .table-wrap td {
+  padding: 6px 8px !important;
+}
+
+.schedule td b {
+  font-size: 12px !important;
+}
+
+.side .nav {
+  font-size: 11px !important;
+  padding: 6px 8px !important;
+}
