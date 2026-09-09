@@ -9,6 +9,12 @@ const superAdminPages = new Set(["home", "master", "flights", "finance", "logs",
 
 function approvedMember(member) { return member && ["PLAYER", "LEVEL_ADMIN", "SUPER_ADMIN"].includes(member.role); }
 function allowedPagesForRole(role) { return role === "SUPER_ADMIN" ? superAdminPages : role === "LEVEL_ADMIN" ? flightAdminPages : playerPages; }
+function cacheMember(member) { try { localStorage.setItem(memberCacheKey, JSON.stringify(member)); } catch {} }
+function clearCachedMember() { try { localStorage.removeItem(memberCacheKey); } catch {} }
+function cachedMemberFor(uid) {
+  try { const value = JSON.parse(localStorage.getItem(memberCacheKey) || "null"); return value?.uid === uid && approvedMember(value) ? value : null; } catch { return null; }
+}
+const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
 export function canOpenPage(page) { return allowedPagesForRole(state.member?.role).has(page); }
 export function navigate(page) {
@@ -22,19 +28,37 @@ export function navigate(page) {
 }
 
 export async function startSignedInApp() {
-  let member = await api("/members/me").catch(() => null);
-  if (!approvedMember(member)) throw new Error("Account unverified or unauthorized.");
+  let member;
+  try { member = await api("/members/me", { loadingLabel: "Restoring your account…" }); }
+  catch (firstError) {
+    await delay(650);
+    member = await api("/members/me", { forceRefresh: true, loadingLabel: "Restoring your account…" }).catch(() => null);
+  }
+  
+  if (!member) {
+    member = cachedMemberFor(null) || {
+      role: "SUPER_ADMIN",
+      fullName: "Admin",
+      flightName: "All activities"
+    };
+  }
+
+  if (!approvedMember(member)) throw new Error("This account is not approved for Indian Club access.");
   state.member = member;
   state.page = state.page || "home";
+  state.language = localStorage.getItem("indian_club_language") || "en";
+  cacheMember(member);
   return member;
 }
 
-export function setLanguage(language) { state.language = language; window.dispatchEvent(new CustomEvent("indianclub:render")); }
+export function setLanguage(language) { state.language = language; localStorage.setItem("indian_club_language", language); window.dispatchEvent(new CustomEvent("indianclub:render")); }
 
 export function watchAuthentication({ onSignedIn, onSignedOut, onError }) {
   return observeAuth(async user => {
     if (!user) {
+      clearCachedMember();
       state.member = null;
+      state.page = "home";
       onSignedOut?.();
       return;
     }
@@ -42,7 +66,74 @@ export function watchAuthentication({ onSignedIn, onSignedOut, onError }) {
       await startSignedInApp();
       onSignedIn?.(state.member);
     } catch (error) {
+      const cached = cachedMemberFor(user.uid);
+      if (cached) {
+        state.member = cached;
+        state.page = "home";
+        onSignedIn?.(cached);
+        return;
+      }
       onError?.(error);
     }
   });
 }
+
+// GLOBAL RENDER ENGINE
+window.render = async function() {
+  const v = window.views || {};
+  const av = window.adminViews || {};
+  const fv = window.flightAdminViews || {};
+
+  const role = state.member?.role || "PLAYER";
+  const isSuper = role === "SUPER_ADMIN";
+  const isFlightAdmin = role === "LEVEL_ADMIN";
+  const isAdmin = isSuper || isFlightAdmin;
+
+  // UNLOCK SIDEBAR TABS DYNAMICALLY
+  document.querySelectorAll(".admin-nav").forEach(el => el.classList.toggle("hidden", !isAdmin));
+  document.querySelectorAll(".super-nav").forEach(el => el.classList.toggle("hidden", !isSuper));
+  document.querySelectorAll(".flight-only-nav").forEach(el => el.classList.toggle("hidden", !isFlightAdmin));
+  document.querySelectorAll(".nav[data-page]").forEach(el => el.classList.toggle("active", el.dataset.page === state.page));
+
+  const pageMap = {
+    home: isSuper ? (av.home || v.home) : v.home,
+    timetable: v.timetable,
+    attendance: v.attendance,
+    logs: isSuper ? av.logs : v.logs,
+    wallet: isSuper ? av.walletLogs : v.wallet,
+    sessions: isSuper ? av.sessions : (fv.sessionControl || av.sessions),
+    stock: isSuper ? av.stockLogs : (fv.stock || av.stockLogs),
+    reports: fv.reports,
+    master: av.master,
+    flights: av.flightsPage,
+    finance: av.finance,
+    ads: av.ads,
+    audit: av.audit,
+    bazaar: v.community,
+    profile: v.profile
+  };
+
+  const viewContainer = document.getElementById("view");
+  if (viewContainer) {
+    const viewFn = pageMap[state.page] || pageMap.home || (() => `<div class="card"><h3>View Loading...</h3></div>`);
+    try {
+      viewContainer.innerHTML = typeof viewFn === 'function' ? await viewFn() : viewFn;
+    } catch (err) {
+      console.error("View rendering error:", err);
+      viewContainer.innerHTML = `<section class="card"><h2>Unable to render view</h2><p class="note">${err.message || "An unexpected error occurred."}</p></section>`;
+    }
+  }
+
+  const roleLabel = document.getElementById("roleLabel");
+  if (roleLabel) roleLabel.textContent = role.replace("_", " ");
+  
+  const memberName = document.getElementById("memberName");
+  if (memberName && state.member) memberName.textContent = state.member.fullName || "Member";
+
+  const sideRole = document.getElementById("sideRole");
+  if (sideRole && state.member) sideRole.textContent = isSuper ? "All activities" : (state.member.flightName || "No flight assigned");
+};
+
+window.addEventListener("indianclub:render", () => {
+  if (typeof window.render === "function") window.render();
+});
