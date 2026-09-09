@@ -74,19 +74,39 @@ export async function flightAdminSessionControlView() {
     const roster = attendance?.roster || [];
     const presentCount = roster.filter(person => person.status === "PRESENT").length;
     const canCorrect = Boolean(attendance?.canCorrect);
-    const rosterRows = roster.map((person, index) => {
+    
+    // Separate Flight Admin's own attendance row vs other players
+    const adminSelfRow = roster.find(person => person.uid === state.member.id);
+    const otherPlayersRoster = roster.filter(person => person.uid !== state.member.id);
+
+    const adminSelfMarkup = adminSelfRow ? `
+      <div class="card" style="background:#eff6ff; border-color:#bfdbfe; margin-bottom:12px; padding:12px;">
+        <div class="page-head" style="margin:0;">
+          <div>
+            <b>Your Personal Attendance (Admin)</b>
+            <p class="note">Status: <b>${escapeHtml(adminSelfRow.status || 'NO_RESPONSE')}</b></p>
+          </div>
+          <div class="actions">
+            <button class="pill ${adminSelfRow.status === 'PRESENT' ? 'primary' : ''}" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I'm Playing (Present)</button>
+            <button class="pill ${adminSelfRow.status === 'ABSENT' ? 'danger-action' : ''}" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">Not Playing (Absent)</button>
+          </div>
+        </div>
+      </div>` : "";
+
+    const rosterRows = otherPlayersRoster.map((person, index) => {
       const isPresent = person.status === "PRESENT";
       const action = canCorrect ? `<button class="${isPresent ? "pill" : "primary"}" data-session-attendance="${isPresent ? "ABSENT" : "PRESENT"}" data-session-id="${escapeHtml(session.id)}" data-member-uid="${escapeHtml(person.uid)}">${isPresent ? "Remove" : "Add"}</button>` : "";
       return `<div class="session"><b>${index + 1}.</b><div class="grow"><b>${escapeHtml(person.fullName || "Member")}</b><p>${escapeHtml(person.memberId || "")}</p></div><span class="tag ${isPresent ? "blue" : person.status === "ABSENT" ? "red" : "amber"}">${escapeHtml(String(person.status || "NO_RESPONSE").replaceAll("_", " "))}</span>${action}</div>`;
-    }).join("") || "<p class='note'>No active members are assigned to this flight.</p>";
+    }).join("") || "<p class='note'>No other active members are assigned to this flight.</p>";
+    
     const previewDisabled = completed || !presentCount || !Number(stock.tubePriceFils) || !Number(stock.shuttlesPerTube);
-    const calculation = completed ? `<div class="grid two"><div class="field"><label for="recalculateShuttles-${escapeHtml(session.id)}">Actual shuttlecocks used</label><input id="recalculateShuttles-${escapeHtml(session.id)}" type="number" min="0" step="1" value="${Number(session.actualShuttlesUsed || 0)}" /></div><div class="field"><label>Amount payable per person</label><div class="session"><b>${bhd(session.perPlayerCostExactFils || 0)}</b></div></div></div><div class="actions"><button class="primary" data-recalculate-flight-game="${escapeHtml(session.id)}">Recalculate charges</button></div><p class="note">Completed game. Assigned Level Admin may correct shuttle usage; the app restores the previous consumption, recalculates the equal amount, updates unpaid charges, and records the correction.</p>` : `<div class="grid two"><div class="field"><label for="actualShuttlesUsed-${escapeHtml(session.id)}">No. of shuttlecocks used</label><input id="actualShuttlesUsed-${escapeHtml(session.id)}" data-session-cost-input="${escapeHtml(session.id)}" data-present-count="${presentCount}" data-tube-price-fils="${Number(stock.tubePriceFils || 0)}" data-shuttles-per-tube="${Number(stock.shuttlesPerTube || 0)}" type="number" min="0" step="1" placeholder="Enter number used"  /></div><div class="field"><label>Amount payable per person</label><div class="session"><b id="perPersonPreview-${escapeHtml(session.id)}">${ended ? "Enter shuttles used" : "Available after game ends"}</b></div><small>Final amount is calculated and saved by the protected game-completion process.</small></div></div><button class="primary" data-complete-flight-game="${escapeHtml(session.id)}" ${previewDisabled ? "disabled" : ""}>Update final attendance and create Player charges</button>`;
-    const attendeeSection = `<section class="card"><div class="page-head"><div><h3>No. of players attended</h3><p class="note">Final PRESENT players: <b>${presentCount}</b>. Use Add for anyone who came and Remove for anyone who did not attend. Only these final attendees receive the equal charge.</p></div><span class="tag ${presentCount ? "blue" : "amber"}">${presentCount} ATTENDED</span></div>${rosterRows}${!canCorrect ? "<p class='note'>Administrator corrections are unavailable because this account is not assigned to this flight.</p>" : ""}</section>`;
+    const calculation = completed ? `<div class="grid two"><div class="field"><label for="recalculateShuttles-${escapeHtml(session.id)}">Actual shuttlecocks used</label><input id="recalculateShuttles-${escapeHtml(session.id)}" type="number" min="0" step="1" value="${Number(session.actualShuttlesUsed || 0)}" /></div><div class="field"><label>Amount payable per person (Equal Share)</label><div class="session"><b>${bhd(session.perPlayerCostExactFils || 0)}</b></div></div></div><div class="actions"><button class="primary" data-recalculate-flight-game="${escapeHtml(session.id)}">Recalculate charges</button></div><p class="note">Completed game. Assigned Level Admin may correct shuttle usage; the app restores stock, recalculates equal shares among attendees (including Admin if present), and updates unpaid charges.</p>` : `<div class="grid two"><div class="field"><label for="actualShuttlesUsed-${escapeHtml(session.id)}">No. of shuttlecocks used</label><input id="actualShuttlesUsed-${escapeHtml(session.id)}" data-session-cost-input="${escapeHtml(session.id)}" data-present-count="${presentCount}" data-tube-price-fils="${Number(stock.tubePriceFils || 0)}" data-shuttles-per-tube="${Number(stock.shuttlesPerTube || 0)}" type="number" min="0" step="1" placeholder="Enter number used"  /></div><div class="field"><label>Amount payable per person (Equal Share)</label><div class="session"><b id="perPersonPreview-${escapeHtml(session.id)}">${ended ? "Enter shuttles used" : "Available after game ends"}</b></div><small>Final amount is split equally among ALL PRESENT players (Admin included) and shuttlecocks are deducted from available stock.</small></div></div><button class="primary" data-complete-flight-game="${escapeHtml(session.id)}" ${previewDisabled ? "disabled" : ""}>Update final attendance, deduct stock, and create Player charges</button>`;
+    const attendeeSection = `<section class="card"><div class="page-head"><div><h3>No. of players attended</h3><p class="note">Final PRESENT players: <b>${presentCount}</b>. Use Add/Remove for manual player overrides.</p></div><span class="tag ${presentCount ? "blue" : "amber"}">${presentCount} ATTENDED</span></div>${adminSelfMarkup}${rosterRows}${!canCorrect ? "<p class='note'>Administrator corrections are unavailable because this account is not assigned to this flight.</p>" : ""}</section>`;
     return `<article class="card"><div class="session"><div class="grow"><b>${escapeHtml(session.flightName || state.member.flightName || "Assigned flight")}</b><p>${escapeHtml(dateTime(session.startAt))} – ${escapeHtml(dateTime(session.endAt))}</p></div><span class="tag ${completed ? "blue" : ended ? "amber" : "blue"}">${completed ? "COMPLETED" : ended ? "READY TO FINISH" : "TODAY · UPCOMING"}</span></div>${attendeeSection}<section class="card"><h3>Game cost calculation</h3>${calculation}</section></article>`;
   }).join("") || emptyTodaySessionCard;
 
   window.__indianClubUnpaidReminderRows = finance.unpaid || [];
-  return `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${escapeHtml(state.member.flightName || "Assigned flight")}</span><h2>Session Control</h2><p>Confirm actual attendance, enter shuttlecocks used, then create equal final charges only for the players who attended.</p></div></div>
+  return `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN · ${escapeHtml(state.member.flightName || "Assigned flight")}</span><h2>Session Control</h2><p>Confirm actual attendance, enter shuttlecocks used, then create equal final charges for all present players (including Admin).</p></div></div>
   <section class="card"><h3>Today’s game session</h3>${sessionCards}<div id="flightGameResult"></div></section>
   <section class="card"><h3>Pending Cash / Benefit confirmation</h3>${(finance.pendingPayments || []).map(payment => `<div class="session"><div class="grow"><b>${escapeHtml(payment.memberName || payment.memberUid)}</b><p>Payment ID: <b>${escapeHtml(payment.paymentCode || payment.id)}</b> · ${escapeHtml(payment.method)} · ${escapeHtml(payment.reference || "No reference")} · ${escapeHtml(dateLabel(payment.submittedAt))}</p></div><strong>${bhd(payment.amountFils)}</strong><button class="primary" data-flight-verify="${escapeHtml(payment.id)}">Verify</button></div>`).join("") || "<p class='note'>No Cash or Benefit settlement is awaiting confirmation for your flight.</p>"}</section>
   <div class="grid two"><section id="paidPlayersList" class="card"><div class="page-head"><div><h3>Paid Players</h3><p class="note">Verified Credit and Cash / Benefit settlement records.</p></div><button class="pill" data-flight-print-list="paidPlayersList">Print</button></div>${rows(finance.paid || [], "No paid Player records.")}</section>
@@ -156,7 +176,7 @@ export function bindFlightAdminViews() {
       const sessionId = button.dataset.recalculateFlightGame;
       const actualShuttlesUsed = Number(document.getElementById(`recalculateShuttles-${sessionId}`).value);
       if (!Number.isInteger(actualShuttlesUsed) || actualShuttlesUsed < 0) throw new Error("Enter a whole number of shuttlecocks used.");
-      if (!window.confirm("Recalculate this completed game and update the player charges?")) return;
+      if (!window.confirm("Recalculate this completed game, deduct shuttles from stock, and update player charges?")) return;
       const result = await api(`/finance/session/${encodeURIComponent(sessionId)}/recalculate`, { method: "POST", body: { actualShuttlesUsed }, confirm: false });
       notify(`Completed game recalculated. New total: ${bhd(result.totalDayCostFils)}.`);
       refresh();
@@ -172,9 +192,10 @@ export function bindFlightAdminViews() {
       const result = await api(`/finance/session/${encodeURIComponent(sessionId)}/complete`, { method: "POST", body: { actualShuttlesUsed } });
       const chargeRows = (result.charges || []).map(charge => `<tr><td>${escapeHtml(charge.memberName || charge.memberUid)}</td><td>${bhd(charge.amountFils)}</td></tr>`).join("");
       const target = document.getElementById("flightGameResult");
-      if (target) target.innerHTML = `<section class="card"><h3>Game charges created</h3><p><b>Total game cost:</b> ${bhd(result.totalDayCostFils)} · <b>PRESENT attendees:</b> ${Number(result.attendeeCount || 0)} · <b>Shuttles used:</b> ${Number(result.actualShuttlesUsed || actualShuttlesUsed)} · <b>Remaining:</b> ${Number(result.remainingShuttles || 0)}</p><table class="schedule"><thead><tr><th>Player</th><th>Amount payable</th></tr></thead><tbody>${chargeRows || "<tr><td colspan='2'>No final PRESENT attendees.</td></tr>"}</tbody></table></section>`;
-      notify("Game completed. Player charges were created.");
+      if (target) target.innerHTML = `<section class="card"><h3>Game charges created (Equal Shares)</h3><p><b>Total game cost:</b> ${bhd(result.totalDayCostFils)} · <b>PRESENT attendees (incl. Admin):</b> ${Number(result.attendeeCount || 0)} · <b>Shuttles used:</b> ${Number(result.actualShuttlesUsed || actualShuttlesUsed)} · <b>Stock remaining:</b> ${Number(result.remainingShuttles || 0)}</p><table class="schedule"><thead><tr><th>Player</th><th>Amount payable</th></tr></thead><tbody>${chargeRows || "<tr><td colspan='2'>No final PRESENT attendees.</td></tr>"}</tbody></table></section>`;
+      notify("Game completed. Stock deducted & equal Player charges created.");
       button.disabled = true;
+      refresh();
     } catch (error) { notify(error.message); }
   });
 
@@ -263,7 +284,6 @@ export function bindFlightAdminViews() {
       refresh();
     } catch (error) { notify(error.message); }
   };
-
 
   const exportCsv = document.getElementById("exportFlightCsv");
   if (exportCsv) exportCsv.onclick = () => {
