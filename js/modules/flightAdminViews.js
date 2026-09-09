@@ -21,6 +21,7 @@ function isOperationalAdmin() { return state.member?.role === "LEVEL_ADMIN" && B
 export async function flightAdminSessionControlView() {
   if (!isOperationalAdmin()) return `<section class="card"><h2>Session Control</h2><p class="note">Only delegated Flight Admins can access operational controls.</p></section>`;
 
+  const flightId = state.member?.flightId;
   const [sessions, finance, inventoryRows, flightRoster] = await Promise.all([
     api("/timetable/mine"),
     api("/finance/overview"),
@@ -34,10 +35,12 @@ export async function flightAdminSessionControlView() {
 
   const sessionCards = todaySessions.map(session => {
     const completed = session.status === "COMPLETED";
+    
+    // STRICT PRESENT FILTER FOR COST CHARGING
     const presentPlayers = roster.filter(p => p.status === "PRESENT");
     const presentCount = presentPlayers.length;
 
-    // Admin Self-Attendance Row
+    // Admin Self-Attendance Markup
     const adminSelf = roster.find(p => p.uid === state.member.id);
     const adminSelfStatus = adminSelf ? adminSelf.status : "NO_RESPONSE";
 
@@ -77,7 +80,7 @@ export async function flightAdminSessionControlView() {
         ${otherRosterRows}
         <div class="grid two" style="margin-top:12px;">
           <div class="field"><label for="shuttlesUsed-${escapeHtml(session.id)}">Shuttlecocks Used</label><input id="shuttlesUsed-${escapeHtml(session.id)}" type="number" min="0" value="${session.actualShuttlesUsed || 0}" /></div>
-          <div class="field"><label>PRESENT Attendees to Charge</label><div class="session"><b>${presentCount} Present (Equal Split)</b></div></div>
+          <div class="field"><label>PRESENT Attendees to Charge (Equal Share)</label><div class="session"><b>${presentCount} Present</b></div></div>
         </div>
         <button class="primary" data-complete-flight-game="${escapeHtml(session.id)}" ${completed ? "disabled" : ""}>Complete Game, Deduct Stock & Charge Present Players</button>
       </article>`;
@@ -125,7 +128,13 @@ export function bindFlightAdminViews() {
     try {
       const sessionId = button.dataset.completeFlightGame;
       const actualShuttlesUsed = Number(document.getElementById(`shuttlesUsed-${sessionId}`)?.value || 0);
-      const result = await api(`/finance/session/${encodeURIComponent(sessionId)}/complete`, { method: "POST", body: { actualShuttlesUsed } });
+      const flightId = state.member?.flightId;
+      
+      const result = await api(`/finance/session/${encodeURIComponent(sessionId)}/complete`, { 
+        method: "POST", 
+        body: { actualShuttlesUsed, flightId } 
+      });
+      
       notify("Game completed! Stock deducted & equal shares charged to PRESENT players.");
       refresh();
     } catch (err) { notify(err.message); }
