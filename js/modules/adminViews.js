@@ -107,7 +107,7 @@ function auditPrint(sectionId, title) {
 function auditScopeOptions(records) {
   const activities = [...new Map(records.filter(row => row.activityId).map(row => [row.activityId, row.activityName || row.activityId])).entries()];
   const flights = records.filter(row => row.flightId && (!selectedAuditActivityId || row.activityId === selectedAuditActivityId));
-  const flightOptions = [...new Map(flights.map(row => [row.flightId, formatLevelName(row.flightName || row.flightId)])).entries()];
+  const flightOptions = [...new Map(flights.map(row => [row.flightId, formatLevelName(row.flightName || row.levelName || row.flightId)])).entries()];
   const memberOptions = [...new Set(records.flatMap(row => [row.subject, row.actor]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)));
   return { activities, flightOptions, memberOptions };
 }
