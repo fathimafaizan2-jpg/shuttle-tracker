@@ -59,69 +59,38 @@ function notify(message) {
 
 export async function playerDashboard(member = state.member) {
   const signedInMember = member && typeof member === "object" ? member : {};
-  const safelyLoad = async (path, fallback) => {
-    try { return await api(path); }
-    catch (error) {
-      console.warn(`Home dashboard data unavailable for ${path}:`, error);
-      return fallback;
-    }
-  };
-  const [dashboardData, personalSessions, walletData] = await Promise.all([
-    safelyLoad("/members/dashboard", {}),
-    safelyLoad("/timetable/mine", []),
-    safelyLoad("/finance/mine", {})
+  const [dashboardData, walletData] = await Promise.all([
+    api("/members/dashboard").catch(() => ({})),
+    api("/finance/mine").catch(() => ({}))
   ]);
-  const data = {
-    walletFils: Number(dashboardData.walletFils ?? walletData.balanceFils ?? signedInMember.walletBalanceFils ?? 0),
-    attendedCount: Number(dashboardData.attendedCount ?? 0),
-    pendingFils: Number(dashboardData.pendingFils ?? walletData.unpaidFils ?? 0),
-    arrearsFils: Number(dashboardData.arrearsFils ?? walletData.arrearsFils ?? 0)
-  };
-  const now = Date.now();
-  const safeSessions = Array.isArray(personalSessions) ? personalSessions : [];
-  const next = safeSessions
-    .filter(session => {
-      if (!session || typeof session !== "object" || session.status !== "SCHEDULED") return false;
-      const startAt = new Date(session.startAt).getTime();
-      const endAt = new Date(session.endAt || session.startAt).getTime();
-      return Number.isFinite(startAt) && Number.isFinite(endAt) && endAt >= now;
-    })
-    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())[0] || null;
-  const gameStatus = next && new Date(next.startAt).getTime() <= now ? "TODAY'S GAME" : "UPCOMING GAME";
+  
+  const balanceFils = Number(walletData.balanceFils ?? dashboardData.walletFils ?? signedInMember.walletBalanceFils ?? 0);
 
   return `
     <div class="page-head">
       <div>
         <h2>Welcome, ${escapeHtml(signedInMember.fullName || "Member")}</h2>
-        <p>${escapeHtml(signedInMember.flightName || "Your flight will be assigned by Super Admin.")}</p>
+        <p>${escapeHtml(formatLevelName(signedInMember.flightName || signedInMember.level))}</p>
       </div>
-      ${next ? `<span class='tag blue'>${gameStatus}</span>` : ""}
     </div>
 
     <div class="grid metrics">
-      <article class="card metric"><span>Sessions attended</span><b>${Number(data.attendedCount || 0)}</b><i>All recorded sessions</i></article>
-      <article class="card metric"><span>Pending amount</span><b>${bhd(data.pendingFils)}</b><i>Cash / Benefit pending</i></article>
-      <article class="card metric"><span>Arrears</span><b>${bhd(data.arrearsFils)}</b><i>Due after 24 hours</i></article>
+      <article class="card metric"><span>Sessions attended</span><b>${Number(dashboardData.attendedCount || 0)}</b><i>Recorded sessions</i></article>
+      <article class="card metric"><span>Pending amount</span><b>${bhd(dashboardData.pendingFils || walletData.unpaidFils || 0)}</b><i>Cash / Benefit pending</i></article>
+      <article class="card metric"><span>Arrears</span><b>${bhd(dashboardData.arrearsFils || walletData.arrearsFils || 0)}</b><i>Due after 24 hours</i></article>
     </div>
 
     <div class="grid two">
-      <article class="card">
-        <h3>Upcoming game</h3>
-        ${next ? `
-          <div class="session">
-            <div class="datebox">${new Date(next.startAt).getDate()}<small>${new Date(next.startAt).toLocaleString("en", { month: "short" })}</small></div>
-            <div class="grow"><b>${escapeHtml(next.flightName)}</b><p>${new Date(next.startAt).toLocaleDateString("en-BH", { weekday: "long", dateStyle: "medium", timeZone: "Asia/Bahrain" })}</p><p>${dateTime(next.startAt)} · 2 courts</p></div>
-            <span class="tag blue">${gameStatus}</span>
-          </div>
-        ` : "<p class='note'>No upcoming game has been published for your flight.</p>"}
-      </article>
       <article class="card wallet">
-        <span>Credit rule</span>
-        <div class="balance">${bhd(data.walletFils)}</div>
-        <p>Only final PRESENT attendees are charged after Flight Admin records actual shuttlecocks used.</p>
+        <span>Available Wallet Credit</span>
+        <div class="balance">${bhd(balanceFils)}</div>
+        <p>Wallet credit automatically syncs between Home & Wallet tabs. Charged only when PRESENT after game completion.</p>
       </article>
-    </div>
-  `;
+      <article class="card">
+        <h3>Upcoming Session</h3>
+        <p class="note">Check My Timetable or Attendance tab for your level schedule.</p>
+      </article>
+    </div>`;
 }
 
 export async function playerTimetable() {
