@@ -214,7 +214,7 @@ export async function activitiesAndFlightsView() {
 }
 
 export async function superAdminTimetableView() {
-  requireSuperAdmin();
+ requireSuperAdmin();
   const baseData = await api(`/timetable/master?${new URLSearchParams({ month: selectedMasterMonth }).toString()}`).catch(() => ({ activities: [], weeklyPattern: [] }));
   const activities = baseData.activities || [];
   if (!activities.some(activity => activity.id === selectedMasterActivityId)) selectedMasterActivityId = baseData.activityId || activities[0]?.id || "";
@@ -222,9 +222,37 @@ export async function superAdminTimetableView() {
   if (selectedMasterActivityId) query.set("activityId", selectedMasterActivityId);
   const data = selectedMasterActivityId === baseData.activityId ? baseData : await api(`/timetable/master?${query.toString()}`).catch(() => ({ flights: [], weeklyPattern: [] }));
   const flights = data.flights || [];
-  return `<div class="page-head"><div><span class="tag blue">SUPER ADMIN</span><h2>Master Timetable</h2><p>Weekly pattern for the selected month. Courts always use 1 and 2.</p></div><button class="pill danger-action" id="deleteEntireMonthTimetable">🗑️ Delete All Month Timetable</button></div><section class="card"><div class="grid two"><div class="field"><label for="masterMonth">Month</label><input id="masterMonth" type="month" value="${escapeHtml(selectedMasterMonth)}" /></div><div class="field"><label for="masterActivity">Activity</label><select id="masterActivity">${activities.map(activity => `<option value="${escapeHtml(activity.id)}" ${activity.id === selectedMasterActivityId ? "selected" : ""}>${escapeHtml(activity.name)}</option>`).join("")}</select></div></div><div class="actions"><button id="loadMasterMonth" class="pill">Load timetable</button><button id="publishMasterMonth" class="primary">Publish this month</button></div></section><section class="card table-wrap"><table class="schedule"><thead><tr><th>Day</th><th>Flight</th><th>Start</th><th>End</th><th>Courts</th><th>Action</th></tr></thead><tbody>${(data.weeklyPattern || []).map(slot => `<tr><td>${escapeHtml(slot.weekday)}</td><td>${escapeHtml(formatLevelName(slot.flightName))}</td><td>${escapeHtml(slot.startTime)}</td><td>${escapeHtml(slot.endTime)}</td><td>1 & 2</td><td><button class="pill danger-action" data-delete-slot="${escapeHtml(slot.id)}">Remove</button></td></tr>`).join("") || "<tr><td colspan='6'>No weekly slots yet.</td></tr>"}</tbody></table></section><section class="card"><h3>Bulk weekly grid</h3><p class="note">Paste one row per occupied cell from your weekly chart. Use the flight name exactly as shown in the flight list. The app creates the whole weekly pattern at once and rejects duplicate or overlapping times for the same flight and weekday.</p><div class="field"><label for="bulkTimetableCsv">CSV rows: weekday, flight, start time, end time</label><textarea id="bulkTimetableCsv" rows="8" placeholder="weekday,flight,startTime,endTime\nSaturday,Flight 2,18:35,19:35\nSaturday,Flight 1,19:35,20:35\nSunday,Flight 4B,18:35,19:35"></textarea></div><div class="actions"><button id="importBulkTimetable" class="primary">Import weekly grid</button><button id="downloadBulkTemplate" class="pill">Download CSV template</button></div></section><section class="card"><h3>Add weekly flight slot</h3><div class="grid two"><div class="field"><label for="slotDay">Day</label><select id="slotDay"><option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select></div><div class="field"><label for="slotFlight">Flight</label><select id="slotFlight">${flights.map(flight => `<option value="${escapeHtml(flight.id)}">${escapeHtml(formatLevelName(flight.name))}</option>`).join("")}</select></div><div class="field"><label for="slotStart">Start time</label><input id="slotStart" type="time" /></div><div class="field"><label for="slotEnd">End time</label><input id="slotEnd" type="time" /></div></div><button id="saveMasterSlot" class="primary">Save weekly slot</button></section>`;
-}
 
+  return `
+    <div class="page-head">
+      <div><span class="tag blue">SUPER ADMIN</span><h2>Master Timetable</h2><p>Weekly schedule pattern for ${escapeHtml(selectedMasterMonth)}.</p></div>
+      <button class="pill danger-action" id="deleteEntireMonthTimetable">🗑️ Clear Entire Month Timetable</button>
+    </div>
+    <section class="card">
+      <div class="grid two">
+        <div class="field"><label for="masterMonth">Select Month</label><input id="masterMonth" type="month" value="${escapeHtml(selectedMasterMonth)}" /></div>
+        <div class="field">
+          <label for="masterFlightFilter">Filter by Level</label>
+          <select id="masterFlightFilter">
+            <option value="">All Levels</option>
+            ${flights.map(f => `<option value="${escapeHtml(f.id)}">${escapeHtml(formatLevelName(f.name))}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="loadMasterMonth" class="pill">Load Timetable</button>
+        <button id="publishMasterMonth" class="primary">Publish Month</button>
+      </div>
+    </section>
+    <section class="card table-wrap">
+      <table class="schedule">
+        <thead><tr><th>Day</th><th>Flight / Level</th><th>Start Time</th><th>End Time</th><th>Courts</th><th>Action</th></tr></thead>
+        <tbody>
+          ${(data.weeklyPattern || []).map(slot => `<tr><td>${escapeHtml(slot.weekday)}</td><td><b>${escapeHtml(formatLevelName(slot.flightName))}</b></td><td>${escapeHtml(slot.startTime)}</td><td>${escapeHtml(slot.endTime)}</td><td>1 & 2</td><td><button class="pill danger-action" data-delete-slot="${escapeHtml(slot.id)}">Remove</button></td></tr>`).join("") || "<tr><td colspan='6'>No slots saved for this month.</td></tr>"}
+        </tbody>
+      </table>
+    </section>`;
+}
 export async function financeAdminView() {
   const isSuperAdmin = state.member?.role === "SUPER_ADMIN", isFlightAdmin = state.member?.role === "LEVEL_ADMIN";
   if (!isSuperAdmin && !isFlightAdmin) throw new Error("Only Flight Admin or Super Admin can access finance.");
