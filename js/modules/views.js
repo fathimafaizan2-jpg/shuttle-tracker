@@ -145,17 +145,38 @@ export async function playerTimetable() {
 
 export async function attendanceView(sessionId) {
   const session = await api(`/attendance/session/${encodeURIComponent(sessionId)}`).catch(() => ({ roster: [], myAttendance: "NO_RESPONSE" }));
-  const audit = session.canCorrect ? await api(`/attendance/session/${encodeURIComponent(sessionId)}/audit`).catch(() => []) : [];
+  const myStatus = session.myAttendance || "NO_RESPONSE";
 
-  return `<div class="page-head"><div><h2>Attendance</h2><p>Your response is fixed to the next game day for your flight in the club timetable.</p></div>${session.locked ? "<span class='tag red'>PLAYER RESPONSES LOCKED</span>" : "<span class='tag blue'>RESPONSES OPEN</span>"}</div>
+  const comingRoster = (session.roster || []).filter(p => p.status === "PRESENT");
+
+  return `
+    <div class="page-head">
+      <div><h2>Attendance</h2><p>Your response is fixed to the next game day for your flight in the club timetable.</p></div>
+      ${session.locked ? "<span class='tag red'>RESPONSES LOCKED</span>" : "<span class='tag blue'>RESPONSES OPEN</span>"}
+    </div>
+
     <section class="card">
-      <h3>${escapeHtml(session.flightName || "My Flight")} · ${escapeHtml(weekdayTime(session.startAt))}, ${escapeHtml(dateTime(session.startAt))}</h3>
-      <p class="note">Players can update only their own response until 15 minutes before game start. Your assigned Flight Admin can correct final attendance with an audit reason until the game is settled.</p>
-      <div class="session"><div class="grow"><b>My personal attendance (${escapeHtml(state.member?.fullName || 'User')})</b></div>${attendanceBadge(session.myAttendance)}</div>
-      ${session.canRespond ? `<div class="actions"><button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I am coming</button><button class="pill" data-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">I am not coming</button></div>` : ""}
+      <h3>Your Personal Status (${escapeHtml(state.member?.fullName || 'User')}): <span class="tag ${myStatus === 'PRESENT' ? 'blue' : myStatus === 'ABSENT' ? 'red' : 'amber'}">${escapeHtml(myStatus)}</span></h3>
+      <div class="actions" style="margin-top:10px;">
+        <button class="primary" data-attendance="PRESENT" data-session-id="${escapeHtml(sessionId)}">I am coming (Present)</button>
+        <button class="pill" data-attendance="ABSENT" data-session-id="${escapeHtml(sessionId)}">I am not coming (Absent)</button>
+      </div>
     </section>
-    <section class="card"><h3>Players coming for this game</h3><p class="note">Only members of ${escapeHtml(session.flightName || 'Flight')} who responded “I am coming” are shown here. Their attendance is read-only on this screen; only your own response can be changed in Attendance.</p>${(session.roster || []).map(person => `<div class="session"><div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(word => word[0]).join("").slice(0, 2))}</div><div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>${attendanceBadge(person.status)}${session.canCorrect && person.uid !== state.member.id ? `<div class="actions"><button class="pill" data-attendance-correct="PRESENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Present</button><button class="pill" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Absent</button></div>` : ""}</div>`).join("") || "<p class='note'>No members have responded “I am coming” yet.</p>"}</section>
-    ${session.canCorrect ? `<section class="card"><h3>Attendance correction audit</h3>${audit.map(item => `<div class="session"><div class="grow"><b>${escapeHtml(item.previousStatus)} → ${escapeHtml(item.newStatus)}</b><p>${escapeHtml(item.reason)} · ${escapeHtml(dateTime(item.createdAt))}</p></div></div>`).join("") || "<p class='note'>No corrections have been recorded for this session.</p>"}</section>` : ""}`;
+
+    <section class="card">
+      <h3>Players coming for this game (${comingRoster.length})</h3>
+      <p class="note">Only members of ${escapeHtml(session.flightName || 'Flight')} who responded "I am coming" are shown here.</p>
+      ${comingRoster.map(person => `
+        <div class="session">
+          <div class="avatar">${escapeHtml((person.fullName || "M").split(" ").map(w => w[0]).join("").slice(0, 2))}</div>
+          <div class="grow"><b>${escapeHtml(person.fullName)}</b><p>${escapeHtml(person.memberId || "")}</p></div>
+          <span class="tag blue">PRESENT</span>
+          ${session.canCorrect && person.uid !== state.member.id ? `
+            <div class="actions">
+              <button class="pill danger-action" data-attendance-correct="ABSENT" data-member-uid="${escapeHtml(person.uid)}" data-session-id="${escapeHtml(session.id)}">Remove</button>
+            </div>` : ""}
+        </div>`).join("") || "<p class='note'>No members have responded 'I am coming' yet.</p>"}
+    </section>`;
 }
 
 let activityLogSection = "games";
