@@ -39,7 +39,7 @@ function refresh() {
   window.dispatchEvent(new CustomEvent("indianclub:render"));
 }
 
-function isOperationalAdmin() { return ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(state.member?.role) && Boolean(state.member?.flightId); }
+function isOperationalAdmin() { return state.member?.role === "LEVEL_ADMIN" && Boolean(state.member?.flightId); }
 
 function onlyFlightAdmin(title) {
   return `<section class="card"><span class="tag amber">FLIGHT ADMIN OPERATION</span><h2>${escapeHtml(title)}</h2><p class="note">Only the Flight Admin delegated to a level can operate this page. Super Admin can view the menu only.</p></section>`;
@@ -55,8 +55,9 @@ export async function flightAdminSessionControlView() {
   if (!isOperationalAdmin()) return onlyFlightAdmin("Session Control");
 
   const financeQuery = state.member.role === "SUPER_ADMIN" && state.member.flightId ? `?flightId=${encodeURIComponent(state.member.flightId)}` : "";
-  const [sessions, finance, inventoryRows] = await Promise.all([api("/timetable/mine"), api(`/finance/overview${financeQuery}`), api("/inventory/mine")]);
+  const [sessions, finance, inventoryRows, flightRoster] = await Promise.all([api("/timetable/mine"), api(`/finance/overview${financeQuery}`), api("/inventory/mine"), state.member.role === "LEVEL_ADMIN" ? api("/members/assigned-flight") : Promise.resolve([])]);
   const stock = inventoryRows[0] || {};
+  const noSessionRoster = Array.isArray(flightRoster) ? flightRoster : [];
   const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bahrain", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const today = sessions.filter(session => bahrainDateKey(session.startAt) === todayKey).sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
   const attendanceResults = await Promise.all(today.map(async session => {
@@ -64,7 +65,8 @@ export async function flightAdminSessionControlView() {
     catch { return [session.id, null]; }
   }));
   const attendanceBySession = new Map(attendanceResults);
-  const emptyTodaySessionCard = `<article class="card"><div class="session"><div class="grow"><b>${escapeHtml(state.member.flightName || "Assigned flight")}</b><p>No session is scheduled for this flight today.</p></div><span class="tag amber">AWAITING GAME</span></div><section class="card"><div class="page-head"><div><h3>No. of players attended</h3><p class="note">The final attendee list will appear here once a game is scheduled.</p></div><span class="tag amber">— ATTENDED</span></div><div class="actions"><button class="pill" disabled>Add member</button><button class="pill" disabled>Remove member</button></div></section><section class="card"><h3>Game cost calculation</h3><div class="grid two"><div class="field"><label>No. of shuttlecocks used</label><input type="number" disabled placeholder="Available after today’s game is scheduled" /></div><div class="field"><label>Amount payable per person</label><div class="session"><b>—</b></div><small>Calculated after final attendance and shuttle usage are entered.</small></div></div></section></article>`;
+  const noSessionRosterRows = noSessionRoster.map((member, index) => `<div class="session"><b>${index + 1}.</b><div class="grow"><b>${escapeHtml(member.fullName || "Player")}</b><p>${escapeHtml(member.phone || member.memberId || "")}</p></div><span class="tag blue">ACTIVE</span></div>`).join("") || "<p class='note'>No active Players are assigned to this flight yet.</p>";
+  const emptyTodaySessionCard = `<article class="card"><div class="session"><div class="grow"><b>${escapeHtml(state.member.flightName || "Assigned flight")}</b><p>No game is scheduled today. Operational controls remain available.</p></div><span class="tag amber">NO SESSION TODAY</span></div><section class="card"><div class="page-head"><div><h3>Flight roster</h3><p class="note">Add a Player to your assigned flight even when no game is scheduled. The Player completes registration later using the registered name and phone.</p></div><span class="tag blue">${noSessionRoster.length} ACTIVE</span></div>${noSessionRosterRows}<div class="grid two"><div class="field"><label for="noSessionMemberName">Player registered name</label><input id="noSessionMemberName" placeholder="Name used for registration" /></div><div class="field"><label for="noSessionMemberPhone">Phone / WhatsApp</label><input id="noSessionMemberPhone" placeholder="Phone number" /></div></div><button class="primary" id="addNoSessionMember">Add Player to flight</button></section><section class="card"><h3>Record shuttle usage</h3><p class="note">This records physical usage and updates stock. It does not create Player charges because there is no completed game.</p><div class="grid two"><div class="field"><label for="noSessionShuttlesUsed">Shuttles used</label><input id="noSessionShuttlesUsed" type="number" min="1" step="1" placeholder="Enter number used" /></div><div class="field"><label for="noSessionShuttleNote">Reason / note</label><input id="noSessionShuttleNote" placeholder="Practice or manual stock correction" /></div></div><button class="primary" id="recordNoSessionShuttles">Record shuttle usage</button></section></article>`;
   const sessionCards = today.map(session => {
     const ended = new Date(session.endAt || session.startAt).getTime() <= Date.now();
     const completed = session.status === "COMPLETED";
@@ -220,6 +222,30 @@ export function bindFlightAdminViews() {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener");
   });
 
+  const addNoSessionMember = document.getElementById("addNoSessionMember");
+  if (addNoSessionMember) addNoSessionMember.onclick = async () => {
+    try {
+      const registeredName = document.getElementById("noSessionMemberName")?.value.trim();
+      const phone = document.getElementById("noSessionMemberPhone")?.value.trim();
+      if (!registeredName || !phone) throw new Error("Enter the Player name and phone number.");
+      const result = await api("/members/assigned-flight/pre-register", { method: "POST", body: { registeredName, phone }, confirm: true, confirmTitle: "Add Player to flight?", confirmMessage: "The Player will be pre-registered for your assigned flight." });
+      notify(`Player added. Reference: ${result.id}`);
+      refresh();
+    } catch (error) { notify(error.message); }
+  };
+  const recordNoSessionShuttles = document.getElementById("recordNoSessionShuttles");
+  if (recordNoSessionShuttles) recordNoSessionShuttles.onclick = async () => {
+    try {
+      const flightId = state.member?.flightId;
+      const usedShuttles = Number(document.getElementById("noSessionShuttlesUsed")?.value);
+      const note = document.getElementById("noSessionShuttleNote")?.value.trim();
+      if (!flightId) throw new Error("Your account has no assigned flight.");
+      if (!Number.isInteger(usedShuttles) || usedShuttles < 1) throw new Error("Enter a whole number of shuttles used.");
+      await api(`/inventory/${encodeURIComponent(flightId)}/usage`, { method: "POST", body: { usedShuttles, note }, confirm: true, confirmTitle: "Record shuttle usage?", confirmMessage: "This updates stock only and does not create Player charges." });
+      notify("Shuttle usage recorded and stock updated.");
+      refresh();
+    } catch (error) { notify(error.message); }
+  };
   const saveStock = document.getElementById("saveFlightStock");
   if (saveStock) saveStock.onclick = async () => {
     try {
