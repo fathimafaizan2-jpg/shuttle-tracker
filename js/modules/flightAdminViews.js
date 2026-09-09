@@ -139,13 +139,23 @@ export async function flightAdminReportsView() {
 export function bindFlightAdminViews() {
   document.querySelectorAll("[data-self-attendance]").forEach(button => button.onclick = async () => {
     try {
-      const status = button.dataset.selfAttendance;
-      const sessionId = button.dataset.sessionId;
-      await api("/attendance/respond", { method: "POST", body: { sessionId, status } });
-      notify(`Your personal attendance marked as ${status}.`);
-      refresh();
-    } catch (error) { notify(error.message); }
-  });
+    const sessionId = button.dataset.completeFlightGame;
+    const actualShuttlesUsed = Number(document.getElementById(`shuttlesUsed-${sessionId}`)?.value || 0);
+    const flightId = state.member?.flightId;
+
+    if (!flightId) throw new Error("No flight access defined for this account.");
+
+    await api(`/finance/session/${encodeURIComponent(sessionId)}/complete`, { 
+      method: "POST", 
+      body: { actualShuttlesUsed, flightId } 
+    });
+
+    notify("Game completed! Stock deducted & equal charges created for present players.");
+    refresh();
+  } catch (err) { 
+    notify(err.message || "Failed to complete session."); 
+  }
+});
 
   document.querySelectorAll("[data-session-cost-input]").forEach(input => input.oninput = () => {
     const sessionId = input.dataset.sessionCostInput;
