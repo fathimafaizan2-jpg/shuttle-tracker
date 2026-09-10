@@ -34,36 +34,19 @@ export async function flightAdminSessionControlView() {
   const sessionCards = todaySessions.map(session => {
     const completed = session.status === "COMPLETED";
     
-    // Strict Filter for Present Players
+    // Filter strictly for Present Players
     const presentPlayers = roster.filter(p => p.status === "PRESENT");
     const presentCount = presentPlayers.length;
 
-    // Admin Self-Attendance
-    const adminSelf = roster.find(p => p.uid === state.member.id);
-    const adminSelfStatus = adminSelf ? adminSelf.status : "NO_RESPONSE";
-
-    const adminSelfMarkup = `
-      <div class="card" style="background:#eff6ff; border:1px solid #bfdbfe; margin-bottom:10px; padding:10px;">
-        <div class="page-head" style="margin:0;">
-          <div>
-            <b>Your Personal Attendance (Admin / Player)</b>
-            <p class="note">Status: <b>${escapeHtml(adminSelfStatus)}</b></p>
-          </div>
-          <div class="actions">
-            <button class="pill ${adminSelfStatus === 'PRESENT' ? 'primary' : ''}" data-self-attendance="PRESENT" data-session-id="${escapeHtml(session.id)}">I'm Playing (Present)</button>
-            <button class="pill ${adminSelfStatus === 'ABSENT' ? 'danger-action' : ''}" data-self-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}">Not Playing (Absent)</button>
-          </div>
-        </div>
-      </div>`;
-
+    // Dropdown for non-present players to manually add them if they showed up
     const nonAttendingRoster = roster.filter(p => p.status !== "PRESENT");
 
     const addMemberDropdown = `
       <div class="field" style="margin-top:10px;">
-        <label>Add Player to Session Roster (Manual Add)</label>
+        <label>Add Player to Active Roster (Marked Absent/No Response but Attended)</label>
         <div class="actions">
           <select id="addMemberSelect-${escapeHtml(session.id)}">
-            <option value="">Choose absent/unregistered player</option>
+            <option value="">Select player to add...</option>
             ${nonAttendingRoster.map(p => `<option value="${escapeHtml(p.uid)}">${escapeHtml(p.fullName)} (${escapeHtml(p.memberId || 'No ID')})</option>`).join('')}
           </select>
           <button class="pill" data-add-member-to-session="${escapeHtml(session.id)}">Add to Present List</button>
@@ -73,12 +56,15 @@ export async function flightAdminSessionControlView() {
     const presentRosterRows = presentPlayers.map((person, index) => `
       <div class="session">
         <b>${index + 1}.</b>
-        <div class="grow"><b>${escapeHtml(person.fullName)}</b></div>
+        <div class="grow">
+          <b>${escapeHtml(person.fullName)}</b> 
+          <small>${person.uid === state.member.id ? '(Admin / You)' : ''}</small>
+        </div>
         <span class="tag blue">PRESENT</span>
         <div class="actions">
-          <button class="pill danger-action" data-session-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}" data-member-uid="${escapeHtml(person.uid)}">Remove</button>
+          <button class="pill danger-action" data-session-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}" data-member-uid="${escapeHtml(person.uid)}">Remove (Mark Absent)</button>
         </div>
-      </div>`).join("") || "<p class='note'>No players currently marked present.</p>";
+      </div>`).join("") || "<p class='note'>No players currently marked present for this session.</p>";
 
     return `
       <article class="card">
@@ -86,11 +72,13 @@ export async function flightAdminSessionControlView() {
           <div><h3>${escapeHtml(session.flightName || state.member.flightName || "Session")}</h3><p>${dateTime(session.startAt)}</p></div>
           <span class="tag ${completed ? "blue" : "amber"}">${completed ? "COMPLETED" : "SCHEDULED"}</span>
         </div>
-        ${adminSelfMarkup}
+        
         <h4>Attending Players (${presentCount})</h4>
+        <p class="note">Players below will receive an equal split of the total shuttlecock charge upon game completion.</p>
         ${presentRosterRows}
         ${addMemberDropdown}
-        <div class="grid two" style="margin-top:12px;">
+
+        <div class="grid two" style="margin-top:14px;">
           <div class="field"><label for="shuttlesUsed-${escapeHtml(session.id)}">Shuttlecocks Used</label><input id="shuttlesUsed-${escapeHtml(session.id)}" type="number" min="0" value="${session.actualShuttlesUsed || 0}" /></div>
           <div class="field"><label>PRESENT Attendees to Charge (Equal Share)</label><div class="session"><b>${presentCount} Present</b></div></div>
         </div>
@@ -172,7 +160,7 @@ export function bindFlightAdminViews() {
       const sessionId = button.dataset.sessionId;
       await api(`/attendance/session/${encodeURIComponent(sessionId)}/correct`, {
         method: "POST",
-        body: { memberUid, status, reason: "Admin override" }
+        body: { memberUid, status, reason: "Flight Admin marked player absent" }
       });
       notify(`Player status updated to ${status}.`);
       refresh();
