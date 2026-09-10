@@ -357,12 +357,12 @@
   <script>window.INDIAN_CLUB_API_URL = "https://indian-club-api.onrender.com/api";</script>
 
   <script type="module">
-    import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness, submitBusinessUpdateRequest } from "./js/modules/auth.js";
-    import { state, navigate, startSignedInApp, setLanguage, watchAuthentication } from "./js/router.js";
-    import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, walletView, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
-    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, advertisingApprovalView, superAdminHomeView, superAdminActivityLogView, superAdminWalletLogView, superAdminSessionLogView, superAdminStockLogView, bindAdminViews } from "./js/modules/adminViews.js";
+    import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness, submitBusinessUpdateRequest } from "./js/modules/auth.js?v=2";
+    import { state, navigate, startSignedInApp, setLanguage, watchAuthentication } from "./js/router.js?v=2";
+    import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, walletView, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js?v=2";
+    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, advertisingApprovalView, superAdminHomeView, superAdminActivityLogView, superAdminWalletLogView, superAdminSessionLogView, superAdminStockLogView, bindAdminViews } from "./js/modules/adminViews.js?v=2";
     import { flightAdminSessionControlView, flightAdminShuttleStockView, flightAdminReportsView, bindFlightAdminViews } from "./js/modules/flightAdminViews.js?v=2";
-
+    
     const $ = id => document.getElementById(id);
     const publicApiBase = window.INDIAN_CLUB_API_URL;
     const escapeHtml = value => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
