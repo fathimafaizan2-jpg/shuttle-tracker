@@ -85,6 +85,16 @@ window.render = async function() {
     const viewFn = pageMap[state.page] || pageMap.home || (() => `<div class="card"><h3>View Loading...</h3></div>`);
     try {
       viewContainer.innerHTML = typeof viewFn === 'function' ? await viewFn() : viewFn;
+      
+      // Bind navigation clicks
+      document.querySelectorAll("[data-go-page]").forEach(btn => {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          const page = btn.dataset.goPage;
+          if (page) navigate(page);
+        };
+      });
+
       if (typeof av.bindAdminViews === 'function' && isSuper) av.bindAdminViews();
       if (typeof fv.bindFlightAdminViews === 'function' && isFlightAdmin) fv.bindFlightAdminViews();
       if (typeof v.bindBusinessSubmission === 'function') v.bindBusinessSubmission();
