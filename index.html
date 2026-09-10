@@ -1,685 +1,229 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#172554" />
-  <meta name="description" content="Indian Club Bahrain shuttle tracker" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="css/styles.css" />
-  <title>Indian Club Bahrain | Powered by A1 Groups</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Indian Club Bahrain - Premium Management System for Badminton, Cricket, Tennis & Swimming">
+    <meta name="keywords" content="Indian Club, Bahrain, Sports Management, Badminton, Cricket">
+    <meta name="author" content="Indian Club Bahrain">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Indian Club">
+    
+    <title>Indian Club Bahrain - Premium Management System</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' fill='%23e94560'>🏸</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%231a1a2e' width='180' height='180'/><text x='90' y='130' font-size='100' fill='%23e94560' text-anchor='middle'>🏸</text></svg>">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Font Awesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVJkEZSMUkrQ6usKu8zIvxUsvypLcXdAambRUe5Xx6G7aRJ0ZHMx+eSXG360s8SafiaTtZBDCw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Premium Styles -->
+    <link rel="stylesheet" href="css/premium-styles.css">
+    
+    <!-- Inline Critical CSS for faster loading -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            color: #1a1a2e;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Loading Screen Critical Styles */
+        .loading-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+        }
+        
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid #e94560;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 30px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-
-  <!-- SPLASH SCREEN -->
-  <section id="splash" class="splash">
-    <div class="splash-content">
-      <div class="splash-mark">🏸</div>
-      <h1>Indian Club Bahrain</h1>
-      <p>Shuttle Tracker · Powered by A1 Groups</p>
-    </div>
-  </section>
-
-  <!-- PUBLIC COMMUNITY LANDING HUB -->
-  <main id="publicLanding" class="public-shell hidden">
-    <header class="public-brand card">
-      <div class="brand-mark">IC</div>
-      <div>
-        <strong>Indian Club Bahrain</strong>
-        <small>Shuttle Tracker · Powered by A1 Groups</small>
-      </div>
-    </header>
-
-    <section id="publicNotice" class="card public-notice">
-      <span class="tag red">OFFICIAL NOTICE</span>
-      <div class="notice-layout">
-        <div>
-          <h3 id="publicNoticeTitle">Welcome to Indian Club Bahrain</h3>
-          <p id="publicNoticeBody" class="note">
-            Club notices, approved sponsor offers, and BaZaar listings will appear here.
-          </p>
-        </div>
-        <img id="publicNoticeImage" class="public-notice-image hidden" alt="Official Indian Club Bahrain notice" />
-      </div>
-    </section>
-
-    <section class="card sponsor-section">
-      <h3>Featured sponsors and offers</h3>
-      <div class="sponsor-carousel-shell">
-        <button id="sponsorPrevious" class="carousel-arrow carousel-prev" type="button" aria-label="Previous featured sponsor">‹</button>
-        <div id="publicSponsorCarousel" class="sponsor-carousel">
-          <p class="sponsor-empty">Approved sponsor offers will appear here.</p>
-        </div>
-        <button id="sponsorNext" class="carousel-arrow carousel-next" type="button" aria-label="Next featured sponsor">›</button>
-      </div>
-      <div id="publicSponsorDots" class="carousel-dots" aria-label="Featured sponsor slides"></div>
-    </section>
-
-    <section class="public-entry-grid">
-      <button id="openLogin" class="entry-card entry-card-login">
-        <span class="entry-icon">IC</span>
-        <span>
-          <strong>Member / Admin Login</strong>
-          <small>Secure club member access</small>
-        </span>
-        <b>→</b>
-      </button>
-
-      <button id="openDirectory" class="entry-card entry-card-directory">
-        <span class="entry-icon">IM</span>
-        <span>
-          <strong>Community Directory</strong>
-          <small>Discover approved BaZaar businesses</small>
-        </span>
-        <b>→</b>
-      </button>
-    </section>
-
-    <div class="business-mini-row">
-      <span>Are you a local Indian business in Bahrain?</span>
-      <button id="openBusiness" class="business-mini-button">List your business</button>
-    </div>
-
-    <!-- PUBLIC BAZAAR DIRECTORY PANEL -->
-    <section id="publicDirectory" class="public-directory-panel hidden">
-      <div class="page-head public-directory-title">
-        <div>
-          <span class="tag blue">INDIAN CLUB BAHRAIN</span>
-          <h2>BaZaar</h2>
-          <p>Approved Indian community businesses, offers, and services in Bahrain.</p>
-        </div>
-        <button id="closeDirectory" class="pill">Back</button>
-      </div>
-      <section class="card directory-control-card">
-        <div class="page-head">
-          <div>
-            <h3>Community Directory</h3>
-            <p>Choose a category or open a business card for its offer, contact, catalogue, location, or website.</p>
-          </div>
-          <div class="actions directory-actions">
-            <button id="openPublicDirectoryBusiness" class="primary" type="button">List your business</button>
-            <button id="publicDirectoryUpdate" class="pill" type="button">Update existing advertisement</button>
-          </div>
-        </div>
-        <div class="field">
-          <label for="publicDirectoryCategory">Business category</label>
-          <select id="publicDirectoryCategory" aria-label="Business category">
-            <option value="">All categories</option>
-          </select>
-        </div>
-      </section>
-      <section id="publicDirectoryList" class="directory-results" aria-live="polite">
-        <article class="card directory-category-empty"><p>No approved businesses are available in this category yet.</p></article>
-      </section>
-    </section>
-
-    <!-- PUBLIC BUSINESS SUBMISSION FORM -->
-    <section id="businessForm" class="card hidden">
-      <div class="page-head">
-        <div>
-          <span class="tag amber">PUBLIC SUBMISSION</span>
-          <h2>List Your Business</h2>
-          <p>Submit your BaZaar request for Super Admin review.</p>
-        </div>
-        <button id="closeBusinessForm" class="pill">Back</button>
-      </div>
-      <p class="business-lock">
-        This form does not create a Player, Flight Admin, Super Admin, wallet, timetable, attendance, or dashboard account.
-      </p>
-      <div class="field"><label for="bizName">Business name</label><input id="bizName" /></div>
-      <div class="field"><label for="bizOwner">Owner name</label><input id="bizOwner" /></div>
-      <div class="field"><label for="bizPhone">Phone / WhatsApp</label><input id="bizPhone" /></div>
-      <div class="field"><label for="bizEmail">Email for reference message</label><input id="bizEmail" type="email" placeholder="you@example.com" /></div>
-      <div class="field">
-        <label for="bizCategory">Category</label>
-        <select id="bizCategory">
-          <option>Restaurant & Catering</option>
-          <option>Groceries & Food</option>
-          <option>Fashion & Beauty</option>
-          <option>Health & Wellness</option>
-          <option>Education & Training</option>
-          <option>Home Services</option>
-          <option>Travel & Transport</option>
-          <option>Professional Services</option>
-          <option>Retail & Electronics</option>
-          <option>Community Services</option>
-          <option selected>Other</option>
-        </select>
-      </div>
-      <div class="field"><label for="bizDescription">Offer / description</label><textarea id="bizDescription" rows="4"></textarea></div>
-      <div class="grid two">
-        <div class="field"><label for="bizAddress">Location / address</label><input id="bizAddress" placeholder="Area, building, or shop location" /></div>
-        <div class="field"><label for="bizWebsite">Website link (optional)</label><input id="bizWebsite" type="url" placeholder="https://..." /></div>
-        <div class="field"><label for="bizDestination">Flyer destination link</label><input id="bizDestination" type="url" placeholder="WhatsApp, catalogue, social page, or map" /></div>
-        <div class="field"><label for="bizOffer">Featured offer text (optional)</label><input id="bizOffer" placeholder="Example: 10% club offer" /></div>
-      </div>
-      <div class="field"><label for="bizFlyer">Google Drive flyer / poster image link (optional)</label><input id="bizFlyer" type="url" placeholder="Set Drive to Anyone with the link, then paste its sharing link" /></div>
-      <div class="actions">
-        <button id="previewPublicBusinessFlyer" class="pill" type="button">Preview flyer</button>
-        <button id="submitBusiness" class="primary">Submit to Super Admin</button>
-      </div>
-      <div id="publicBusinessFlyerPreview" class="image-link-preview hidden"></div>
-    </section>
-
-    <footer class="footer"><b>Indian Club Bahrain</b> Powered by <b>A1 Groups</b></footer>
-  </main>
-
-  <!-- LOGIN MODAL STAGE -->
-  <section id="login" class="login-overlay hidden" aria-modal="true" role="dialog">
-    <div class="login-backdrop"></div>
-    <div class="login-stage">
-      <button id="closeLogin" class="login-close">×</button>
-      <div class="login-flag-strip"><span></span><span></span><span></span></div>
-      <div class="login-brand">
-        <div class="login-crest">IC</div>
-        <div>
-          <p>INDIAN CLUB BAHRAIN</p>
-          <h1>Member Portal</h1>
-          <small>Secure access for approved club members</small>
-        </div>
-      </div>
-      <div class="role-cards">
-        <article class="role-card role-player"><span>PLAYER</span><strong>My games</strong><small>Attendance, wallet and payment status</small></article>
-        <article class="role-card role-admin"><span>FLIGHT ADMIN</span><strong>My flight</strong><small>Attendance, stock and session records</small></article>
-        <article class="role-card role-super"><span>SUPER ADMIN</span><strong>Club control</strong><small>Members, timetable, approvals and audit</small></article>
-      </div>
-      <div class="login-form-panel">
-        <div class="field">
-          <label for="loginEmail">Registered email</label>
-          <input id="loginEmail" type="email" autocomplete="email" placeholder="name@example.com" />
-        </div>
-        <div class="field">
-          <label for="loginPassword">Password</label>
-          <div class="password-field">
-            <input id="loginPassword" type="password" autocomplete="current-password" />
-            <button type="button" class="password-toggle" data-toggle-password="loginPassword">Show</button>
-          </div>
-        </div>
-        <div class="login-form-footer">
-          <div class="field language-field">
-            <label for="languageSelector">Language</label>
-            <select id="languageSelector">
-              <option value="en">English</option>
-              <option value="ml">മലയാളം</option>
-              <option value="hi">हिंदी</option>
-              <option value="ta">தமிழ்</option>
-            </select>
-          </div>
-          <button id="signIn" class="login-submit">Sign in securely <span>→</span></button>
-        </div>
-        <div class="actions">
-          <button id="openSignup" class="pill" type="button">New registered member? Create my login</button>
-          <button id="forgotPassword" class="pill" type="button">Forgot password?</button>
-        </div>
-      </div>
-      <p class="login-help">
-        Accounts are pre-registered only by Super Admin. A Player or Flight Admin completes their own login by matching the name and phone number recorded by Super Admin.
-      </p>
-    </div>
-  </section>
-
-  <!-- SIGNUP ACCOUNT ACTIVATION MODAL -->
-  <section id="signup" class="login-overlay hidden" aria-modal="true" role="dialog">
-    <div class="login-backdrop"></div>
-    <div class="login-stage">
-      <button id="closeSignup" class="login-close">×</button>
-      <div class="login-flag-strip"><span></span><span></span><span></span></div>
-      <div class="login-brand">
-        <div class="login-crest">IC</div>
-        <div>
-          <p>INDIAN CLUB BAHRAIN</p>
-          <h1>Create My Login</h1>
-          <small>Enter the name and phone number recorded by Super Admin</small>
-        </div>
-      </div>
-      <div class="login-form-panel">
-        <div class="field"><label for="signupFullName">Registered name</label><input id="signupFullName" /></div>
-        <div class="field"><label for="signupMemberId">Member ID</label><input id="signupMemberId" placeholder="ICB-PL-001" /></div>
-        <div class="field"><label for="signupEmail">Your email address</label><input id="signupEmail" type="email" /></div>
-        <div class="field">
-          <label for="signupPhone">Registered phone number</label>
-          <div class="phone-field">
-            <select id="signupCountryCode">
-              <option value="+973">Bahrain (+973)</option>
-              <option value="+91">India (+91)</option>
-              <option value="+971">UAE (+971)</option>
-              <option value="+966">Saudi Arabia (+966)</option>
-              <option value="+974">Qatar (+974)</option>
-              <option value="+968">Oman (+968)</option>
-              <option value="+965">Kuwait (+965)</option>
-              <option value="+44">United Kingdom (+44)</option>
-              <option value="+1">USA / Canada (+1)</option>
-            </select>
-            <input id="signupPhone" type="tel" inputmode="tel" />
-          </div>
-        </div>
-        <div class="field">
-          <label for="signupPassword">Create password</label>
-          <div class="password-field">
-            <input id="signupPassword" type="password" />
-            <button type="button" class="password-toggle" data-toggle-password="signupPassword">Show</button>
-          </div>
-        </div>
-        <div class="field">
-          <label for="signupPasswordConfirm">Confirm password</label>
-          <div class="password-field">
-            <input id="signupPasswordConfirm" type="password" />
-            <button type="button" class="password-toggle" data-toggle-password="signupPasswordConfirm">Show</button>
-          </div>
-        </div>
-        <div class="actions">
-          <button id="activateMember" class="primary">Activate my account</button>
-          <button id="backToLogin" class="pill" type="button">Back to login</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- MAIN AUTHENTICATED APP SHELL -->
-  <main id="app" class="hidden">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-mark">IC</div>
-        <div><h1>Indian Club</h1><small>Powered by A1 Groups</small></div>
-      </div>
-      <div class="user-dot">
-        <span id="roleLabel"></span>
-        <div id="avatar" class="avatar">IC</div>
-        <button id="logout" class="tag red">Logout</button>
-      </div>
-    </header>
-
-    <div class="ticker">
-      <div id="tickerTrack" class="ticker-track">Indian Club Bahrain · Powered by A1 Groups</div>
-    </div>
-
-    <div class="layout">
-      <!-- RE-ORDERED NAVIGATION SIDEBAR -->
-      <aside id="side" class="side">
-        <div class="brand">
-          <div class="brand-mark">IC</div>
-          <div><b id="memberName">Member</b><small id="sideRole"></small></div>
-        </div>
+    <!-- ============================================
+         MAIN APP CONTAINER
+         ============================================ -->
+    <div id="app" class="app-container">
         
-        <div class="nav-group">MAIN</div>
-        <button class="nav active" data-page="home">Home</button>
-        <button class="nav" data-page="timetable">My Timetable</button>
-        <button class="nav" data-page="attendance">Attendance</button>
+        <!-- ============================================
+             LOADING SCREEN
+             ============================================ -->
+        <div id="loadingScreen" class="loading-screen">
+            <div class="loader"></div>
+            <h2 style="font-size: 32px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.5px;">Indian Club Bahrain</h2>
+            <p style="font-size: 14px; opacity: 0.8;">Premium Management System</p>
+        </div>
 
-        <div class="nav-group super-nav">SUPER ADMIN</div>
-        <button class="nav super-nav" data-page="flights">Activities, Flights & Members</button>
-        <button class="nav super-nav" data-page="master">Master Timetable</button>
-        <button class="nav super-nav" data-page="finance">Finance</button>
-        <button class="nav super-nav" data-page="ads">Ad Management</button>
+        <!-- ============================================
+             AUTHENTICATION SCREEN
+             ============================================ -->
+        <div id="authScreen" class="auth-screen" style="display: none;">
+            <div class="auth-wrapper">
+                <div class="auth-card">
+                    <!-- Logo -->
+                    <div class="auth-logo">
+                        <i class="fas fa-badminton"></i>
+                    </div>
+                    
+                    <!-- Title -->
+                    <h1>Indian Club Bahrain</h1>
+                    <p class="auth-subtitle">Premium Management System</p>
+                    
+                    <!-- Login Form Container -->
+                    <div id="firebaseui-auth-container"></div>
+                </div>
+            </div>
+        </div>
 
-        <div class="nav-group admin-nav">FLIGHT ADMIN</div>
-        <button class="nav admin-nav" data-page="sessions">Session Control</button>
-        <button class="nav admin-nav" data-page="stock">Shuttle Stock</button>
-        <button class="nav admin-nav flight-only-nav" data-page="reports">Reports & Sheets</button>
+        <!-- ============================================
+             MAIN APPLICATION
+             ============================================ -->
+        <div id="mainApp" class="main-app" style="display: none;">
+            
+            <!-- ============================================
+                 PREMIUM HEADER
+                 ============================================ -->
+            <header class="premium-header">
+                <!-- Brand Section -->
+                <div class="header-brand">
+                    <i class="fas fa-badminton brand-icon"></i>
+                    <h1>Indian Club</h1>
+                </div>
+                
+                <!-- Center Section - Role Badge -->
+                <div class="header-center">
+                    <span id="userRole" class="role-badge">Player</span>
+                </div>
+                
+                <!-- Right Section - User Profile & Actions -->
+                <div class="header-actions">
+                    <div class="user-profile">
+                        <span id="userName" class="user-name">User</span>
+                        <button id="signOutBtn" class="btn-icon" title="Sign Out">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
 
-        <div class="nav-group">COMMUNITY</div>
-        <button class="nav" data-page="bazaar">BaZaar</button>
-        <button class="nav" data-page="profile">Update Credentials</button>
+            <!-- ============================================
+                 MAIN CONTENT AREA
+                 ============================================ -->
+            <main class="premium-main">
+                
+                <!-- ============================================
+                     SIDEBAR NAVIGATION
+                     ============================================ -->
+                <aside class="premium-sidebar">
+                    <nav id="sidebarMenu" class="sidebar-menu">
+                        <!-- Menu items will be generated by JavaScript -->
+                    </nav>
+                </aside>
 
-        <div class="nav-group">LOGS & FINANCIAL HISTORY</div>
-        <button class="nav" data-page="wallet">Wallet & Payments</button>
-        <button class="nav" data-page="logs">User Activity Logs</button>
-        <button class="nav super-nav" data-page="audit">Audit History</button>
-      </aside>
+                <!-- ============================================
+                     PAGE CONTENT
+                     ============================================ -->
+                <section class="premium-content">
+                    <div id="pageContent" class="content-wrapper">
+                        <!-- Page content will be rendered here by JavaScript -->
+                    </div>
+                </section>
+            </main>
 
-      <!-- DYNAMIC CONTENT VIEW CONTAINER -->
-      <section id="view"></section>
+            <!-- ============================================
+                 TOAST NOTIFICATIONS
+                 ============================================ -->
+            <div id="toastContainer" class="toast-container">
+                <!-- Notifications will be added here dynamically -->
+            </div>
+        </div>
     </div>
 
-    <footer class="footer"><b>Indian Club Bahrain</b> · Powered by <b>A1 Groups</b></footer>
-  </main>
-
-  <!-- GLOBAL OVERLAYS & MESSAGES -->
-  <div id="toast" class="toast hidden" role="status"></div>
-  
-  <div id="appLoading" class="app-loading hidden" role="status" aria-live="polite">
-    <div class="app-loading-card">
-      <span class="loading-spinner" aria-hidden="true"></span>
-      <strong id="appLoadingText">Loading…</strong>
-    </div>
-  </div>
-
-  <section id="accountError" class="account-error hidden" role="alert" aria-live="assertive">
-    <div class="account-error-card">
-      <span class="tag red">ACCOUNT ACTION REQUIRED</span>
-      <h2 id="accountErrorTitle">Account problem</h2>
-      <p id="accountErrorMessage"></p>
-      <button id="closeAccountError" class="primary" type="button">Try again</button>
-    </div>
-  </section>
-
-  <!-- CONFIGURATION & SCRIPT INITIALIZATION -->
-  <script>window.INDIAN_CLUB_API_URL = "https://indian-club-api.onrender.com/api";</script>
-
-  <script type="module">
-    import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness, submitBusinessUpdateRequest } from "./js/modules/auth.js?v=2";
-    import { state, navigate, startSignedInApp, setLanguage, watchAuthentication } from "./js/router.js?v=2";
-    import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, walletView, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js?v=2";
-    import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, advertisingApprovalView, superAdminHomeView, superAdminActivityLogView, superAdminWalletLogView, superAdminSessionLogView, superAdminStockLogView, bindAdminViews } from "./js/modules/adminViews.js?v=2";
-    import { flightAdminSessionControlView, flightAdminShuttleStockView, flightAdminReportsView, bindFlightAdminViews } from "./js/modules/flightAdminViews.js?v=2";
+    <!-- ============================================
+         SCRIPTS - LOAD ORDER IS CRITICAL
+         ============================================ -->
     
-    const $ = id => document.getElementById(id);
-    const publicApiBase = window.INDIAN_CLUB_API_URL;
-    const escapeHtml = value => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    <!-- 1. Config (no dependencies) -->
+    <script src="js/modules/config.js"></script>
     
-    let publicSponsors = [];
-    let activeSponsorIndex = 0;
-    let sponsorTimer = null;
+    <!-- 2. Router (depends on config) -->
+    <script type="module" src="js/modules/router.js"></script>
     
-    const publicDirectoryCategories = [
-      "Restaurant & Catering", "Groceries & Food", "Fashion & Beauty", "Health & Wellness",
-      "Education & Training", "Home Services", "Travel & Transport", "Professional Services",
-      "Retail & Electronics", "Community Services", "Other"
-    ];
-
-    function publicImageUrl(value) {
-      const raw = String(value || "").trim();
-      if (!raw) return "";
-      try {
-        const url = new URL(raw);
-        const id = url.hostname.endsWith("drive.google.com") ? (url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || url.searchParams.get("id")) : null;
-        return id ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600` : url.toString();
-      } catch { return ""; }
-    }
-
-    function renderFeaturedSponsor() {
-      const carousel = $("publicSponsorCarousel");
-      const dots = $("publicSponsorDots");
-      if (!publicSponsors.length) {
-        carousel.innerHTML = "<p class='sponsor-empty'>Approved sponsor offers will appear here.</p>";
-        dots.innerHTML = "";
-        return;
-      }
-      activeSponsorIndex = (activeSponsorIndex + publicSponsors.length) % publicSponsors.length;
-      const sponsor = publicSponsors[activeSponsorIndex];
-      const image = publicImageUrl(sponsor.flyerUrl);
-      const destination = sponsor.destinationUrl || sponsor.website || "";
-      const inner = `${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(sponsor.businessName)} sponsor flyer" />` : "<div class='directory-flyer directory-flyer-empty'><span>FEATURED OFFER</span></div>"}<div class="sponsor-slide-copy"><span class="tag blue">FEATURED SPONSOR</span><h3>${escapeHtml(sponsor.businessName)}</h3><p>${escapeHtml(sponsor.description || "Approved Indian Club Bahrain sponsor")}</p>${sponsor.discountText ? `<p class="sponsor-offer">${escapeHtml(sponsor.discountText)}</p>` : ""}</div>`;
-      carousel.innerHTML = destination ? `<a class="sponsor-slide" href="${escapeHtml(destination)}" target="_blank" rel="noopener">${inner}</a>` : `<article class="sponsor-slide">${inner}</article>`;
-      dots.innerHTML = publicSponsors.map((item, index) => `<button class="carousel-dot ${index === activeSponsorIndex ? "active" : ""}" data-sponsor-index="${index}" type="button" aria-label="Show ${escapeHtml(item.businessName)}"></button>`).join("");
-      document.querySelectorAll("[data-sponsor-index]").forEach(button => button.onclick = () => { activeSponsorIndex = Number(button.dataset.sponsorIndex || 0); renderFeaturedSponsor(); });
-    }
-
-    function renderPublicDirectory(businesses) {
-      const list = $("publicDirectoryList");
-      const categorySelect = $("publicDirectoryCategory");
-      const categories = [...new Set([
-        ...publicDirectoryCategories,
-        ...businesses.map(business => String(business.category || "Other").trim()).filter(Boolean)
-      ])].sort((a, b) => a.localeCompare(b));
-      const previousCategory = categories.includes(categorySelect.value) ? categorySelect.value : "";
-      categorySelect.innerHTML = `<option value="">All categories</option>${categories.map(category => `<option value="${escapeHtml(category)}" ${category === previousCategory ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}`;
-
-      const drawResults = selectedCategory => {
-        const shown = selectedCategory ? businesses.filter(business => String(business.category || "Other") === selectedCategory) : businesses;
-        if (!shown.length) {
-          const noResultsMessage = selectedCategory
-            ? `No approved businesses are available in the ${escapeHtml(selectedCategory)} category yet.`
-            : "No approved businesses are available in this category yet.";
-          list.innerHTML = `<article class="card directory-category-empty"><p>${noResultsMessage}</p></article>`;
-          return;
+    <!-- 3. Auth (depends on router) -->
+    <script type="module" src="js/modules/auth.js"></script>
+    
+    <!-- 4. View Modules (no dependencies, global scope) -->
+    <script src="js/modules/adminViews.js"></script>
+    <script src="js/modules/flightAdminViews.js"></script>
+    <script src="js/modules/views.js"></script>
+    
+    <!-- 5. Main App (depends on everything above) -->
+    <script type="module" src="js/app.js"></script>
+    
+    <!-- 6. Service Worker Registration (optional, for PWA) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker registered:', registration);
+                    })
+                    .catch(error => {
+                        console.log('⚠️ Service Worker registration failed:', error);
+                    });
+            });
         }
-        list.innerHTML = `<div class="directory-grid">${shown.map(business => { const image = publicImageUrl(business.flyerUrl); const destination = business.destinationUrl || business.website || ""; return `<article class="card directory-card">${image ? (destination ? `<a class="directory-flyer" href="${escapeHtml(destination)}" target="_blank" rel="noopener"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></a>` : `<div class="directory-flyer"><img src="${escapeHtml(image)}" alt="${escapeHtml(business.businessName)} flyer" loading="lazy" /></div>`) : "<div class='directory-flyer directory-flyer-empty'>INDI MART</div>"}<div class="directory-card-body"><span class="tag blue">${escapeHtml(business.category || "Business")}</span><h3>${escapeHtml(business.businessName)}</h3><p>${escapeHtml(business.description || "")}</p>${business.discountText ? `<p class="directory-offer">${escapeHtml(business.discountText)}</p>` : ""}<p class="note"><b>Contact:</b> ${escapeHtml(business.phone || "Not provided")}</p>${business.address ? `<p class="note"><b>Location:</b> ${escapeHtml(business.address)}</p>` : ""}${destination ? `<a class="primary directory-link" href="${escapeHtml(destination)}" target="_blank" rel="noopener">View offer / contact</a>` : ""}</div></article>`; }).join("")}</div>`;
-      };
-
-      categorySelect.onchange = () => drawResults(categorySelect.value);
-      drawResults(previousCategory);
-    }
-
-    function toast(message) {
-      const box = $("toast");
-      box.textContent = message;
-      box.classList.remove("hidden");
-      window.setTimeout(() => box.classList.add("hidden"), 3000);
-    }
-
-    let loadingRequests = 0;
-    function setLoading(active, label = "Loading…") {
-      const overlay = $("appLoading");
-      const copy = $("appLoadingText");
-      if (!overlay || !copy) return;
-      loadingRequests = active ? loadingRequests + 1 : Math.max(0, loadingRequests - 1);
-      copy.textContent = label;
-      overlay.classList.toggle("hidden", loadingRequests === 0);
-    }
-
-    function showAccountError(title, message) {
-      $("accountErrorTitle").textContent = title;
-      $("accountErrorMessage").textContent = message || "Please check the account details and try again.";
-      $("accountError").classList.remove("hidden");
-    }
-
-    function clearAccountError() { $("accountError").classList.add("hidden"); }
-
-    function hidePublicPanels() {
-      ["businessForm", "publicDirectory"].forEach(id => $(id).classList.add("hidden"));
-    }
-
-    function closeLoginOverlay() {
-      $("login").classList.add("hidden");
-      document.body.classList.remove("login-active");
-    }
-
-    function closeSignupOverlay() {
-      $("signup").classList.add("hidden");
-      document.body.classList.remove("login-active");
-    }
-
-    function openLoginOverlay() {
-      hidePublicPanels();
-      closeSignupOverlay();
-      clearAccountError();
-      $("login").classList.remove("hidden");
-      document.body.classList.add("login-active");
-    }
-
-    function openSignupOverlay() {
-      hidePublicPanels();
-      closeLoginOverlay();
-      clearAccountError();
-      $("signup").classList.remove("hidden");
-      document.body.classList.add("login-active");
-    }
-
-    async function renderPage() {
-      if (typeof window.render === "function") await window.render();
-    }
-
-    async function loadPublicHub() {
-      try {
-        const [noticeResponse, sponsorResponse, directoryResponse] = await Promise.all([
-          fetch(`${publicApiBase}/business/public/notices`),
-          fetch(`${publicApiBase}/business/public/sponsors`),
-          fetch(`${publicApiBase}/business/public/directory`)
-        ]);
-        if (!noticeResponse.ok || !sponsorResponse.ok || !directoryResponse.ok) return;
-        const notices = await noticeResponse.json();
-        const sponsors = await sponsorResponse.json();
-        const businesses = await directoryResponse.json();
-        if (notices[0]) {
-          $("publicNoticeTitle").textContent = notices[0].title;
-          $("publicNoticeBody").textContent = notices[0].body;
-          $("tickerTrack").textContent = notices.map(notice => notice.title).join(" • ");
-          const noticeImage = publicImageUrl(notices[0].imageUrl);
-          if (noticeImage) {
-            $("publicNoticeImage").src = noticeImage;
-            $("publicNoticeImage").classList.remove("hidden");
-          } else {
-            $("publicNoticeImage").removeAttribute("src");
-            $("publicNoticeImage").classList.add("hidden");
-          }
-        }
-        publicSponsors = Array.isArray(sponsors) ? sponsors.slice(0, 10) : [];
-        activeSponsorIndex = 0;
-        renderFeaturedSponsor();
-        renderPublicDirectory(Array.isArray(businesses) ? businesses : []);
-        if (sponsorTimer) clearInterval(sponsorTimer);
-        if (publicSponsors.length > 1) sponsorTimer = setInterval(() => { activeSponsorIndex += 1; renderFeaturedSponsor(); }, 5000);
-      } catch {}
-    }
-
-    $("openLogin").onclick = openLoginOverlay;
-    $("closeLogin").onclick = closeLoginOverlay;
-    $("openSignup").onclick = openSignupOverlay;
-    $("closeSignup").onclick = closeSignupOverlay;
-    $("backToLogin").onclick = openLoginOverlay;
-    $("openDirectory").onclick = () => { hidePublicPanels(); $("publicDirectory").classList.remove("hidden"); };
-    $("closeDirectory").onclick = () => $("publicDirectory").classList.add("hidden");
-    $("openBusiness").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
-    $("openPublicDirectoryBusiness").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
+    </script>
     
-    $("publicDirectoryUpdate").onclick = async () => {
-      const referenceCode = prompt("Enter your BIZ reference code");
-      const phone = prompt("Enter the phone number used in the request");
-      if (!referenceCode || !phone) return;
-      try {
-        await submitBusinessUpdateRequest({ referenceCode, phone });
-        toast("Your update request was sent to Super Admin for approval.");
-      } catch (error) { toast(error.message || "Could not submit the update request."); }
-    };
-
-    $("closeBusinessForm").onclick = () => $("businessForm").classList.add("hidden");
-    $("sponsorPrevious").onclick = () => { if (!publicSponsors.length) return; activeSponsorIndex -= 1; renderFeaturedSponsor(); };
-    $("sponsorNext").onclick = () => { if (!publicSponsors.length) return; activeSponsorIndex += 1; renderFeaturedSponsor(); };
-    
-    $("previewPublicBusinessFlyer").onclick = () => {
-      const preview = $("publicBusinessFlyerPreview");
-      const image = publicImageUrl($("bizFlyer").value);
-      if (!image) return toast("Paste a valid Google Drive or public image link first.");
-      preview.innerHTML = `<img src="${escapeHtml(image)}" alt="Business flyer preview" /><p class="note">Preview only. Your business stays private until Super Admin approves it.</p>`;
-      preview.classList.remove("hidden");
-    };
-
-    $("languageSelector").onchange = event => setLanguage(event.target.value);
-
-    $("submitBusiness").onclick = async () => {
-      try {
-        const response = await submitPublicBusiness({
-          businessName: $("bizName").value.trim(),
-          ownerName: $("bizOwner").value.trim(),
-          phone: $("bizPhone").value.trim(),
-          email: $("bizEmail").value.trim(),
-          category: $("bizCategory").value.trim(),
-          description: $("bizDescription").value.trim(),
-          address: $("bizAddress").value.trim(),
-          website: $("bizWebsite").value.trim(),
-          destinationUrl: $("bizDestination").value.trim(),
-          flyerUrl: $("bizFlyer").value.trim(),
-          discountText: $("bizOffer").value.trim(),
-          packageId: "community-standard"
-        });
-        toast(`Submitted. Save reference code: ${response.referenceCode}`);
-        $("businessForm").classList.add("hidden");
-      } catch (error) {
-        toast(error.message || "Business request could not be submitted.");
-      }
-    };
-
-    $("activateMember").onclick = async () => {
-      try {
-        const password = $("signupPassword").value;
-        if (password !== $("signupPasswordConfirm").value) {
-          throw new Error("The password and confirmation do not match.");
-        }
-        const result = await activateMemberAccount({
-          fullName: $("signupFullName").value.trim(),
-          memberId: $("signupMemberId").value.trim(),
-          email: $("signupEmail").value.trim(),
-          phone: `${$("signupCountryCode").value} ${$("signupPhone").value.trim()}`.trim(),
-          password
-        });
-        $("loginEmail").value = result.email;
-        $("loginPassword").value = "";
-        closeSignupOverlay();
-        openLoginOverlay();
-        toast("Account activated. Sign in with your new email and password.");
-      } catch (error) {
-        showAccountError("Account could not be created", error.message || "Check the registration details and try again.");
-      }
-    };
-
-    $("forgotPassword").onclick = async () => {
-      try {
-        await sendMyPasswordReset($("loginEmail").value);
-        toast("Password reset email sent. Check your inbox and spam folder.");
-      } catch (error) {
-        showAccountError("Password reset could not start", error.message || "Check the email address and try again.");
-      }
-    };
-
-    $("signIn").onclick = async () => {
-      try {
-        await login($("loginEmail").value.trim(), $("loginPassword").value);
-        await startSignedInApp();
-        closeLoginOverlay();
-        $("publicLanding").classList.add("hidden");
-        $("app").classList.remove("hidden");
-        await renderPage();
-      } catch (error) {
-        showAccountError("Sign-in unsuccessful", error.message || "Check your email address and password, then try again.");
-      }
-    };
-
-    $("logout").onclick = async () => {
-      await logout();
-      $("app").classList.add("hidden");
-      $("publicLanding").classList.remove("hidden");
-      hidePublicPanels();
-      toast("Signed out");
-    };
-
-    $("closeAccountError").onclick = clearAccountError;
-
-    document.querySelectorAll(".nav[data-page]").forEach(button => {
-      button.onclick = () => navigate(button.dataset.page);
-    });
-
-    document.querySelectorAll("[data-toggle-password]").forEach(button => {
-      button.onclick = () => {
-        const input = $(button.dataset.togglePassword);
-        const reveal = input.type === "password";
-        input.type = reveal ? "text" : "password";
-        button.textContent = reveal ? "Hide" : "Show";
-      };
-    });
-
-    window.addEventListener("indianclub:render", renderPage);
-    window.addEventListener("indianclub:toast", event => toast(event.detail));
-    window.addEventListener("indianclub:loading", event => setLoading(Boolean(event.detail?.active), event.detail?.label || "Loading…"));
-    window.addEventListener("indianclub:navigate", event => {
-      if (!state.member) return;
-      if (navigate(event.detail.page)) renderPage();
-    });
-
-    window.setTimeout(async () => {
-      $("splash").classList.add("hidden");
-      if (!state.member) $("publicLanding").classList.remove("hidden");
-      await loadPublicHub();
-    }, 850);
-
-    watchAuthentication({
-      onSignedIn: async () => {
-        closeLoginOverlay();
-        closeSignupOverlay();
-        $("publicLanding").classList.add("hidden");
-        $("app").classList.remove("hidden");
-        await renderPage();
-      },
-      onSignedOut: () => {
-        $("app").classList.add("hidden");
-        $("publicLanding").classList.remove("hidden");
-      },
-      onError: error => showAccountError("Account access needs attention", error?.message || "Your saved session could not be restored. Please sign in again.")
-    });
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(() => undefined);
-    }
-  </script>
+    <!-- 7. Analytics & Monitoring (optional) -->
+    <script>
+        // Log app initialization
+        console.log('📱 Indian Club Bahrain App');
+        console.log('🚀 Loading application...');
+        console.log('⏰ Timestamp:', new Date().toLocaleString());
+    </script>
 </body>
 </html>
+
