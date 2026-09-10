@@ -495,3 +495,73 @@ window.adminViews = {
   walletLogs: superAdminWalletLogView,
   stockLogs: superAdminStockLogView
 };
+export function bindFlightAdminViews() {
+  document.querySelectorAll("[data-self-attendance]").forEach(button => button.onclick = async () => {
+    try {
+      const status = button.dataset.selfAttendance;
+      const sessionId = button.dataset.sessionId;
+      await api("/attendance/respond", { method: "POST", body: { sessionId, status } });
+      notify(`Your attendance marked as ${status}.`);
+      refresh();
+    } catch (err) { notify(err.message); }
+  });
+
+  document.querySelectorAll("[data-add-member-to-session]").forEach(button => button.onclick = async () => {
+    try {
+      const sessionId = button.dataset.addMemberToSession;
+      const select = document.getElementById(`addMemberSelect-${sessionId}`);
+      const memberUid = select?.value;
+      if (!memberUid) throw new Error("Select a player from the dropdown to add.");
+      await api(`/attendance/session/${encodeURIComponent(sessionId)}/correct`, {
+        method: "POST",
+        body: { memberUid, status: "PRESENT", reason: "Flight Admin added player to roster" }
+      });
+      notify("Player added to present list.");
+      refresh();
+    } catch (err) { notify(err.message); }
+  });
+
+  document.querySelectorAll("[data-session-attendance]").forEach(button => button.onclick = async () => {
+    try {
+      const status = button.dataset.sessionAttendance;
+      const memberUid = button.dataset.memberUid;
+      const sessionId = button.dataset.sessionId;
+      await api(`/attendance/session/${encodeURIComponent(sessionId)}/correct`, {
+        method: "POST",
+        body: { memberUid, status, reason: "Flight Admin marked player absent" }
+      });
+      notify(`Player status updated to ${status}.`);
+      refresh();
+    } catch (err) { notify(err.message); }
+  });
+
+  document.querySelectorAll("[data-complete-flight-game]").forEach(button => button.onclick = async () => {
+    try {
+      const sessionId = button.dataset.completeFlightGame;
+      const actualShuttlesUsed = Number(document.getElementById(`shuttlesUsed-${sessionId}`)?.value || 0);
+      const flightId = state.member?.flightId;
+      await api(`/finance/session/${encodeURIComponent(sessionId)}/complete`, { 
+        method: "POST", 
+        body: { actualShuttlesUsed, flightId } 
+      });
+      notify("Game completed & charges calculated for present players.");
+      refresh();
+    } catch (err) { notify(err.message); }
+  });
+
+  const saveStock = document.getElementById("saveFlightStock");
+  if (saveStock) saveStock.onclick = async () => {
+    try {
+      const flightId = state.member?.flightId;
+      await api(`/inventory/${encodeURIComponent(flightId)}/config`, {
+        method: "PUT",
+        body: {
+          tubePriceFils: Math.round(Number(document.getElementById("stockTubePrice").value) * 1000),
+          availableTubes: Number(document.getElementById("stockTubes").value)
+        }
+      });
+      notify("Stock settings saved.");
+      refresh();
+    } catch (err) { notify(err.message); }
+  };
+}
