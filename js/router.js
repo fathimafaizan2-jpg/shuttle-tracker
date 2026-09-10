@@ -86,7 +86,7 @@ window.render = async function() {
     try {
       viewContainer.innerHTML = typeof viewFn === 'function' ? await viewFn() : viewFn;
       
-      // Bind navigation clicks
+      // Bind navigation clicks across the entire view
       document.querySelectorAll("[data-go-page]").forEach(btn => {
         btn.onclick = (e) => {
           e.preventDefault();
