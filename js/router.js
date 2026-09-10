@@ -57,7 +57,7 @@ window.render = async function() {
   const isFlightAdmin = role === "LEVEL_ADMIN";
   const isAdmin = isSuper || isFlightAdmin;
 
-  // Toggle navigation visibility safely according to role
+  // Toggle navigation tabs by role
   document.querySelectorAll(".admin-nav").forEach(el => el.classList.toggle("hidden", !isAdmin));
   document.querySelectorAll(".super-nav").forEach(el => el.classList.toggle("hidden", !isSuper));
   document.querySelectorAll(".flight-only-nav").forEach(el => el.classList.toggle("hidden", !isFlightAdmin));
