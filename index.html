@@ -10,6 +10,8 @@
   <title>Indian Club Bahrain | Powered by A1 Groups</title>
 </head>
 <body>
+
+  <!-- SPLASH SCREEN -->
   <section id="splash" class="splash">
     <div class="splash-content">
       <div class="splash-mark">🏸</div>
@@ -18,6 +20,7 @@
     </div>
   </section>
 
+  <!-- PUBLIC COMMUNITY LANDING HUB -->
   <main id="publicLanding" class="public-shell hidden">
     <header class="public-brand card">
       <div class="brand-mark">IC</div>
@@ -77,6 +80,7 @@
       <button id="openBusiness" class="business-mini-button">List your business</button>
     </div>
 
+    <!-- PUBLIC BAZAAR DIRECTORY PANEL -->
     <section id="publicDirectory" class="public-directory-panel hidden">
       <div class="page-head public-directory-title">
         <div>
@@ -109,6 +113,7 @@
       </section>
     </section>
 
+    <!-- PUBLIC BUSINESS SUBMISSION FORM -->
     <section id="businessForm" class="card hidden">
       <div class="page-head">
         <div>
@@ -125,17 +130,41 @@
       <div class="field"><label for="bizOwner">Owner name</label><input id="bizOwner" /></div>
       <div class="field"><label for="bizPhone">Phone / WhatsApp</label><input id="bizPhone" /></div>
       <div class="field"><label for="bizEmail">Email for reference message</label><input id="bizEmail" type="email" placeholder="you@example.com" /></div>
-      <div class="field"><label for="bizCategory">Category</label><select id="bizCategory"><option>Restaurant & Catering</option><option>Groceries & Food</option><option>Fashion & Beauty</option><option>Health & Wellness</option><option>Education & Training</option><option>Home Services</option><option>Travel & Transport</option><option>Professional Services</option><option>Retail & Electronics</option><option>Community Services</option><option selected>Other</option></select></div>
+      <div class="field">
+        <label for="bizCategory">Category</label>
+        <select id="bizCategory">
+          <option>Restaurant & Catering</option>
+          <option>Groceries & Food</option>
+          <option>Fashion & Beauty</option>
+          <option>Health & Wellness</option>
+          <option>Education & Training</option>
+          <option>Home Services</option>
+          <option>Travel & Transport</option>
+          <option>Professional Services</option>
+          <option>Retail & Electronics</option>
+          <option>Community Services</option>
+          <option selected>Other</option>
+        </select>
+      </div>
       <div class="field"><label for="bizDescription">Offer / description</label><textarea id="bizDescription" rows="4"></textarea></div>
-      <div class="grid two"><div class="field"><label for="bizAddress">Location / address</label><input id="bizAddress" placeholder="Area, building, or shop location" /></div><div class="field"><label for="bizWebsite">Website link (optional)</label><input id="bizWebsite" type="url" placeholder="https://..." /></div><div class="field"><label for="bizDestination">Flyer destination link</label><input id="bizDestination" type="url" placeholder="WhatsApp, catalogue, social page, or map" /></div><div class="field"><label for="bizOffer">Featured offer text (optional)</label><input id="bizOffer" placeholder="Example: 10% club offer" /></div></div>
+      <div class="grid two">
+        <div class="field"><label for="bizAddress">Location / address</label><input id="bizAddress" placeholder="Area, building, or shop location" /></div>
+        <div class="field"><label for="bizWebsite">Website link (optional)</label><input id="bizWebsite" type="url" placeholder="https://..." /></div>
+        <div class="field"><label for="bizDestination">Flyer destination link</label><input id="bizDestination" type="url" placeholder="WhatsApp, catalogue, social page, or map" /></div>
+        <div class="field"><label for="bizOffer">Featured offer text (optional)</label><input id="bizOffer" placeholder="Example: 10% club offer" /></div>
+      </div>
       <div class="field"><label for="bizFlyer">Google Drive flyer / poster image link (optional)</label><input id="bizFlyer" type="url" placeholder="Set Drive to Anyone with the link, then paste its sharing link" /></div>
-      <div class="actions"><button id="previewPublicBusinessFlyer" class="pill" type="button">Preview flyer</button><button id="submitBusiness" class="primary">Submit to Super Admin</button></div>
+      <div class="actions">
+        <button id="previewPublicBusinessFlyer" class="pill" type="button">Preview flyer</button>
+        <button id="submitBusiness" class="primary">Submit to Super Admin</button>
+      </div>
       <div id="publicBusinessFlyerPreview" class="image-link-preview hidden"></div>
     </section>
 
     <footer class="footer"><b>Indian Club Bahrain</b> Powered by <b>A1 Groups</b></footer>
   </main>
 
+  <!-- LOGIN MODAL STAGE -->
   <section id="login" class="login-overlay hidden" aria-modal="true" role="dialog">
     <div class="login-backdrop"></div>
     <div class="login-stage">
@@ -189,6 +218,7 @@
     </div>
   </section>
 
+  <!-- SIGNUP ACCOUNT ACTIVATION MODAL -->
   <section id="signup" class="login-overlay hidden" aria-modal="true" role="dialog">
     <div class="login-backdrop"></div>
     <div class="login-stage">
@@ -223,65 +253,124 @@
             <input id="signupPhone" type="tel" inputmode="tel" />
           </div>
         </div>
-        <div class="field"><label for="signupPassword">Create password</label><div class="password-field"><input id="signupPassword" type="password" /><button type="button" class="password-toggle" data-toggle-password="signupPassword">Show</button></div></div>
-        <div class="field"><label for="signupPasswordConfirm">Confirm password</label><div class="password-field"><input id="signupPasswordConfirm" type="password" /><button type="button" class="password-toggle" data-toggle-password="signupPasswordConfirm">Show</button></div></div>
-        <div class="actions"><button id="activateMember" class="primary">Activate my account</button><button id="backToLogin" class="pill" type="button">Back to login</button></div>
+        <div class="field">
+          <label for="signupPassword">Create password</label>
+          <div class="password-field">
+            <input id="signupPassword" type="password" />
+            <button type="button" class="password-toggle" data-toggle-password="signupPassword">Show</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="signupPasswordConfirm">Confirm password</label>
+          <div class="password-field">
+            <input id="signupPasswordConfirm" type="password" />
+            <button type="button" class="password-toggle" data-toggle-password="signupPasswordConfirm">Show</button>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="activateMember" class="primary">Activate my account</button>
+          <button id="backToLogin" class="pill" type="button">Back to login</button>
+        </div>
       </div>
     </div>
   </section>
 
+  <!-- MAIN AUTHENTICATED APP SHELL -->
   <main id="app" class="hidden">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark">IC</div><div><h1>Indian Club</h1><small>Powered by A1 Groups</small></div></div>
-      <div class="user-dot"><span id="roleLabel"></span><div id="avatar" class="avatar">IC</div><button id="logout" class="tag red">Logout</button></div>
+      <div class="brand">
+        <div class="brand-mark">IC</div>
+        <div><h1>Indian Club</h1><small>Powered by A1 Groups</small></div>
+      </div>
+      <div class="user-dot">
+        <span id="roleLabel"></span>
+        <div id="avatar" class="avatar">IC</div>
+        <button id="logout" class="tag red">Logout</button>
+      </div>
     </header>
-    <div class="ticker"><div id="tickerTrack" class="ticker-track">Indian Club Bahrain · Powered by A1 Groups</div></div>
+
+    <div class="ticker">
+      <div id="tickerTrack" class="ticker-track">Indian Club Bahrain · Powered by A1 Groups</div>
+    </div>
+
     <div class="layout">
+      <!-- SIDEBAR NAVIGATION WITH RE-ORDERED SECTIONS -->
       <aside id="side" class="side">
-        <div class="brand"><div class="brand-mark">IC</div><div><b id="memberName">Member</b><small id="sideRole"></small></div></div>
+        <div class="brand">
+          <div class="brand-mark">IC</div>
+          <div><b id="memberName">Member</b><small id="sideRole"></small></div>
+        </div>
+        
         <div class="nav-group">MAIN</div>
         <button class="nav active" data-page="home">Home</button>
         <button class="nav" data-page="timetable">My Timetable</button>
         <button class="nav" data-page="attendance">Attendance</button>
-        <button class="nav" data-page="wallet">Wallet & Payments</button>
+
         <div class="nav-group super-nav">SUPER ADMIN</div>
         <button class="nav super-nav" data-page="flights">Activities, Flights & Members</button>
         <button class="nav super-nav" data-page="master">Master Timetable</button>
         <button class="nav super-nav" data-page="finance">Finance</button>
         <button class="nav super-nav" data-page="ads">Ad Management</button>
+
         <div class="nav-group admin-nav">FLIGHT ADMIN</div>
         <button class="nav admin-nav" data-page="sessions">Session Control</button>
         <button class="nav admin-nav" data-page="stock">Shuttle Stock</button>
         <button class="nav admin-nav flight-only-nav" data-page="reports">Reports & Sheets</button>
+
         <div class="nav-group">COMMUNITY</div>
         <button class="nav" data-page="bazaar">BaZaar</button>
         <button class="nav" data-page="profile">Update Credentials</button>
-        <div class="nav-group">LOGS & HISTORY</div>
+
+        <div class="nav-group">LOGS & FINANCIAL HISTORY</div>
+        <button class="nav" data-page="wallet">Wallet & Payments</button>
         <button class="nav" data-page="logs">User Activity Logs</button>
         <button class="nav super-nav" data-page="audit">Audit History</button>
       </aside>
+
+      <!-- DYNAMIC CONTENT VIEW -->
       <section id="view"></section>
     </div>
+
     <footer class="footer"><b>Indian Club Bahrain</b> · Powered by <b>A1 Groups</b></footer>
   </main>
 
+  <!-- GLOBAL OVERLAYS & MESSAGES -->
   <div id="toast" class="toast hidden" role="status"></div>
-  <div id="appLoading" class="app-loading hidden" role="status" aria-live="polite"><div class="app-loading-card"><span class="loading-spinner" aria-hidden="true"></span><strong id="appLoadingText">Loading…</strong></div></div>
-  <section id="accountError" class="account-error hidden" role="alert" aria-live="assertive"><div class="account-error-card"><span class="tag red">ACCOUNT ACTION REQUIRED</span><h2 id="accountErrorTitle">Account problem</h2><p id="accountErrorMessage"></p><button id="closeAccountError" class="primary" type="button">Try again</button></div></section>
+  
+  <div id="appLoading" class="app-loading hidden" role="status" aria-live="polite">
+    <div class="app-loading-card">
+      <span class="loading-spinner" aria-hidden="true"></span>
+      <strong id="appLoadingText">Loading…</strong>
+    </div>
+  </div>
+
+  <section id="accountError" class="account-error hidden" role="alert" aria-live="assertive">
+    <div class="account-error-card">
+      <span class="tag red">ACCOUNT ACTION REQUIRED</span>
+      <h2 id="accountErrorTitle">Account problem</h2>
+      <p id="accountErrorMessage"></p>
+      <button id="closeAccountError" class="primary" type="button">Try again</button>
+    </div>
+  </section>
+
+  <!-- CONFIGURATION & SCRIPT INITIALIZATION -->
   <script>window.INDIAN_CLUB_API_URL = "https://indian-club-api.onrender.com/api";</script>
+
   <script type="module">
     import { activateMemberAccount, login, logout, api, sendMyPasswordReset, submitPublicBusiness, submitBusinessUpdateRequest } from "./js/modules/auth.js";
     import { state, navigate, startSignedInApp, setLanguage, watchAuthentication } from "./js/router.js";
     import { playerDashboard, playerTimetable, attendanceView, playerActivityLog, walletView, credentialsView, publicIndiMart, bindBusinessSubmission } from "./js/modules/views.js";
     import { activitiesAndFlightsView, superAdminTimetableView, financeAdminView, auditHistoryView, advertisingApprovalView, superAdminHomeView, superAdminActivityLogView, superAdminWalletLogView, superAdminSessionLogView, superAdminStockLogView, bindAdminViews } from "./js/modules/adminViews.js";
-    import {flightAdminSessionControlView,flightAdminShuttleStockView,flightAdminReportsView,bindFlightAdminViews} from "./js/modules/flightAdminViews.js";
+    import { flightAdminSessionControlView, flightAdminShuttleStockView, flightAdminReportsView, bindFlightAdminViews } from "./js/modules/flightAdminViews.js";
 
-    const $ = id => document.getElementById(id );
+    const $ = id => document.getElementById(id);
     const publicApiBase = window.INDIAN_CLUB_API_URL;
     const escapeHtml = value => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    
     let publicSponsors = [];
     let activeSponsorIndex = 0;
     let sponsorTimer = null;
+    
     const publicDirectoryCategories = [
       "Restaurant & Catering", "Groceries & Food", "Fashion & Beauty", "Health & Wellness",
       "Education & Training", "Home Services", "Travel & Transport", "Professional Services",
@@ -397,74 +486,8 @@
       document.body.classList.add("login-active");
     }
 
-    function updateNavigation() {
-      const isAdmin = ["LEVEL_ADMIN", "SUPER_ADMIN"].includes(state.member?.role);
-      const isSuper = state.member?.role === "SUPER_ADMIN";
-      const isFlightAdmin = state.member?.role === "LEVEL_ADMIN";
-      document.querySelectorAll(".admin-nav").forEach(item => item.classList.toggle("hidden", !isAdmin));
-      document.querySelectorAll(".super-nav").forEach(item => item.classList.toggle("hidden", !isSuper));
-      document.querySelectorAll(".flight-only-nav").forEach(item => item.classList.toggle("hidden", !isFlightAdmin));
-      $("memberName").textContent = state.member?.fullName || "Member";
-      $("roleLabel").textContent = state.member?.role?.replace("_", " ") || "";
-      $("sideRole").textContent = isSuper ? "All activities" : (state.member?.flightName || "No flight assigned");
-      const profilePhoto = publicImageUrl(state.member?.profilePhotoUrl);
-      $("avatar").innerHTML = profilePhoto ? `<img src="${escapeHtml(profilePhoto)}" alt="${escapeHtml(state.member?.fullName || "Member")} profile photo" />` : escapeHtml((state.member?.fullName || "IC").split(" ").map(word => word[0]).join("").slice(0, 2));
-    }
-
-    function emergencyHomeDashboard(member) {
-      const safeMember = member && typeof member === "object" ? member : {};
-      return `<div class="page-head"><div><h2>Welcome, ${escapeHtml(safeMember.fullName || "Member")}</h2><p>${escapeHtml(safeMember.flightName || "Your flight will be assigned by Super Admin.")}</p></div></div>
-        <div class="grid metrics"><article class="card metric"><span>Sessions attended</span><b>0</b><i>All recorded sessions</i></article><article class="card metric"><span>Pending amount</span><b>BHD 0.000</b><i>Cash / Benefit pending</i></article><article class="card metric"><span>Arrears</span><b>BHD 0.000</b><i>Due after 24 hours</i></article></div>
-        <div class="grid two"><article class="card"><h3>Upcoming game</h3><p class="note">No upcoming game has been published for your flight.</p></article><article class="card wallet"><span>Credit rule</span><div class="balance">BHD 0.000</div><p>Only final PRESENT attendees are charged after Flight Admin records actual shuttlecocks used.</p></article></div>`;
-    }
-
     async function renderPage() {
-      if (!state.member) return;
-      updateNavigation();
-      document.querySelectorAll(".nav[data-page]").forEach(button => button.classList.toggle("active", button.dataset.page === state.page));
-      try {
-        let html = "";
-        if (state.page === "home") html = state.member.role === "SUPER_ADMIN" ? await superAdminHomeView() : await playerDashboard(state.member);
-        else if (state.page === "timetable") html = await playerTimetable();
-        else if (state.page === "attendance") {
-          const sessions = await api("/timetable/mine");
-          const now = Date.now();
-          const currentOrNext = sessions
-            .filter(session => {
-              if (session.status !== "SCHEDULED") return false;
-              const startAt = new Date(session.startAt).getTime();
-              const endAt = new Date(session.endAt || session.startAt).getTime();
-              return Number.isFinite(startAt) && Number.isFinite(endAt) && endAt >= now;
-            })
-            .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())[0];
-          html = currentOrNext ? await attendanceView(currentOrNext.id) : "<section class='card'><h2>Attendance</h2><p class='note'>No current or upcoming session is published for your flight. Super Admin must publish the current Master Timetable month after saving its weekly slots.</p></section>";
-        }
-        else if (state.page === "logs") html = state.member.role === "SUPER_ADMIN" ? await superAdminActivityLogView() : await playerActivityLog();
-        else if (state.page === "wallet") html = state.member.role === "SUPER_ADMIN" ? await superAdminWalletLogView() : await walletView();
-        else if (state.page === "bazaar") html = await publicIndiMart();
-        else if (state.page === "master") html = await superAdminTimetableView();
-        else if (state.page === "flights") html = await activitiesAndFlightsView();
-        else if (state.page === "finance") html = await financeAdminView();
-        else if (state.page === "ads") html = await advertisingApprovalView();
-        else if (state.page === "audit") html = await auditHistoryView();
-        else if (state.page === "sessions") html = state.member.role === "SUPER_ADMIN" ? await superAdminSessionLogView() : await flightAdminSessionControlView();
-        else if (state.page === "stock") html = state.member.role === "SUPER_ADMIN" ? await superAdminStockLogView() : await flightAdminShuttleStockView();
-        else if (state.page === "reports") html = await flightAdminReportsView();
-        else if (state.page === "profile") html = await credentialsView();
-        else html = `<section class="card"><h2>${state.page}</h2><p class="note">This module is controlled by its protected server route.</p></section>`;
-        $("view").innerHTML = html;
-        bindBusinessSubmission();
-        bindAdminViews();
-        bindFlightAdminViews();
-        document.querySelectorAll("[data-go-page]").forEach(button => button.onclick = () => navigate(button.dataset.goPage));
-      } catch (error) {
-        if (state.page === "home") {
-          console.warn("Home dashboard rendering fallback:", error);
-          $("view").innerHTML = emergencyHomeDashboard(state.member);
-        } else {
-          $("view").innerHTML = `<section class="card"><h2>Unable to load this page</h2><p class="note">${error.message || "Please try again later."}</p></section>`;
-        }
-      }
+      if (typeof window.render === "function") await window.render();
     }
 
     async function loadPublicHub() {
@@ -509,6 +532,7 @@
     $("closeDirectory").onclick = () => $("publicDirectory").classList.add("hidden");
     $("openBusiness").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
     $("openPublicDirectoryBusiness").onclick = () => { hidePublicPanels(); $("businessForm").classList.remove("hidden"); };
+    
     $("publicDirectoryUpdate").onclick = async () => {
       const referenceCode = prompt("Enter your BIZ reference code");
       const phone = prompt("Enter the phone number used in the request");
@@ -518,9 +542,11 @@
         toast("Your update request was sent to Super Admin for approval.");
       } catch (error) { toast(error.message || "Could not submit the update request."); }
     };
+
     $("closeBusinessForm").onclick = () => $("businessForm").classList.add("hidden");
     $("sponsorPrevious").onclick = () => { if (!publicSponsors.length) return; activeSponsorIndex -= 1; renderFeaturedSponsor(); };
     $("sponsorNext").onclick = () => { if (!publicSponsors.length) return; activeSponsorIndex += 1; renderFeaturedSponsor(); };
+    
     $("previewPublicBusinessFlyer").onclick = () => {
       const preview = $("publicBusinessFlyerPreview");
       const image = publicImageUrl($("bizFlyer").value);
@@ -528,6 +554,7 @@
       preview.innerHTML = `<img src="${escapeHtml(image)}" alt="Business flyer preview" /><p class="note">Preview only. Your business stays private until Super Admin approves it.</p>`;
       preview.classList.remove("hidden");
     };
+
     $("languageSelector").onchange = event => setLanguage(event.target.value);
 
     $("submitBusiness").onclick = async () => {
@@ -605,6 +632,7 @@
       hidePublicPanels();
       toast("Signed out");
     };
+
     $("closeAccountError").onclick = clearAccountError;
 
     document.querySelectorAll(".nav[data-page]").forEach(button => {
