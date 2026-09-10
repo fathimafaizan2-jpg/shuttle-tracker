@@ -1,73 +1,133 @@
 
-// adminViews.js - Super Admin Dashboard
+// adminViews.js - Premium Super Admin Dashboard
 
 const adminViews = {
   dashboard: () => {
     return `
       <div class="admin-dashboard">
-        <h1>Super Admin Dashboard</h1>
+        <div class="page-header">
+          <h1>Club Management</h1>
+          <p>Manage members, activities, and club operations</p>
+        </div>
+
+        <!-- Stats Grid -->
         <div class="stats-grid">
           <div class="stat-card">
             <h3>Total Members</h3>
-            <p class="stat-number">0</p>
+            <p class="stat-number" id="totalMembers">0</p>
           </div>
           <div class="stat-card">
             <h3>Active Sessions</h3>
-            <p class="stat-number">0</p>
-          </div>
-          <div class="stat-card">
-            <h3>Unpaid Amount</h3>
-            <p class="stat-number">0.000 BHD</p>
+            <p class="stat-number" id="activeSessions">0</p>
           </div>
           <div class="stat-card">
             <h3>Pending Approvals</h3>
-            <p class="stat-number">0</p>
+            <p class="stat-number" id="pendingApprovals">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Total Revenue</h3>
+            <p class="stat-number" id="totalRevenue">0.000 BHD</p>
           </div>
         </div>
-        <div class="admin-tabs">
-          <button class="tab-btn active" onclick="adminViews.switchTab('members')">Members</button>
-          <button class="tab-btn" onclick="adminViews.switchTab('timetable')">Timetable</button>
-          <button class="tab-btn" onclick="adminViews.switchTab('advertising')">Advertising</button>
-          <button class="tab-btn" onclick="adminViews.switchTab('reports')">Reports</button>
+
+        <!-- Club Configuration Header -->
+        <div class="admin-header-bar">
+          <h3>⚙️ Club Configuration</h3>
+          <div class="dropdown-group">
+            <label class="dropdown-label">Activity:</label>
+            <select class="dropdown-select" id="activityFilter" onchange="adminViews.filterByActivity()">
+              <option value="">All Activities</option>
+              <option value="badminton">Badminton</option>
+              <option value="cricket">Cricket</option>
+              <option value="tennis">Tennis</option>
+              <option value="swimming">Swimming</option>
+            </select>
+          </div>
+          <div class="dropdown-group">
+            <label class="dropdown-label">Level:</label>
+            <select class="dropdown-select" id="levelFilter" onchange="adminViews.filterByLevel()">
+              <option value="">All Levels</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+              <option value="professional">Professional</option>
+            </select>
+          </div>
         </div>
-        <div id="tabContent" class="tab-content"></div>
+
+        <!-- Navigation Buttons -->
+        <div class="nav-buttons">
+          <button class="nav-btn active" onclick="adminViews.showSection('members')">
+            <i class="fas fa-users"></i> Members
+          </button>
+          <button class="nav-btn" onclick="adminViews.showSection('activities')">
+            <i class="fas fa-calendar"></i> Activities
+          </button>
+          <button class="nav-btn" onclick="adminViews.showSection('advertising')">
+            <i class="fas fa-megaphone"></i> Advertising
+          </button>
+          <button class="nav-btn" onclick="adminViews.showSection('logs')">
+            <i class="fas fa-history"></i> Logs
+          </button>
+        </div>
+
+        <!-- Content Sections -->
+        <div id="adminContent"></div>
       </div>
     `;
   },
 
-  switchTab: (tabName) => {
-    const buttons = document.querySelectorAll('.tab-btn');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+  showSection: (section) => {
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.closest('.nav-btn').classList.add('active');
 
-    const content = document.getElementById('tabContent');
+    const content = document.getElementById('adminContent');
     
-    switch(tabName) {
+    switch(section) {
       case 'members':
-        content.innerHTML = adminViews.membersTab();
+        content.innerHTML = adminViews.membersSection();
         break;
-      case 'timetable':
-        content.innerHTML = adminViews.timetableTab();
+      case 'activities':
+        content.innerHTML = adminViews.activitiesSection();
         break;
       case 'advertising':
-        content.innerHTML = adminViews.advertisingTab();
+        content.innerHTML = adminViews.advertisingSection();
         break;
-      case 'reports':
-        content.innerHTML = adminViews.reportsTab();
+      case 'logs':
+        content.innerHTML = adminViews.logsSection();
         break;
     }
   },
 
-  membersTab: () => {
+  filterByActivity: () => {
+    const activity = document.getElementById('activityFilter').value;
+    console.log('Filter by activity:', activity);
+    adminViews.loadMembers();
+  },
+
+  filterByLevel: () => {
+    const level = document.getElementById('levelFilter').value;
+    console.log('Filter by level:', level);
+    adminViews.loadMembers();
+  },
+
+  membersSection: () => {
     return `
-      <div class="members-section">
-        <h2>Members Management</h2>
-        <div class="section-controls">
-          <button class="btn btn-primary">+ Add Member</button>
-          <button class="btn btn-secondary">+ Pre-Register</button>
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2>Members Management</h2>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="adminViews.addMember()">
+              <i class="fas fa-plus"></i> Add Member
+            </button>
+            <button class="btn btn-secondary" onclick="adminViews.preRegister()">
+              <i class="fas fa-user-plus"></i> Pre-Register
+            </button>
+          </div>
         </div>
+
         <div class="table-container">
-          <table class="compact-table">
+          <table class="premium-table">
             <thead>
               <tr>
                 <th>Name</th>
@@ -79,8 +139,8 @@ const adminViews = {
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr><td colspan="7" class="loading">No members yet</td></tr>
+            <tbody id="membersTable">
+              <tr><td colspan="7" class="text-center" style="padding: 40px;">No members found</td></tr>
             </tbody>
           </table>
         </div>
@@ -88,27 +148,30 @@ const adminViews = {
     `;
   },
 
-  timetableTab: () => {
+  activitiesSection: () => {
     return `
-      <div class="timetable-section">
-        <h2>Timetable Management</h2>
-        <div class="section-controls">
-          <button class="btn btn-primary">+ Add Session</button>
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2>Activities & Timetable</h2>
+          <button class="btn btn-primary" onclick="adminViews.addActivity()">
+            <i class="fas fa-plus"></i> Add Activity
+          </button>
         </div>
+
         <div class="table-container">
-          <table class="compact-table">
+          <table class="premium-table">
             <thead>
               <tr>
-                <th>Date</th>
                 <th>Activity</th>
                 <th>Level</th>
-                <th>Time</th>
+                <th>Schedule</th>
+                <th>Capacity</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr><td colspan="6" class="loading">No sessions yet</td></tr>
+            <tbody id="activitiesTable">
+              <tr><td colspan="6" class="text-center" style="padding: 40px;">No activities found</td></tr>
             </tbody>
           </table>
         </div>
@@ -116,26 +179,35 @@ const adminViews = {
     `;
   },
 
-  advertisingTab: () => {
+  advertisingSection: () => {
     return `
-      <div class="advertising-section">
-        <h2>Advertising Management</h2>
-        <div class="section-controls">
-          <button class="btn btn-primary">Carousel Settings</button>
-          <button class="btn btn-secondary">Pending Approvals</button>
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2>Advertising & Promotions</h2>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="adminViews.carouselSettings()">
+              <i class="fas fa-sliders-h"></i> Carousel Settings
+            </button>
+            <button class="btn btn-secondary" onclick="adminViews.pendingApprovals()">
+              <i class="fas fa-check-circle"></i> Pending Approvals
+            </button>
+          </div>
         </div>
+
         <div class="table-container">
-          <table class="compact-table">
+          <table class="premium-table">
             <thead>
               <tr>
-                <th>Business Name</th>
+                <th>Business</th>
+                <th>Category</th>
                 <th>Status</th>
                 <th>Featured</th>
+                <th>Submitted</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr><td colspan="4" class="loading">No ads yet</td></tr>
+            <tbody id="advertisingTable">
+              <tr><td colspan="6" class="text-center" style="padding: 40px;">No advertisements found</td></tr>
             </tbody>
           </table>
         </div>
@@ -143,18 +215,87 @@ const adminViews = {
     `;
   },
 
-  reportsTab: () => {
+  logsSection: () => {
     return `
-      <div class="reports-section">
-        <h2>Reports & Analytics</h2>
-        <div class="section-controls">
-          <button class="btn btn-primary">Attendance Report</button>
-          <button class="btn btn-primary">Payments Report</button>
-          <button class="btn btn-primary">Shuttle Report</button>
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2>System Logs & Audit Trail</h2>
+          <button class="btn btn-secondary" onclick="adminViews.exportLogs()">
+            <i class="fas fa-download"></i> Export Logs
+          </button>
         </div>
-        <div id="reportContent"></div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+          <button class="nav-btn active" onclick="adminViews.showLogType('all')">All Logs</button>
+          <button class="nav-btn" onclick="adminViews.showLogType('members')">Member Actions</button>
+          <button class="nav-btn" onclick="adminViews.showLogType('payments')">Payment Logs</button>
+          <button class="nav-btn" onclick="adminViews.showLogType('attendance')">Attendance Logs</button>
+          <button class="nav-btn" onclick="adminViews.showLogType('admin')">Admin Actions</button>
+        </div>
+
+        <div class="table-container">
+          <table class="premium-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Details</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="logsTable">
+              <tr><td colspan="5" class="text-center" style="padding: 40px;">No logs found</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
+  },
+
+  showLogType: (type) => {
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    console.log('Show log type:', type);
+    adminViews.loadLogs(type);
+  },
+
+  addMember: () => {
+    console.log('Add member');
+    appController.showNotification('Add Member feature coming soon', 'info');
+  },
+
+  preRegister: () => {
+    console.log('Pre-register member');
+    appController.showNotification('Pre-Register feature coming soon', 'info');
+  },
+
+  addActivity: () => {
+    console.log('Add activity');
+    appController.showNotification('Add Activity feature coming soon', 'info');
+  },
+
+  carouselSettings: () => {
+    console.log('Carousel settings');
+    appController.showNotification('Carousel Settings feature coming soon', 'info');
+  },
+
+  pendingApprovals: () => {
+    console.log('Pending approvals');
+    appController.showNotification('Pending Approvals feature coming soon', 'info');
+  },
+
+  exportLogs: () => {
+    console.log('Export logs');
+    appController.showNotification('Logs exported successfully', 'success');
+  },
+
+  loadMembers: async () => {
+    console.log('Loading members...');
+  },
+
+  loadLogs: async (type) => {
+    console.log('Loading logs:', type);
   }
 };
 
