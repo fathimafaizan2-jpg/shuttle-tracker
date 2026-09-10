@@ -1,204 +1,741 @@
-import { api } from "./auth.js";
-import { state } from "../router.js";
 
-const escapeHtml = value => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
-const bhd = fils => `BHD ${(Number(fils || 0) / 1000).toFixed(3)}`;
+// flightAdminViews.js - Level Admin Dashboard (Updated)
 
-function dateLabel(value) {
-  const date = value?._seconds ? new Date(Number(value._seconds) * 1000) : new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("en-BH", { dateStyle: "medium" }) : "—";
-}
-
-function dateTime(value) {
-  const date = value?._seconds ? new Date(Number(value._seconds) * 1000) : new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleString("en-BH", { dateStyle: "medium", timeStyle: "short" }) : "—";
-}
-
-function notify(message) { window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: message })); }
-function refresh() { window.dispatchEvent(new CustomEvent("indianclub:render")); }
-
-export async function flightAdminSessionControlView() {
-  const flightId = state.member?.flightId;
-  const [sessions, finance, inventoryRows, flightRoster] = await Promise.all([
-    api("/timetable/mine").catch(() => []),
-    api("/finance/overview").catch(() => ({ pendingPayments: [] })),
-    api("/inventory/mine").catch(() => [{}]),
-    api("/members/assigned-flight").catch(() => [])
-  ]);
-
-  const stock = inventoryRows[0] || {};
-  const roster = Array.isArray(flightRoster) ? flightRoster : [];
-  const todaySessions = Array.isArray(sessions) ? sessions : [];
-
-  const sessionCards = todaySessions.map(session => {
-    const completed = session.status === "COMPLETED";
-    
-    // Strict Filter for Present Players
-    const presentPlayers = roster.filter(p => p.status === "PRESENT");
-    const presentCount = presentPlayers.length;
-
-    // Dropdown for non-present players to manually add them if they showed up
-    const nonAttendingRoster = roster.filter(p => p.status !== "PRESENT");
-
-    const addMemberDropdown = `
-      <div class="field" style="margin-top:10px;">
-        <label>Add Player to Active Roster (Marked Absent/No Response but Attended)</label>
-        <div class="actions">
-          <select id="addMemberSelect-${escapeHtml(session.id)}">
-            <option value="">Select player to add...</option>
-            ${nonAttendingRoster.map(p => `<option value="${escapeHtml(p.uid)}">${escapeHtml(p.fullName)} (${escapeHtml(p.memberId || 'No ID')})</option>`).join('')}
-          </select>
-          <button class="pill" data-add-member-to-session="${escapeHtml(session.id)}">Add to Present List</button>
-        </div>
-      </div>`;
-
-    const presentRosterRows = presentPlayers.map((person, index) => `
-      <div class="session">
-        <b>${index + 1}.</b>
-        <div class="grow">
-          <b>${escapeHtml(person.fullName)}</b> 
-          <small>${person.uid === state.member.id ? '(Admin / You)' : ''}</small>
-        </div>
-        <span class="tag blue">PRESENT</span>
-        <div class="actions">
-          <button class="pill danger-action" data-session-attendance="ABSENT" data-session-id="${escapeHtml(session.id)}" data-member-uid="${escapeHtml(person.uid)}">Remove (Mark Absent)</button>
-        </div>
-      </div>`).join("") || "<p class='note'>No players currently marked present for this session.</p>";
-
+const flightAdminViews = {
+  // Main Flight Admin Dashboard
+  dashboard: () => {
     return `
-      <article class="card">
-        <div class="page-head">
-          <div><h3>${escapeHtml(session.flightName || state.member.flightName || "Session")}</h3><p>${dateTime(session.startAt)}</p></div>
-          <span class="tag ${completed ? "blue" : "amber"}">${completed ? "COMPLETED" : "SCHEDULED"}</span>
-        </div>
+      <div class="flight-admin-dashboard">
+        <h1>Level Admin Dashboard</h1>
         
-        <h4>Attending Players (${presentCount})</h4>
-        <p class="note">Players below will receive an equal split of the total shuttlecock charge upon game completion.</p>
-        ${presentRosterRows}
-        ${addMemberDropdown}
-
-        <div class="grid two" style="margin-top:14px;">
-          <div class="field"><label for="shuttlesUsed-${escapeHtml(session.id)}">Shuttlecocks Used</label><input id="shuttlesUsed-${escapeHtml(session.id)}" type="number" min="0" value="${session.actualShuttlesUsed || 0}" /></div>
-          <div class="field"><label>PRESENT Attendees to Charge (Equal Share)</label><div class="session"><b>${presentCount} Present</b></div></div>
+        <!-- Quick Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>Next Game</h3>
+            <p id="nextGameInfo" class="stat-text">Loading...</p>
+          </div>
+          <div class="stat-card">
+            <h3>Players Coming</h3>
+            <p id="playersComingCount" class="stat-number">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Shuttle Stock</h3>
+            <p id="shuttleStock" class="stat-number">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Unpaid Amount</h3>
+            <p id="unpaidAmountAdmin" class="stat-number">0.000 BHD</p>
+          </div>
         </div>
-        <button class="primary" data-complete-flight-game="${escapeHtml(session.id)}">Update Final Attendance & Calculate Charges</button>
-      </article>`;
-  }).join("") || "<p class='note'>No sessions scheduled today.</p>";
 
-  return `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN</span><h2>Session Control</h2></div></div><section class="card">${sessionCards}</section>`;
-}
+        <!-- Navigation Tabs -->
+        <div class="admin-tabs">
+          <button class="tab-btn active" onclick="flightAdminViews.switchTab('attendance')">Attendance</button>
+          <button class="tab-btn" onclick="flightAdminViews.switchTab('sessionControl')">Session Control</button>
+          <button class="tab-btn" onclick="flightAdminViews.switchTab('shuttle')">Shuttle Stock</button>
+          <button class="tab-btn" onclick="flightAdminViews.switchTab('reports')">Reports</button>
+        </div>
 
-export async function flightAdminShuttleStockView() {
-  const stockRows = await api("/inventory/mine").catch(() => [{}]);
-  const stock = stockRows[0] || {};
-  return `<div class="page-head"><div><span class="tag blue">FLIGHT ADMIN</span><h2>Shuttle Stock</h2></div></div>
-  <div class="grid metrics"><article class="card metric"><span>Available Tubes</span><b>${Number(stock.availableTubes || 0)}</b></article><article class="card metric"><span>Loose Shuttles</span><b>${Number(stock.looseShuttles || 0)}</b></article><article class="card metric"><span>Tube Price</span><b>${bhd(stock.tubePriceFils)}</b></article></div>
-  <section class="card"><h3>Update Stock Settings</h3>
-    <div class="grid two">
-      <div class="field"><label for="stockTubePrice">Tube Price in BHD</label><input id="stockTubePrice" type="number" step="0.001" value="${Number(stock.tubePriceFils || 0)/1000}" /></div>
-      <div class="field"><label for="stockTubes">Available Tubes</label><input id="stockTubes" type="number" value="${Number(stock.availableTubes || 0)}" /></div>
-    </div>
-    <button id="saveFlightStock" class="primary">Save Stock</button>
-  </section>`;
-}
+        <!-- Tab Content -->
+        <div id="tabContent" class="tab-content"></div>
+      </div>
+    `;
+  },
 
-export async function flightAdminReportsView() {
-  const finance = await api("/finance/overview").catch(() => ({ paid: [], unpaid: [] }));
-  const inventoryRows = await api("/inventory/mine").catch(() => [{}]);
-  const stock = inventoryRows[0] || {};
+  // Switch tabs
+  switchTab: (tabName) => {
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
 
-  return `<div class="page-head">
-    <div><span class="tag blue">FLIGHT ADMIN</span><h2>Reports & Sheets</h2><p>Print or review logs for attendance, shuttle stock, and payments.</p></div>
-    <button class="pill" onclick="window.print()">Print Report</button>
-  </div>
-  <div class="grid metrics">
-    <article class="card metric"><span>Available Stock</span><b>${Number(stock.totalAvailableShuttles || 0)} shuttles</b></article>
-    <article class="card metric"><span>Paid Players</span><b>${finance.paid?.length || 0}</b></article>
-    <article class="card metric"><span>Unpaid Players</span><b>${finance.unpaid?.length || 0}</b></article>
-  </div>
-  <section class="card">
-    <h3>Paid Players Log</h3>
-    ${(finance.paid || []).map(p => `<div class="session"><div class="grow"><b>${escapeHtml(p.memberName)}</b><p>Paid ${bhd(p.amountFils || p.totalChargeFils)}</p></div><span class="tag blue">PAID</span></div>`).join('') || "<p class='note'>No paid players recorded.</p>"}
-  </section>
-  <section class="card">
-    <h3>Unpaid Players Log</h3>
-    ${(finance.unpaid || []).map(p => `<div class="session"><div class="grow"><b>${escapeHtml(p.memberName)}</b><p>Due ${bhd(p.amountDueFils)}</p></div><span class="tag red">UNPAID</span></div>`).join('') || "<p class='note'>No unpaid players recorded.</p>"}
-  </section>`;
-}
+    const content = document.getElementById('tabContent');
+    
+    switch(tabName) {
+      case 'attendance':
+        content.innerHTML = flightAdminViews.attendanceTab();
+        flightAdminViews.loadAttendance();
+        break;
+      case 'sessionControl':
+        content.innerHTML = flightAdminViews.sessionControlTab();
+        flightAdminViews.loadSessionControl();
+        break;
+      case 'shuttle':
+        content.innerHTML = flightAdminViews.shuttleTab();
+        flightAdminViews.loadShuttleStock();
+        break;
+      case 'reports':
+        content.innerHTML = flightAdminViews.reportsTab();
+        break;
+    }
+  },
 
-export function bindFlightAdminViews() {
-  document.querySelectorAll("[data-self-attendance]").forEach(button => button.onclick = async () => {
+  // Attendance Tab
+  attendanceTab: () => {
+    return `
+      <div class="attendance-section">
+        <h2>Attendance Management</h2>
+        
+        <div class="filter-section">
+          <label>Select Session:</label>
+          <select id="sessionSelector" onchange="flightAdminViews.loadAttendance()">
+            <option value="">Loading sessions...</option>
+          </select>
+        </div>
+
+        <!-- Present List -->
+        <div class="attendance-lists">
+          <div class="list-container">
+            <h3>✓ Coming (${document.querySelectorAll('.present-item').length})</h3>
+            <div id="presentList" class="player-list">
+              <p class="loading">Loading...</p>
+            </div>
+          </div>
+
+          <!-- Absent List -->
+          <div class="list-container">
+            <h3>✗ Not Coming (${document.querySelectorAll('.absent-item').length})</h3>
+            <div id="absentList" class="player-list">
+              <p class="loading">Loading...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-controls">
+          <button class="btn btn-primary" onclick="flightAdminViews.showAddPlayerForm()">+ Add Player</button>
+          <button class="btn btn-secondary" onclick="flightAdminViews.finalizeAttendance()">Finalize Attendance</button>
+        </div>
+      </div>
+    `;
+  },
+
+  // Load attendance
+  loadAttendance: async () => {
     try {
-      const status = button.dataset.selfAttendance;
-      const sessionId = button.dataset.sessionId;
-      await api("/attendance/respond", { method: "POST", body: { sessionId, status } });
-      notify(`Your attendance marked as ${status}.`);
-      refresh();
-    } catch (err) { notify(err.message); }
-  });
-
-  document.querySelectorAll("[data-add-member-to-session]").forEach(button => button.onclick = async () => {
-    try {
-      const sessionId = button.dataset.addMemberToSession;
-      const select = document.getElementById(`addMemberSelect-${sessionId}`);
-      const memberUid = select?.value;
-      if (!memberUid) throw new Error("Select a player from the dropdown to add.");
-      await api(`/attendance/session/${encodeURIComponent(sessionId)}/correct`, {
-        method: "POST",
-        body: { memberUid, status: "PRESENT", reason: "Flight Admin added player to roster" }
-      });
-      notify("Player added to present list.");
-      refresh();
-    } catch (err) { notify(err.message); }
-  });
-
-  document.querySelectorAll("[data-session-attendance]").forEach(button => button.onclick = async () => {
-    try {
-      const status = button.dataset.sessionAttendance;
-      const memberUid = button.dataset.memberUid;
-      const sessionId = button.dataset.sessionId;
-      await api(`/attendance/session/${encodeURIComponent(sessionId)}/correct`, {
-        method: "POST",
-        body: { memberUid, status, reason: "Flight Admin marked player absent" }
-      });
-      notify(`Player status updated to ${status}.`);
-      refresh();
-    } catch (err) { notify(err.message); }
-  });
-
-  document.querySelectorAll("[data-complete-flight-game]").forEach(button => button.onclick = async () => {
-    try {
-      const sessionId = button.dataset.completeFlightGame;
-      const actualShuttlesUsed = Number(document.getElementById(`shuttlesUsed-${sessionId}`)?.value || 0);
-      const flightId = state.member?.flightId;
-      await api(`/finance/session/${encodeURIComponent(sessionId)}/complete`, { 
-        method: "POST", 
-        body: { actualShuttlesUsed, flightId } 
-      });
-      notify("Game completed & charges calculated for present players.");
-      refresh();
-    } catch (err) { notify(err.message); }
-  });
-
-  const saveStock = document.getElementById("saveFlightStock");
-  if (saveStock) saveStock.onclick = async () => {
-    try {
-      const flightId = state.member?.flightId;
-      await api(`/inventory/${encodeURIComponent(flightId)}/config`, {
-        method: "PUT",
-        body: {
-          tubePriceFils: Math.round(Number(document.getElementById("stockTubePrice").value) * 1000),
-          availableTubes: Number(document.getElementById("stockTubes").value)
+      const sessionId = document.getElementById('sessionSelector')?.value;
+      if (!sessionId) {
+        // Load sessions first
+        const sessionsResponse = await fetch('/api/sessions/upcoming', {
+          headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const sessionsData = await sessionsResponse.json();
+        
+        const selector = document.getElementById('sessionSelector');
+        selector.innerHTML = sessionsData.sessions.map(s => `
+          <option value="${s.id}">${new Date(s.startAt).toLocaleDateString('en-BH')} - ${s.activityName}</option>
+        `).join('');
+        
+        if (sessionsData.sessions.length > 0) {
+          selector.value = sessionsData.sessions[0].id;
+          flightAdminViews.loadAttendance();
         }
-      });
-      notify("Stock settings saved.");
-      refresh();
-    } catch (err) { notify(err.message); }
-  };
-}
+        return;
+      }
 
-window.flightAdminViews = {
-  sessionControl: flightAdminSessionControlView,
-  stock: flightAdminShuttleStockView,
-  reports: flightAdminReportsView
+      const response = await fetch(`/api/attendance/session/${sessionId}/attendance-list`, {
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+      });
+      const data = await response.json();
+      
+      // Present list
+      const presentList = document.getElementById('presentList');
+      presentList.innerHTML = data.presentList.map(player => `
+        <div class="player-item present-item">
+          <span>${player.name}</span>
+          <button class="btn-sm btn-remove" onclick="flightAdminViews.removeAttendee('${data.sessionId}', '${player.uid}')">Remove</button>
+        </div>
+      `).join('');
+
+      // Absent list
+      const absentList = document.getElementById('absentList');
+      absentList.innerHTML = data.absentList.map(player => `
+        <div class="player-item absent-item">
+          <span>${player.name}</span>
+          <button class="btn-sm btn-add" onclick="flightAdminViews.addAttendee('${data.sessionId}', '${player.uid}')">Add</button>
+        </div>
+      `).join('');
+    } catch (error) {
+      console.error('Error loading attendance:', error);
+    }
+  },
+
+  // Show add player form
+  showAddPlayerForm: () => {
+    const sessionId = document.getElementById('sessionSelector')?.value;
+    if (!sessionId) {
+      showNotification('Please select a session first', 'warning');
+      return;
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal-content">
+        <h3>Add Player to Session</h3>
+        <div class="form-group">
+          <label>Select Player:</label>
+          <select id="playerSelector">
+            <option value="">Loading players...</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="flightAdminViews.addPlayerToSession('${sessionId}')">Add</button>
+          <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Load players
+    flightAdminViews.loadPlayersForSession();
+  },
+
+  // Load players for session
+  loadPlayersForSession: async () => {
+    try {
+      const response = await fetch('/api/members/by-level', {
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+      });
+      const data = await response.json();
+      
+      const selector = document.getElementById('playerSelector');
+      selector.innerHTML = data.members.map(m => `
+        <option value="${m.uid}">${m.name}</option>
+      `).join('');
+    } catch (error) {
+      console.error('Error loading players:', error);
+    }
+  },
+
+  // Add player to session
+  addPlayerToSession: async (sessionId) => {
+    try {
+      const memberUid = document.getElementById('playerSelector').value;
+      
+      const response = await fetch(`/api/attendance/session/${sessionId}/add-attendee`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ memberUid, action: 'add' })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        showNotification('Player added', 'success');
+        document.querySelector('.modal').remove();
+        flightAdminViews.loadAttendance();
+      }
+    } catch (error) {
+      showNotification('Error adding player', 'error');
+    }
+  },
+
+  // Add attendee
+  addAttendee: async (sessionId, memberUid) => {
+    try {
+      const response = await fetch(`/api/attendance/session/${sessionId}/add-attendee`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ memberUid, action: 'add' })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        flightAdminViews.loadAttendance();
+      }
+    } catch (error) {
+      console.error('Error adding attendee:', error);
+    }
+  },
+
+  // Remove attendee
+  removeAttendee: async (sessionId, memberUid) => {
+    try {
+      const response = await fetch(`/api/attendance/session/${sessionId}/remove-attendee`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ memberUid, action: 'remove' })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        flightAdminViews.loadAttendance();
+      }
+    } catch (error) {
+      console.error('Error removing attendee:', error);
+    }
+  },
+
+  // Finalize attendance
+  finalizeAttendance: async () => {
+    try {
+      const sessionId = document.getElementById('sessionSelector')?.value;
+      const presentPlayers = Array.from(document.querySelectorAll('.present-item'))
+        .map(el => el.dataset.uid);
+      
+      const response = await fetch(`/api/attendance/session/${sessionId}/mark-attended`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ attendedMemberUids: presentPlayers })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        showNotification('Attendance finalized', 'success');
+      }
+    } catch (error) {
+      showNotification('Error finalizing attendance', 'error');
+    }
+  },
+
+  // Session Control Tab
+  sessionControlTab: () => {
+    return `
+      <div class="session-control-section">
+        <h2>Session Control</h2>
+        
+        <div class="filter-section">
+          <label>Select Session:</label>
+          <select id="sessionControlSelector" onchange="flightAdminViews.loadSessionControl()">
+            <option value="">Loading sessions...</option>
+          </select>
+        </div>
+
+        <!-- Session Info -->
+        <div class="session-info-card">
+          <h3>Session Details</h3>
+          <div id="sessionDetails"></div>
+        </div>
+
+        <!-- Attendance Status -->
+        <div class="attendance-status-card">
+          <h3>Attendance Status</h3>
+          <div id="attendanceStatus"></div>
+        </div>
+
+        <!-- Shuttle Entry -->
+        <div class="shuttle-entry-card">
+          <h3>Enter Shuttle Usage</h3>
+          <form onsubmit="flightAdminViews.calculateShuttleCost(event)">
+            <div class="form-group">
+              <label>Tubes Used *</label>
+              <input type="number" id="tubesUsed" min="0" required>
+            </div>
+            <div class="form-group">
+              <label>Loose Shuttles</label>
+              <input type="number" id="looseShuttles" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label>Tube Price (BHD) *</label>
+              <input type="number" id="tubePrice" step="0.001" required>
+            </div>
+            <div class="form-group">
+              <label>Shuttles Per Tube *</label>
+              <input type="number" id="shuttlesPerTube" value="12" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Calculate Cost</button>
+          </form>
+        </div>
+
+        <!-- Cost Calculation Result -->
+        <div id="costResult" class="cost-result-card" style="display: none;">
+          <h3>Cost Calculation</h3>
+          <div id="costDetails"></div>
+          <button class="btn btn-success" onclick="flightAdminViews.publishCharges()">Publish Charges</button>
+        </div>
+      </div>
+    `;
+  },
+
+  // Load session control
+  loadSessionControl: async () => {
+    try {
+      const sessionId = document.getElementById('sessionControlSelector')?.value;
+      if (!sessionId) {
+        // Load sessions
+        const sessionsResponse = await fetch('/api/sessions/upcoming', {
+          headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        });
+        const sessionsData = await sessionsResponse.json();
+        
+        const selector = document.getElementById('sessionControlSelector');
+        selector.innerHTML = sessionsData.sessions.map(s => `
+          <option value="${s.id}">${new Date(s.startAt).toLocaleDateString('en-BH')} - ${s.activityName}</option>
+        `).join('');
+        
+        if (sessionsData.sessions.length > 0) {
+          selector.value = sessionsData.sessions[0].id;
+          flightAdminViews.loadSessionControl();
+        }
+        return;
+      }
+
+      const response = await fetch(`/api/sessionControl/session/${sessionId}`, {
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+      });
+      const data = await response.json();
+      
+      // Session details
+      const sessionDetails = document.getElementById('sessionDetails');
+      sessionDetails.innerHTML = `
+        <p><strong>Date:</strong> ${new Date(data.session.startAt).toLocaleDateString('en-BH')}</p>
+        <p><strong>Time:</strong> ${new Date(data.session.startAt).toLocaleTimeString('en-BH')}</p>
+        <p><strong>Activity:</strong> ${data.session.activityName}</p>
+        <p><strong>Status:</strong> <span class="badge badge-${data.session.status}">${data.session.status}</span></p>
+      `;
+
+      // Attendance status
+      const attendanceStatus = document.getElementById('attendanceStatus');
+      attendanceStatus.innerHTML = `
+        <div class="status-grid">
+          <div class="status-item">
+            <h4>Coming</h4>
+            <p class="count">${data.attendanceList.filter(a => a.status === 'present').length}</p>
+          </div>
+          <div class="status-item">
+            <h4>Not Coming</h4>
+            <p class="count">${data.attendanceList.filter(a => a.status === 'absent').length}</p>
+          </div>
+        </div>
+        <div class="player-list">
+          ${data.attendanceList.map(player => `
+            <div class="player-item ${player.status}">
+              <span>${player.name}</span>
+              <span class="status-badge">${player.status === 'present' ? '✓' : '✗'}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error loading session control:', error);
+    }
+  },
+
+  // Calculate shuttle cost
+  calculateShuttleCost: async (event) => {
+    event.preventDefault();
+    try {
+      const sessionId = document.getElementById('sessionControlSelector')?.value;
+      
+      const response = await fetch('/api/shuttle/calculate-cost', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sessionId,
+          tubesUsed: parseInt(document.getElementById('tubesUsed').value),
+          looseShuttles: parseInt(document.getElementById('looseShuttles').value),
+          tubePrice: parseFloat(document.getElementById('tubePrice').value) * 1000, // Convert to fils
+          shuttlesPerTube: parseInt(document.getElementById('shuttlesPerTube').value)
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        const costResult = document.getElementById('costResult');
+        const costDetails = document.getElementById('costDetails');
+        
+        costDetails.innerHTML = `
+          <table class="compact-table">
+            <tr>
+              <td>Total Available Shuttles:</td>
+              <td>${result.calculation.totalAvailableShuttles}</td>
+            </tr>
+            <tr>
+              <td>Total Cost:</td>
+              <td>${(result.calculation.totalCostBhd).toFixed(3)} BHD</td>
+            </tr>
+            <tr>
+              <td>Players Attending:</td>
+              <td>${result.calculation.presentCount}</td>
+            </tr>
+            <tr>
+              <td>Cost Per Player:</td>
+              <td>${(result.calculation.costPerPlayerBhd).toFixed(3)} BHD</td>
+            </tr>
+          </table>
+          <div class="charges-list">
+            <h4>Player Charges:</h4>
+            ${result.calculation.charges.map(c => `
+              <div class="charge-item">
+                <span>${c.memberUid}</span>
+                <span>${(c.chargeBhd).toFixed(3)} BHD</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        
+        costResult.style.display = 'block';
+        showNotification('Cost calculated', 'success');
+      }
+    } catch (error) {
+      showNotification('Error calculating cost', 'error');
+    }
+  },
+
+  // Publish charges
+  publishCharges: async () => {
+    try {
+      showNotification('Charges published to players', 'success');
+    } catch (error) {
+      showNotification('Error publishing charges', 'error');
+    }
+  },
+
+  // Shuttle Tab
+  shuttleTab: () => {
+    return `
+      <div class="shuttle-section">
+        <h2>Shuttle Stock Management</h2>
+        
+        <!-- Current Stock -->
+        <div class="stock-card">
+          <h3>Current Stock</h3>
+          <div id="currentStock" class="stock-display">
+            <p class="loading">Loading...</p>
+          </div>
+        </div>
+
+        <!-- Update Stock -->
+        <div class="update-stock-card">
+          <h3>Update Stock</h3>
+          <form onsubmit="flightAdminViews.updateStock(event)">
+            <div class="form-group">
+              <label>Tubes *</label>
+              <input type="number" id="stockTubes" min="0" required>
+            </div>
+            <div class="form-group">
+              <label>Loose Shuttles</label>
+              <input type="number" id="stockLoose" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label>Shuttles Per Tube</label>
+              <input type="number" id="stockPerTube" value="12" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Stock</button>
+          </form>
+        </div>
+
+        <!-- Refill Log -->
+        <div class="refill-log-card">
+          <h3>Refill History</h3>
+          <div id="refillLog" class="log-list">
+            <p class="loading">Loading...</p>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  // Load shuttle stock
+  loadShuttleStock: async () => {
+    try {
+      const response = await fetch('/api/shuttle/inventory', {
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+      });
+      const data = await response.json();
+      
+      const stockDisplay = document.getElementById('currentStock');
+      stockDisplay.innerHTML = `
+        <div class="stock-info">
+          <p><strong>Tubes:</strong> ${data.tubes}</p>
+          <p><strong>Loose Shuttles:</strong> ${data.looseShuttles}</p>
+          <p><strong>Total Available:</strong> ${data.totalAvailable}</p>
+          ${data.lowStockAlert ? '<p class="alert">⚠ Low stock alert!</p>' : ''}
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error loading shuttle stock:', error);
+    }
+  },
+
+  // Update stock
+  updateStock: async (event) => {
+    event.preventDefault();
+    try {
+      const response = await fetch('/api/shuttle/inventory/update', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          tubes: parseInt(document.getElementById('stockTubes').value),
+          looseShuttles: parseInt(document.getElementById('stockLoose').value),
+          shuttlesPerTube: parseInt(document.getElementById('stockPerTube').value),
+          action: 'refill'
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        showNotification('Stock updated', 'success');
+        flightAdminViews.loadShuttleStock();
+      }
+    } catch (error) {
+      showNotification('Error updating stock', 'error');
+    }
+  },
+
+  // Reports Tab
+  reportsTab: () => {
+    return `
+      <div class="reports-section">
+        <h2>Reports & Logs</h2>
+        
+        <div class="filter-section">
+          <label>Select Month:</label>
+          <select id="reportMonth" onchange="flightAdminViews.loadReports()">
+            <option value="">Current Month</option>
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+
+        <!-- Attendance Logs -->
+        <div class="report-card">
+          <h3>Attendance Logs</h3>
+          <div id="attendanceLogs" class="log-table">
+            <p class="loading">Loading...</p>
+          </div>
+          <button class="btn btn-secondary" onclick="flightAdminViews.printReport('attendance')">Print</button>
+        </div>
+
+        <!-- Paid Players -->
+        <div class="report-card">
+          <h3>Paid Players</h3>
+          <div id="paidPlayers" class="log-table">
+            <p class="loading">Loading...</p>
+          </div>
+          <button class="btn btn-secondary" onclick="flightAdminViews.printReport('paid')">Print</button>
+        </div>
+
+        <!-- Unpaid Players -->
+        <div class="report-card">
+          <h3>Unpaid Players</h3>
+          <div id="unpaidPlayers" class="log-table">
+            <p class="loading">Loading...</p>
+          </div>
+          <button class="btn btn-secondary" onclick="flightAdminViews.printReport('unpaid')">Print</button>
+        </div>
+
+        <!-- Shuttle Logs -->
+        <div class="report-card">
+          <h3>Shuttle Logs</h3>
+          <div id="shuttleLogs" class="log-table">
+            <p class="loading">Loading...</p>
+          </div>
+          <button class="btn btn-secondary" onclick="flightAdminViews.printReport('shuttle')">Print</button>
+        </div>
+      </div>
+    `;
+  },
+
+  // Load reports
+  loadReports: async () => {
+    try {
+      const month = document.getElementById('reportMonth')?.value || new Date().getMonth() + 1;
+      const year = new Date().getFullYear();
+      
+      // Attendance logs
+      const attendanceResponse = await fetch(`/api/reports/attendance-logs?month=${month}&year=${year}`, {
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+      });
+      const attendanceData = await attendanceResponse.json();
+      
+      document.getElementById('attendanceLogs').innerHTML = `
+        <table class="compact-table">
+          <thead>
+            <tr><th>Date</th><th>Member</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            ${attendanceData.attendanceLogs.map(log => `
+              <tr>
+                <td>${new Date(log.date).toLocaleDateString('en-BH')}</td>
+                <td>${log.memberName}</td>
+                <td>${log.status}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      // Paid players
+      const paidResponse = await fetch(`/api/reports/paid-players?month=${month}&year=${year}`, {
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+      });
+      const paidData = await paidResponse.json();
+      
+      document.getElementById('paidPlayers').innerHTML = `
+        <table class="compact-table">
+          <thead>
+            <tr><th>Date</th><th>Member</th><th>Amount</th><th>Method</th></tr>
+          </thead>
+          <tbody>
+            ${paidData.paidPlayers.map(player => `
+              <tr>
+                <td>${new Date(player.date).toLocaleDateString('en-BH')}</td>
+                <td>${player.memberName}</td>
+                <td>${(player.amount).toFixed(3)} BHD</td>
+                <td>${player.paymentMethod}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      // Unpaid players
+      const unpaidResponse = await fetch(`/api/reports/unpaid-players`, {
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+      });
+      const unpaidData = await unpaidResponse.json();
+      
+      document.getElementById('unpaidPlayers').innerHTML = `
+        <table class="compact-table">
+          <thead>
+            <tr><th>Member</th><th>Amount Due</th><th>Days Overdue</th></tr>
+          </thead>
+          <tbody>
+            ${unpaidData.unpaidPlayers.map(player => `
+              <tr>
+                <td>${player.memberName}</td>
+                <td>${(player.amountDue).toFixed(3)} BHD</td>
+                <td>${player.daysOverdue}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch (error) {
+      console.error('Error loading reports:', error);
+    }
+  },
+
+  // Print report
+  printReport: (reportType) => {
+    window.print();
+  }
 };
+
