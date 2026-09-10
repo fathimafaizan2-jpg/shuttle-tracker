@@ -57,19 +57,21 @@ window.render = async function() {
   const isFlightAdmin = role === "LEVEL_ADMIN";
   const isAdmin = isSuper || isFlightAdmin;
 
+  // Toggle navigation visibility safely according to role
   document.querySelectorAll(".admin-nav").forEach(el => el.classList.toggle("hidden", !isAdmin));
   document.querySelectorAll(".super-nav").forEach(el => el.classList.toggle("hidden", !isSuper));
   document.querySelectorAll(".flight-only-nav").forEach(el => el.classList.toggle("hidden", !isFlightAdmin));
   document.querySelectorAll(".nav[data-page]").forEach(el => el.classList.toggle("active", el.dataset.page === state.page));
 
+  // Role-aware page mapping (prevents LEVEL_ADMIN from calling superAdmin views)
   const pageMap = {
-    home: isSuper ? (av.home || v.home) : v.home,
+    home: isSuper ? av.home : v.home,
     timetable: v.timetable,
     attendance: v.attendance,
     logs: isSuper ? av.logs : v.logs,
     wallet: isSuper ? av.walletLogs : v.wallet,
-    sessions: isSuper ? av.sessions : (fv.sessionControl || av.sessions),
-    stock: isSuper ? av.stockLogs : (fv.stock || av.stockLogs),
+    sessions: isSuper ? av.sessions : fv.sessionControl,
+    stock: isSuper ? av.stockLogs : fv.stock,
     reports: fv.reports,
     master: av.master,
     flights: av.flightsPage,
@@ -86,7 +88,7 @@ window.render = async function() {
     try {
       viewContainer.innerHTML = typeof viewFn === 'function' ? await viewFn() : viewFn;
       
-      // Bind navigation clicks across the entire view
+      // Bind inline page navigation clicks
       document.querySelectorAll("[data-go-page]").forEach(btn => {
         btn.onclick = (e) => {
           e.preventDefault();
