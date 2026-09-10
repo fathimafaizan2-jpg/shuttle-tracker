@@ -4,17 +4,11 @@ export const state = { member: null, page: "home", language: "en" };
 const memberCacheKey = "indian_club_verified_member";
 
 const playerPages = new Set(["home", "timetable", "attendance", "logs", "wallet", "bazaar", "profile"]);
-const flightAdminPages = new Set([...playerPages, "sessions", "stock", "finance"]);
-const superAdminPages = new Set(["home", "master", "flights", "finance", "logs", "wallet", "sessions", "stock", "ads", "audit", "bazaar", "profile"]);
+const flightAdminPages = new Set([...playerPages, "sessions", "stock", "reports", "finance"]);
+const superAdminPages = new Set(["home", "master", "flights", "finance", "logs", "wallet", "sessions", "stock", "reports", "ads", "audit", "bazaar", "profile"]);
 
 function approvedMember(member) { return member && ["PLAYER", "LEVEL_ADMIN", "SUPER_ADMIN"].includes(member.role); }
 function allowedPagesForRole(role) { return role === "SUPER_ADMIN" ? superAdminPages : role === "LEVEL_ADMIN" ? flightAdminPages : playerPages; }
-function cacheMember(member) { try { localStorage.setItem(memberCacheKey, JSON.stringify(member)); } catch {} }
-function clearCachedMember() { try { localStorage.removeItem(memberCacheKey); } catch {} }
-function cachedMemberFor(uid) {
-  try { const value = JSON.parse(localStorage.getItem(memberCacheKey) || "null"); return value?.uid === uid && approvedMember(value) ? value : null; } catch { return null; }
-}
-const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
 export function canOpenPage(page) { return allowedPagesForRole(state.member?.role).has(page); }
 export function navigate(page) {
@@ -28,26 +22,10 @@ export function navigate(page) {
 }
 
 export async function startSignedInApp() {
-  let member;
-  try { member = await api("/members/me", { loadingLabel: "Restoring your account…" }); }
-  catch (firstError) {
-    await delay(650);
-    member = await api("/members/me", { forceRefresh: true, loadingLabel: "Restoring your account…" }).catch(() => null);
-  }
-  
-  if (!member) {
-    member = cachedMemberFor(null) || {
-      role: "SUPER_ADMIN",
-      fullName: "Admin",
-      flightName: "All activities"
-    };
-  }
-
-  if (!approvedMember(member)) throw new Error("This account is not approved for Indian Club access.");
+  let member = await api("/members/me").catch(() => null);
+  if (!approvedMember(member)) throw new Error("Account unverified or unauthorized.");
   state.member = member;
   state.page = state.page || "home";
-  state.language = localStorage.getItem("indian_club_language") || "en";
-  cacheMember(member);
   return member;
 }
 
@@ -56,9 +34,7 @@ export function setLanguage(language) { state.language = language; localStorage.
 export function watchAuthentication({ onSignedIn, onSignedOut, onError }) {
   return observeAuth(async user => {
     if (!user) {
-      clearCachedMember();
       state.member = null;
-      state.page = "home";
       onSignedOut?.();
       return;
     }
@@ -66,19 +42,11 @@ export function watchAuthentication({ onSignedIn, onSignedOut, onError }) {
       await startSignedInApp();
       onSignedIn?.(state.member);
     } catch (error) {
-      const cached = cachedMemberFor(user.uid);
-      if (cached) {
-        state.member = cached;
-        state.page = "home";
-        onSignedIn?.(cached);
-        return;
-      }
       onError?.(error);
     }
   });
 }
 
-// GLOBAL RENDER ENGINE
 window.render = async function() {
   const v = window.views || {};
   const av = window.adminViews || {};
@@ -89,7 +57,6 @@ window.render = async function() {
   const isFlightAdmin = role === "LEVEL_ADMIN";
   const isAdmin = isSuper || isFlightAdmin;
 
-  // UNLOCK SIDEBAR TABS DYNAMICALLY
   document.querySelectorAll(".admin-nav").forEach(el => el.classList.toggle("hidden", !isAdmin));
   document.querySelectorAll(".super-nav").forEach(el => el.classList.toggle("hidden", !isSuper));
   document.querySelectorAll(".flight-only-nav").forEach(el => el.classList.toggle("hidden", !isFlightAdmin));
@@ -118,6 +85,9 @@ window.render = async function() {
     const viewFn = pageMap[state.page] || pageMap.home || (() => `<div class="card"><h3>View Loading...</h3></div>`);
     try {
       viewContainer.innerHTML = typeof viewFn === 'function' ? await viewFn() : viewFn;
+      if (typeof av.bindAdminViews === 'function' && isSuper) av.bindAdminViews();
+      if (typeof fv.bindFlightAdminViews === 'function' && isFlightAdmin) fv.bindFlightAdminViews();
+      if (typeof v.bindBusinessSubmission === 'function') v.bindBusinessSubmission();
     } catch (err) {
       console.error("View rendering error:", err);
       viewContainer.innerHTML = `<section class="card"><h2>Unable to render view</h2><p class="note">${err.message || "An unexpected error occurred."}</p></section>`;
