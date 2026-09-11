@@ -1,10 +1,3 @@
-
-// config.js - Configuration & API Endpoints
-
-// ============================================
-// ENVIRONMENT CONFIGURATION
-// ============================================
-
 const ENV = {
   development: {
     apiUrl: "http://localhost:3000/api",
@@ -30,11 +23,7 @@ const ENV = {
   }
 };
 
-const currentEnv = ENV.development; // Change to production when ready
-
-// ============================================
-// API CONFIGURATION
-// ============================================
+let currentEnv = ENV.development;
 
 export const API_CONFIG = {
   baseUrl: currentEnv.apiUrl,
@@ -45,18 +34,9 @@ export const API_CONFIG = {
   }
 };
 
-// ============================================
-// FIREBASE CONFIGURATION
-// ============================================
-
 export const FIREBASE_CONFIG = currentEnv.firebaseConfig;
 
-// ============================================
-// API ENDPOINTS
-// ============================================
-
 export const API_ENDPOINTS = {
-  // Authentication
   auth: {
     login: "/auth/login",
     logout: "/auth/logout",
@@ -65,7 +45,6 @@ export const API_ENDPOINTS = {
     refreshToken: "/auth/refresh-token"
   },
 
-  // Members
   members: {
     list: "/members",
     get: "/members/:id",
@@ -76,7 +55,6 @@ export const API_ENDPOINTS = {
     preRegister: "/members/pre-register"
   },
 
-  // Activities
   activities: {
     list: "/activities",
     get: "/activities/:id",
@@ -86,7 +64,6 @@ export const API_ENDPOINTS = {
     byLevel: "/activities/level/:level"
   },
 
-  // Timetable
   timetable: {
     list: "/timetable",
     get: "/timetable/:id",
@@ -95,7 +72,6 @@ export const API_ENDPOINTS = {
     delete: "/timetable/:id"
   },
 
-  // Attendance
   attendance: {
     list: "/attendance",
     get: "/attendance/:id",
@@ -106,7 +82,6 @@ export const API_ENDPOINTS = {
     finalize: "/attendance/:sessionId/finalize"
   },
 
-  // Wallet
   wallet: {
     getBalance: "/wallet/balance",
     getTransactions: "/wallet/transactions",
@@ -115,7 +90,6 @@ export const API_ENDPOINTS = {
     payByWhatsApp: "/wallet/pay-whatsapp"
   },
 
-  // Advertising
   advertising: {
     list: "/advertising",
     get: "/advertising/:id",
@@ -126,14 +100,12 @@ export const API_ENDPOINTS = {
     reject: "/advertising/:id/reject"
   },
 
-  // Shuttle Stock
   shuttle: {
     getStock: "/shuttle/stock",
     updateStock: "/shuttle/stock/update",
     getHistory: "/shuttle/history"
   },
 
-  // Reports
   reports: {
     attendance: "/reports/attendance",
     payments: "/reports/payments",
@@ -141,7 +113,6 @@ export const API_ENDPOINTS = {
     activities: "/reports/activities"
   },
 
-  // Logs
   logs: {
     list: "/logs",
     get: "/logs/:id",
@@ -149,41 +120,36 @@ export const API_ENDPOINTS = {
   }
 };
 
-// ============================================
-// APP CONFIGURATION
-// ============================================
-
 export const APP_CONFIG = {
   appName: "Indian Club Bahrain",
   appVersion: "1.0.0",
   appDescription: "Premium Management System",
+  environment: "development",
   
-  // UI Settings
   ui: {
     itemsPerPage: 10,
-    maxUploadSize: 5242880, // 5MB
+    maxUploadSize: 5242880,
     dateFormat: "DD/MM/YYYY",
     timeFormat: "HH:mm",
     currency: "BHD"
   },
 
-  // Features
   features: {
     enableAdvertising: true,
     enableWallet: true,
     enableBazaar: true,
     enableReports: true,
-    enableLogs: true
+    enableLogs: true,
+    enablePWA: true,
+    enableServiceWorker: true
   },
 
-  // Roles
   roles: {
     SUPER_ADMIN: "Super Admin",
     LEVEL_ADMIN: "Level Admin",
     PLAYER: "Player"
   },
 
-  // Levels
   levels: {
     BEGINNER: "Beginner",
     INTERMEDIATE: "Intermediate",
@@ -191,18 +157,28 @@ export const APP_CONFIG = {
     PROFESSIONAL: "Professional"
   },
 
-  // Activities
   activities: {
     BADMINTON: "Badminton",
     CRICKET: "Cricket",
     TENNIS: "Tennis",
     SWIMMING: "Swimming"
+  },
+
+  colors: {
+    primary: "#1a1a2e",
+    accent: "#e94560",
+    success: "#00d4aa",
+    warning: "#ffa502",
+    danger: "#ff4757",
+    info: "#0099ff"
+  },
+
+  timeouts: {
+    sessionTimeout: 3600000,
+    apiTimeout: 30000,
+    notificationDuration: 3000
   }
 };
-
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
 
 export function getApiUrl(endpoint) {
   return `${API_CONFIG.baseUrl}${endpoint}`;
@@ -215,13 +191,15 @@ export function getEnvironment() {
 export function setEnvironment(env) {
   if (ENV[env]) {
     currentEnv = ENV[env];
-    console.log(`Environment changed to: ${env}`);
+    console.log(`✅ Environment changed to: ${env}`);
+  } else {
+    console.error(`❌ Unknown environment: ${env}`);
   }
 }
 
-// ============================================
-// EXPORT ALL CONFIG
-// ============================================
+export function getConfig(key) {
+  return APP_CONFIG[key];
+}
 
 export default {
   API_CONFIG,
@@ -230,6 +208,11 @@ export default {
   APP_CONFIG,
   getApiUrl,
   getEnvironment,
-  setEnvironment
+  setEnvironment,
+  getConfig
 };
+
+console.log('✅ config.js loaded');
+console.log('📱 App:', APP_CONFIG.appName, 'v' + APP_CONFIG.appVersion);
+console.log('🌍 Environment:', APP_CONFIG.environment);
 
