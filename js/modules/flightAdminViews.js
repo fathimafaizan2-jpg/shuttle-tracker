@@ -484,4 +484,7 @@ const flightAdminViews = {
 };
 
 console.log('✅ flightAdminViews.js loaded successfully');
+window.flightAdminViews = flightAdminViews;
+console.log('✅ flightAdminViews.js loaded successfully');
+
 
