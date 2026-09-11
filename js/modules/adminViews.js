@@ -507,4 +507,8 @@ const adminViews = {
   }
 };
 
+// ✅ MAKE IT GLOBAL
+window.adminViews = adminViews;
+
 console.log('✅ adminViews.js loaded successfully');
+
