@@ -1,11 +1,4 @@
-
-// js/modules/auth.js - Firebase Authentication
-
 import { setAuthToken, clearAuthToken, setMember, loadMember } from './router.js';
-
-// ============================================
-// FIREBASE INITIALIZATION
-// ============================================
 
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
@@ -15,13 +8,6 @@ const firebaseConfig = {
   messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
   appId: "YOUR_APP_ID"
 };
-
-// Initialize Firebase (if using Firebase)
-// firebase.initializeApp(firebaseConfig);
-
-// ============================================
-// MOCK AUTHENTICATION (FOR TESTING)
-// ============================================
 
 const mockUsers = {
   "superadmin@club.com": {
@@ -53,25 +39,18 @@ const mockUsers = {
   }
 };
 
-// ============================================
-// LOGIN FUNCTION
-// ============================================
-
 export async function login(email, password) {
   try {
     console.log("🔐 Attempting login with:", email);
     
-    // Mock authentication
     const user = mockUsers[email];
     
     if (!user) {
       throw new Error("User not found");
     }
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Set auth token
     const token = "mock_token_" + Date.now();
     setAuthToken(token);
     setMember(user);
@@ -85,10 +64,6 @@ export async function login(email, password) {
   }
 }
 
-// ============================================
-// LOGOUT FUNCTION
-// ============================================
-
 export async function logout() {
   try {
     console.log("🔓 Logging out...");
@@ -101,33 +76,20 @@ export async function logout() {
   }
 }
 
-// ============================================
-// CHECK AUTH STATUS
-// ============================================
-
 export function isAuthenticated() {
   const token = localStorage.getItem("firebase_auth_token");
   const member = localStorage.getItem("member_data");
   return !!(token && member);
 }
 
-// ============================================
-// GET CURRENT USER
-// ============================================
-
 export function getCurrentUser() {
   return loadMember();
 }
-
-// ============================================
-// REGISTER FUNCTION
-// ============================================
 
 export async function register(email, password, fullName) {
   try {
     console.log("📝 Attempting registration with:", email);
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     const newUser = {
@@ -140,7 +102,6 @@ export async function register(email, password, fullName) {
       joinDate: new Date().toISOString().split('T')[0]
     };
     
-    // Set auth token
     const token = "mock_token_" + Date.now();
     setAuthToken(token);
     setMember(newUser);
@@ -154,15 +115,10 @@ export async function register(email, password, fullName) {
   }
 }
 
-// ============================================
-// PASSWORD RESET
-// ============================================
-
 export async function resetPassword(email) {
   try {
     console.log("🔑 Password reset requested for:", email);
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     console.log("✅ Password reset email sent");
@@ -173,10 +129,6 @@ export async function resetPassword(email) {
     throw error;
   }
 }
-
-// ============================================
-// UPDATE PROFILE
-// ============================================
 
 export async function updateProfile(updates) {
   try {
@@ -193,13 +145,8 @@ export async function updateProfile(updates) {
   }
 }
 
-// ============================================
-// EXPORT MOCK USERS FOR TESTING
-// ============================================
-
 export function getMockUsers() {
   return mockUsers;
 }
 
 console.log('✅ auth.js loaded');
-
