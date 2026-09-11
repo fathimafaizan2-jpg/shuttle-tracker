@@ -565,3 +565,6 @@ const views = {
 };
 
 console.log('✅ views.js loaded successfully');
+window.views = views;
+console.log('✅ views.js loaded successfully');
+
