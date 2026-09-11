@@ -1,6 +1,3 @@
-
-// app.js - Main Application Controller (Updated)
-
 import { 
   state, 
   navigate, 
@@ -10,44 +7,36 @@ import {
   getMember,
   initRouter,
   loadMember
-} from './router.js';
+} from './modules/router.js';
 
 import { 
   isAuthenticated, 
   getCurrentUser,
   login,
   logout
-} from './auth.js';
+} from './modules/auth.js';
 
-import { APP_CONFIG } from './config.js';
+import { APP_CONFIG } from './modules/config.js';
 
-// ============================================
-// APP INITIALIZATION
-// ============================================
+let appReady = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 App initializing...');
   console.log('App Name:', APP_CONFIG.appName);
   console.log('App Version:', APP_CONFIG.appVersion);
   
-  // Initialize router
   initRouter();
   
-  // Check if user is authenticated
   if (isAuthenticated()) {
     console.log('✅ User authenticated');
     showMainApp();
     initializeApp();
   } else {
-    console.log('❌ User not authenticated');
+    console.log('❌ User not authenticated - showing login');
     showAuthScreen();
     initializeAuthScreen();
   }
 });
-
-// ============================================
-// SCREEN MANAGEMENT
-// ============================================
 
 function showLoadingScreen() {
   document.getElementById('loadingScreen').style.display = 'flex';
@@ -67,46 +56,49 @@ function showMainApp() {
   document.getElementById('mainApp').style.display = 'flex';
 }
 
-// ============================================
-// AUTH SCREEN INITIALIZATION
-// ============================================
-
 function initializeAuthScreen() {
   const authContainer = document.getElementById('firebaseui-auth-container');
   
-  // Create simple login form for testing
   authContainer.innerHTML = `
     <div style="display: flex; flex-direction: column; gap: 15px;">
       <div class="form-group">
         <label>Email</label>
-        <input type="email" id="authEmail" placeholder="Enter your email" style="width: 100%; padding: 10px; border: 1px solid #e0e6ed; border-radius: 8px;">
+        <input type="email" id="authEmail" placeholder="Enter your email" style="width: 100%; padding: 10px; border: 1px solid #e0e6ed; border-radius: 8px; font-family: inherit;">
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="authPassword" placeholder="Enter your password" style="width: 100%; padding: 10px; border: 1px solid #e0e6ed; border-radius: 8px;">
+        <input type="password" id="authPassword" placeholder="Enter your password" style="width: 100%; padding: 10px; border: 1px solid #e0e6ed; border-radius: 8px; font-family: inherit;">
       </div>
       <button id="loginBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
-        Sign In
+        <i class="fas fa-sign-in-alt"></i> Sign In
       </button>
-      <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #a0a8b8;">
-        <p><strong>Test Accounts:</strong></p>
-        <p>Super Admin: superadmin@club.com</p>
-        <p>Level Admin: leveladmin@club.com</p>
-        <p>Player: player@club.com</p>
-        <p>Password: any</p>
+      <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #a0a8b8; line-height: 1.8;">
+        <p style="margin: 0; font-weight: 600; margin-bottom: 10px;">📋 Test Accounts:</p>
+        <p style="margin: 5px 0;"><strong>Super Admin:</strong></p>
+        <p style="margin: 0 0 10px 0; color: #6c757d;">superadmin@club.com</p>
+        
+        <p style="margin: 5px 0;"><strong>Level Admin:</strong></p>
+        <p style="margin: 0 0 10px 0; color: #6c757d;">leveladmin@club.com</p>
+        
+        <p style="margin: 5px 0;"><strong>Player:</strong></p>
+        <p style="margin: 0 0 10px 0; color: #6c757d;">player@club.com</p>
+        
+        <p style="margin: 10px 0 0 0; color: #6c757d;">Password: <strong>any</strong></p>
       </div>
     </div>
   `;
   
   document.getElementById('loginBtn').addEventListener('click', handleLogin);
+  document.getElementById('authEmail').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
+  document.getElementById('authPassword').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
 }
 
-// ============================================
-// LOGIN HANDLER
-// ============================================
-
 async function handleLogin() {
-  const email = document.getElementById('authEmail').value;
+  const email = document.getElementById('authEmail').value.trim();
   const password = document.getElementById('authPassword').value;
   
   if (!email || !password) {
@@ -115,43 +107,39 @@ async function handleLogin() {
   }
   
   try {
+    console.log('🔐 Attempting login with:', email);
     showLoadingScreen();
+    
     const user = await login(email, password);
+    
+    console.log('✅ Login successful:', user);
     showMainApp();
     initializeApp();
     showNotification(`Welcome, ${user.fullName}!`, 'success');
   } catch (error) {
+    console.error('❌ Login failed:', error);
     showAuthScreen();
     initializeAuthScreen();
     showNotification('Login failed: ' + error.message, 'error');
   }
 }
 
-// ============================================
-// APP INITIALIZATION
-// ============================================
-
 function initializeApp() {
   console.log('📱 Initializing main app...');
   
-  // Set user info in header
-  updateUserHeader();
-  
-  // Generate sidebar menu
-  generateSidebarMenu();
-  
-  // Render initial page
-  renderPage();
-  
-  // Setup event listeners
-  setupEventListeners();
-  
-  console.log('✅ App initialized successfully');
+  try {
+    updateUserHeader();
+    generateSidebarMenu();
+    renderPage();
+    setupEventListeners();
+    
+    appReady = true;
+    console.log('✅ App initialized successfully');
+  } catch (error) {
+    console.error('❌ App initialization failed:', error);
+    showNotification('Failed to initialize app', 'error');
+  }
 }
-
-// ============================================
-// USER HEADER
-// ============================================
 
 function updateUserHeader() {
   const member = getMember();
@@ -160,12 +148,9 @@ function updateUserHeader() {
   if (member) {
     document.getElementById('userName').textContent = member.fullName || 'User';
     document.getElementById('userRole').textContent = role || 'Player';
+    console.log('👤 User header updated:', member.fullName, '(' + role + ')');
   }
 }
-
-// ============================================
-// SIDEBAR MENU GENERATION
-// ============================================
 
 function generateSidebarMenu() {
   const menu = getSidebarMenu();
@@ -190,13 +175,13 @@ function generateSidebarMenu() {
     
     sidebarMenu.appendChild(menuItem);
   });
+  
+  console.log('📋 Sidebar menu generated with', menu.length, 'items');
 }
 
-// ============================================
-// PAGE RENDERING
-// ============================================
-
 function renderPage() {
+  if (!appReady) return;
+  
   const role = getCurrentRole();
   const page = getCurrentPage();
   
@@ -204,25 +189,32 @@ function renderPage() {
   
   let content = '';
   
-  if (role === 'SUPER_ADMIN') {
-    content = renderSuperAdminPage(page);
-  } else if (role === 'LEVEL_ADMIN') {
-    content = renderLevelAdminPage(page);
-  } else if (role === 'PLAYER') {
-    content = renderPlayerPage(page);
+  try {
+    if (role === 'SUPER_ADMIN') {
+      content = renderSuperAdminPage(page);
+    } else if (role === 'LEVEL_ADMIN') {
+      content = renderLevelAdminPage(page);
+    } else if (role === 'PLAYER') {
+      content = renderPlayerPage(page);
+    } else {
+      content = '<div class="card"><p>Unknown role</p></div>';
+    }
+    
+    document.getElementById('pageContent').innerHTML = content;
+    updateActiveMenu(page);
+    document.querySelector('.premium-content').scrollTop = 0;
+  } catch (error) {
+    console.error('❌ Error rendering page:', error);
+    showNotification('Error loading page', 'error');
   }
-  
-  document.getElementById('pageContent').innerHTML = content;
-  
-  // Update active menu item
-  updateActiveMenu(page);
 }
 
-// ============================================
-// SUPER ADMIN PAGES
-// ============================================
-
 function renderSuperAdminPage(page) {
+  if (!window.adminViews) {
+    console.error('❌ adminViews not loaded');
+    return '<div class="card"><p>Admin views not loaded</p></div>';
+  }
+  
   switch(page) {
     case 'home':
       return adminViews.dashboard();
@@ -239,11 +231,12 @@ function renderSuperAdminPage(page) {
   }
 }
 
-// ============================================
-// LEVEL ADMIN PAGES
-// ============================================
-
 function renderLevelAdminPage(page) {
+  if (!window.flightAdminViews) {
+    console.error('❌ flightAdminViews not loaded');
+    return '<div class="card"><p>Level admin views not loaded</p></div>';
+  }
+  
   switch(page) {
     case 'home':
       return flightAdminViews.dashboard();
@@ -260,11 +253,12 @@ function renderLevelAdminPage(page) {
   }
 }
 
-// ============================================
-// PLAYER PAGES
-// ============================================
-
 function renderPlayerPage(page) {
+  if (!window.views) {
+    console.error('❌ views not loaded');
+    return '<div class="card"><p>Player views not loaded</p></div>';
+  }
+  
   switch(page) {
     case 'home':
       return views.home();
@@ -285,10 +279,6 @@ function renderPlayerPage(page) {
   }
 }
 
-// ============================================
-// ACTIVE MENU ITEM
-// ============================================
-
 function updateActiveMenu(page) {
   document.querySelectorAll('.menu-item').forEach(item => {
     item.classList.remove('active');
@@ -300,45 +290,39 @@ function updateActiveMenu(page) {
   }
 }
 
-// ============================================
-// EVENT LISTENERS
-// ============================================
-
 function setupEventListeners() {
-  // Sign out button
-  document.getElementById('signOutBtn').addEventListener('click', handleSignOut);
+  const signOutBtn = document.getElementById('signOutBtn');
+  if (signOutBtn) {
+    signOutBtn.addEventListener('click', handleSignOut);
+  }
   
-  // Listen for navigation events
   window.addEventListener('app:navigate', (e) => {
     renderPage();
   });
   
-  // Listen for notification events
   window.addEventListener('app:notify', (e) => {
     showNotification(e.detail.message, e.detail.type);
   });
+  
+  console.log('✅ Event listeners setup complete');
 }
-
-// ============================================
-// SIGN OUT
-// ============================================
 
 async function handleSignOut() {
   if (confirm('Are you sure you want to sign out?')) {
     try {
+      console.log('🔓 Signing out...');
       await logout();
+      appReady = false;
       showAuthScreen();
       initializeAuthScreen();
       showNotification('Signed out successfully', 'success');
+      console.log('✅ Logout successful');
     } catch (error) {
+      console.error('❌ Logout failed:', error);
       showNotification('Logout failed: ' + error.message, 'error');
     }
   }
 }
-
-// ============================================
-// NOTIFICATIONS
-// ============================================
 
 function showNotification(message, type = 'info') {
   const container = document.getElementById('toastContainer');
@@ -354,15 +338,12 @@ function showNotification(message, type = 'info') {
   
   container.appendChild(toast);
   
-  // Auto remove after 3 seconds
+  console.log(`📢 Notification [${type}]:`, message);
+  
   setTimeout(() => {
     toast.remove();
   }, 3000);
 }
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
 
 function getIconForPage(page) {
   const icons = {
@@ -395,16 +376,14 @@ function getNotificationIcon(type) {
   return icons[type] || 'ℹ️';
 }
 
-// ============================================
-// EXPORT FOR GLOBAL USE
-// ============================================
-
 window.appController = {
   renderPage,
   showNotification,
   navigate,
   login,
-  logout
+  logout,
+  isReady: () => appReady
 };
 
 console.log('✅ app.js loaded successfully');
+
