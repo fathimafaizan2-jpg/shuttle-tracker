@@ -95,26 +95,26 @@
          ============================================ -->
 
     <!-- 1. LOAD CONFIG FIRST -->
-    <script src="js/modules/config.js"></script>
+    <script src="js/config.js"></script>
 
     <!-- 2. LOAD AUTH -->
-    <script src="js/modules/auth.js"></script>
+    <script src="js/auth.js"></script>
 
     <!-- 3. LOAD ROUTER -->
-    <script src="js/modules/router.js"></script>
+    <script src="js/router.js"></script>
 
     <!-- 4. LOAD ALL VIEW FILES (SUPER IMPORTANT!) -->
-    <script src="js/modules/adminViews.js"></script>
-    <script src="js/modules/flightAdminViews.js"></script>
-    <script src="js/modules/views.js"></script>
+    <script src="js/adminViews.js"></script>
+    <script src="js/flightAdminViews.js"></script>
+    <script src="js/views.js"></script>
 
     <!-- 5. LOAD APP CONTROLLER LAST -->
-    <script src="js/modules/app.js"></script>
+    <script src="js/app.js"></script>
 
     <!-- 6. LOAD SERVICE WORKER -->
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('js/sw.js').catch(err => console.log('SW registration failed:', err));
+            navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed:', err));
         }
     </script>
 </body>
