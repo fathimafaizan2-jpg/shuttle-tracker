@@ -4,226 +4,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Indian Club Bahrain - Premium Management System for Badminton, Cricket, Tennis & Swimming">
-    <meta name="keywords" content="Indian Club, Bahrain, Sports Management, Badminton, Cricket">
-    <meta name="author" content="Indian Club Bahrain">
-    <meta name="theme-color" content="#1a1a2e">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Indian Club">
+    <title>Indian Club Bahrain - Premium App</title>
     
-    <title>Indian Club Bahrain - Premium Management System</title>
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' fill='%23e94560'>🏸</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%231a1a2e' width='180' height='180'/><text x='90' y='130' font-size='100' fill='%23e94560' text-anchor='middle'>🏸</text></svg>">
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Font Awesome Icons CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVJkEZSMUkrQ6usKu8zIvxUsvypLcXdAambRUe5Xx6G7aRJ0ZHMx+eSXG360s8SafiaTtZBDCw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Premium Styles -->
-    <link rel="stylesheet" href="css/premium-styles.css">
-    
-    <!-- Inline Critical CSS for faster loading -->
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        html, body {
-            height: 100%;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f5f7fa;
-            color: #1a1a2e;
-        }
-        
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        /* Loading Screen Critical Styles */
-        .loading-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
-        }
-        
-        .loader {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-top: 4px solid #e94560;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 30px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!-- ============================================
-         MAIN APP CONTAINER
-         ============================================ -->
-    <div id="app" class="app-container">
-        
-        <!-- ============================================
-             LOADING SCREEN
-             ============================================ -->
-        <div id="loadingScreen" class="loading-screen">
-            <div class="loader"></div>
-            <h2 style="font-size: 32px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.5px;">Indian Club Bahrain</h2>
-            <p style="font-size: 14px; opacity: 0.8;">Premium Management System</p>
-        </div>
+    <!-- LOADING SCREEN -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loader"></div>
+        <h2>Indian Club Bahrain</h2>
+        <p>Loading your premium experience...</p>
+    </div>
 
-        <!-- ============================================
-             AUTHENTICATION SCREEN
-             ============================================ -->
-        <div id="authScreen" class="auth-screen" style="display: none;">
-            <div class="auth-wrapper">
-                <div class="auth-card">
-                    <!-- Logo -->
-                    <div class="auth-logo">
-                        <i class="fas fa-badminton"></i>
-                    </div>
-                    
-                    <!-- Title -->
-                    <h1>Indian Club Bahrain</h1>
-                    <p class="auth-subtitle">Premium Management System</p>
-                    
-                    <!-- Login Form Container -->
-                    <div id="firebaseui-auth-container"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================
-             MAIN APPLICATION
-             ============================================ -->
-        <div id="mainApp" class="main-app" style="display: none;">
-            
-            <!-- ============================================
-                 PREMIUM HEADER
-                 ============================================ -->
-            <header class="premium-header">
-                <!-- Brand Section -->
-                <div class="header-brand">
-                    <i class="fas fa-badminton brand-icon"></i>
-                    <h1>Indian Club</h1>
+    <!-- AUTH SCREEN -->
+    <div id="authScreen" class="auth-screen" style="display: none;">
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <div class="auth-logo">🏸</div>
+                <h1>Indian Club</h1>
+                <p class="auth-subtitle">Bahrain's Premier Sports Club</p>
+                
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="authEmail" placeholder="Enter your email" value="superadmin@club.com">
                 </div>
                 
-                <!-- Center Section - Role Badge -->
-                <div class="header-center">
-                    <span id="userRole" class="role-badge">Player</span>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="authPassword" placeholder="Enter password" value="any">
                 </div>
                 
-                <!-- Right Section - User Profile & Actions -->
-                <div class="header-actions">
-                    <div class="user-profile">
-                        <span id="userName" class="user-name">User</span>
-                        <button id="signOutBtn" class="btn-icon" title="Sign Out">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <!-- ============================================
-                 MAIN CONTENT AREA
-                 ============================================ -->
-            <main class="premium-main">
-                
-                <!-- ============================================
-                     SIDEBAR NAVIGATION
-                     ============================================ -->
-                <aside class="premium-sidebar">
-                    <nav id="sidebarMenu" class="sidebar-menu">
-                        <!-- Menu items will be generated by JavaScript -->
-                    </nav>
-                </aside>
-
-                <!-- ============================================
-                     PAGE CONTENT
-                     ============================================ -->
-                <section class="premium-content">
-                    <div id="pageContent" class="content-wrapper">
-                        <!-- Page content will be rendered here by JavaScript -->
-                    </div>
-                </section>
-            </main>
-
-            <!-- ============================================
-                 TOAST NOTIFICATIONS
-                 ============================================ -->
-            <div id="toastContainer" class="toast-container">
-                <!-- Notifications will be added here dynamically -->
+                <button class="btn btn-primary" onclick="handleLogin()" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
             </div>
         </div>
     </div>
 
+    <!-- MAIN APP -->
+    <div id="mainApp" class="app-container" style="display: none;">
+        <!-- HEADER -->
+        <div class="premium-header">
+            <div class="header-brand">
+                <div class="brand-icon">🏸</div>
+                <h1>Indian Club</h1>
+            </div>
+            
+            <div class="header-center">
+                <span class="role-badge" id="userRole">Player</span>
+            </div>
+            
+            <div class="header-actions">
+                <div class="user-profile">
+                    <span class="user-name" id="userName">User</span>
+                    <button class="btn-icon" id="signOutBtn" title="Sign Out">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="main-app">
+            <!-- SIDEBAR -->
+            <div class="premium-sidebar">
+                <div class="sidebar-menu" id="sidebarMenu"></div>
+            </div>
+
+            <!-- CONTENT -->
+            <div class="premium-main">
+                <div class="premium-content">
+                    <div class="content-wrapper" id="pageContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toastContainer" class="toast-container"></div>
+
     <!-- ============================================
-         SCRIPTS - LOAD ORDER IS CRITICAL
+         SCRIPT LOADING ORDER - CRITICAL!
          ============================================ -->
-    
-    <!-- 1. Config (no dependencies) -->
+
+    <!-- 1. LOAD CONFIG FIRST -->
     <script src="js/modules/config.js"></script>
-    
-    <!-- 2. Router (depends on config) -->
-    <script type="module" src="js/modules/router.js"></script>
-    
-    <!-- 3. Auth (depends on router) -->
-    <script type="module" src="js/modules/auth.js"></script>
-    
-    <!-- 4. View Modules (no dependencies, global scope) -->
+
+    <!-- 2. LOAD AUTH -->
+    <script src="js/modules/auth.js"></script>
+
+    <!-- 3. LOAD ROUTER -->
+    <script src="js/modules/router.js"></script>
+
+    <!-- 4. LOAD ALL VIEW FILES (SUPER IMPORTANT!) -->
     <script src="js/modules/adminViews.js"></script>
     <script src="js/modules/flightAdminViews.js"></script>
     <script src="js/modules/views.js"></script>
-    
-    <!-- 5. Main App (depends on everything above) -->
-    <script type="module" src="js/app.js"></script>
-    
-    <!-- 6. Service Worker Registration (optional, for PWA) -->
+
+    <!-- 5. LOAD APP CONTROLLER LAST -->
+    <script src="js/modules/app.js"></script>
+
+    <!-- 6. LOAD SERVICE WORKER -->
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(registration => {
-                        console.log('✅ Service Worker registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('⚠️ Service Worker registration failed:', error);
-                    });
-            });
+            navigator.serviceWorker.register('js/sw.js').catch(err => console.log('SW registration failed:', err));
         }
-    </script>
-    
-    <!-- 7. Analytics & Monitoring (optional) -->
-    <script>
-        // Log app initialization
-        console.log('📱 Indian Club Bahrain App');
-        console.log('🚀 Loading application...');
-        console.log('⏰ Timestamp:', new Date().toLocaleString());
     </script>
 </body>
 </html>
-
