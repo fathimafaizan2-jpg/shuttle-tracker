@@ -1,9 +1,3 @@
-
-// ============================================
-// adminViews.js - Super Admin Dashboard
-// COMPLETE & PRODUCTION READY - 452 LINES
-// ============================================
-
 const adminViews = {
   
   // DASHBOARD PAGE
@@ -506,6 +500,8 @@ const adminViews = {
     `;
   }
 };
+};
+
 // Make functions globally accessible
 window.superAdminHomeView = superAdminHomeView;
 window.superAdminActivityLogView = superAdminActivityLogView;
@@ -522,6 +518,3 @@ window.bindAdminViews = bindAdminViews;
 // ✅ MAKE IT GLOBAL
 window.adminViews = adminViews;
 console.log('✅ adminViews.js loaded successfully');
-window.adminViews = adminViews;
-console.log('✅ adminViews loaded');
-
