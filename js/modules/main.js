@@ -3,11 +3,11 @@
 // main.js - Application Entry Point
 // ============================================
 
-import { adminViews } from './modules/adminViews.js';
-import { flightAdminViews } from './modules/flightAdminViews.js';
-import { views } from './modules/views.js';
-import { router } from './modules/router.js';
-import { auth } from './modules/auth.js';
+import { adminViews } from './adminViews.js';
+import { flightAdminViews } from './flightAdminViews.js';
+import { views } from './views.js';
+import { router } from './router.js';
+import { auth } from './auth.js';
 
 // Global App Controller
 window.appController = {
