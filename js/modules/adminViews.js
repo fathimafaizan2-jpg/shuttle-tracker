@@ -511,4 +511,6 @@ const adminViews = {
 window.adminViews = adminViews;
 
 console.log('✅ adminViews.js loaded successfully');
+window.adminViews = adminViews;
+console.log('✅ adminViews loaded');
 
