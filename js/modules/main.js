@@ -6,9 +6,6 @@
 import { adminViews } from './adminViews.js';
 import { flightAdminViews } from './flightAdminViews.js';
 import { views } from './views.js';
-import { router } from './router.js';
-import { auth } from './auth.js';
-import { config } from './config.js';
 
 console.log('✅ main.js loaded successfully');
 
@@ -16,36 +13,14 @@ console.log('✅ main.js loaded successfully');
 window.adminViews = adminViews;
 window.flightAdminViews = flightAdminViews;
 window.views = views;
-window.router = router;
-window.auth = auth;
-window.config = config;
 
 console.log('✅ All modules imported and made global');
 
-// Initialize app
-window.addEventListener('load', function() {
-  console.log('✅ Window loaded');
-  
-  // Check if user is authenticated
-  const authToken = localStorage.getItem('firebase_auth_token');
-  const userRole = localStorage.getItem('user_role');
-  
-  if (authToken && userRole) {
-    console.log('✅ User authenticated as:', userRole);
-    showMainApp();
-    setupMainApp();
-  } else {
-    console.log('❌ User not authenticated, showing login');
-    showAuthScreen();
-    setupAuthScreen();
-  }
-});
-
 // ============================================
-// SCREEN MANAGEMENT
+// SCREEN MANAGEMENT FUNCTIONS
 // ============================================
 
-function showLoadingScreen() {
+const showLoadingScreen = () => {
   const loading = document.getElementById('loadingScreen');
   const auth = document.getElementById('authScreen');
   const main = document.getElementById('mainApp');
@@ -53,9 +28,9 @@ function showLoadingScreen() {
   if (loading) loading.style.display = 'flex';
   if (auth) auth.style.display = 'none';
   if (main) main.style.display = 'none';
-}
+};
 
-function showAuthScreen() {
+const showAuthScreen = () => {
   const loading = document.getElementById('loadingScreen');
   const auth = document.getElementById('authScreen');
   const main = document.getElementById('mainApp');
@@ -63,9 +38,9 @@ function showAuthScreen() {
   if (loading) loading.style.display = 'none';
   if (auth) auth.style.display = 'flex';
   if (main) main.style.display = 'none';
-}
+};
 
-function showMainApp() {
+const showMainApp = () => {
   const loading = document.getElementById('loadingScreen');
   const auth = document.getElementById('authScreen');
   const main = document.getElementById('mainApp');
@@ -73,20 +48,13 @@ function showMainApp() {
   if (loading) loading.style.display = 'none';
   if (auth) auth.style.display = 'none';
   if (main) main.style.display = 'flex';
-}
+};
 
 // ============================================
-// AUTH SCREEN SETUP
+// AUTH FUNCTIONS
 // ============================================
 
-function setupAuthScreen() {
-  const loginBtn = document.querySelector('button[onclick="handleLogin()"]');
-  if (loginBtn) {
-    loginBtn.addEventListener('click', handleLogin);
-  }
-}
-
-function handleLogin() {
+const handleLogin = () => {
   const email = document.getElementById('authEmail').value;
   const password = document.getElementById('authPassword').value;
   
@@ -95,12 +63,10 @@ function handleLogin() {
     return;
   }
   
-  // Determine role based on email
   let role = 'PLAYER';
   if (email.includes('superadmin')) role = 'SUPER_ADMIN';
   else if (email.includes('admin')) role = 'LEVEL_ADMIN';
   
-  // Save to localStorage
   localStorage.setItem('firebase_auth_token', 'token_' + Date.now());
   localStorage.setItem('user_role', role);
   localStorage.setItem('user_email', email);
@@ -108,36 +74,22 @@ function handleLogin() {
   
   console.log('✅ Login successful as:', role);
   
-  // Show main app
   showMainApp();
   setupMainApp();
-}
+};
+
+const setupAuthScreen = () => {
+  const loginBtn = document.querySelector('button[onclick="handleLogin()"]');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', handleLogin);
+  }
+};
 
 // ============================================
-// MAIN APP SETUP
+// HEADER FUNCTIONS
 // ============================================
 
-function setupMainApp() {
-  console.log('🚀 Setting up main app...');
-  
-  // Update header
-  updateUserHeader();
-  
-  // Generate sidebar
-  generateSidebarMenu();
-  
-  // Render home page
-  renderPage('home');
-  
-  // Setup event listeners
-  setupEventListeners();
-}
-
-// ============================================
-// USER HEADER
-// ============================================
-
-function updateUserHeader() {
+const updateUserHeader = () => {
   const userName = localStorage.getItem('user_name') || 'User';
   const userRole = localStorage.getItem('user_role') || 'Player';
   
@@ -146,13 +98,13 @@ function updateUserHeader() {
   
   if (userNameEl) userNameEl.textContent = userName;
   if (userRoleEl) userRoleEl.textContent = userRole.replace('_', ' ');
-}
+};
 
 // ============================================
-// SIDEBAR MENU GENERATION
+// SIDEBAR FUNCTIONS
 // ============================================
 
-function generateSidebarMenu() {
+const generateSidebarMenu = () => {
   const userRole = localStorage.getItem('user_role');
   const sidebarMenu = document.getElementById('sidebarMenu');
   
@@ -207,13 +159,80 @@ function generateSidebarMenu() {
     
     sidebarMenu.appendChild(menuItem);
   });
-}
+};
 
 // ============================================
-// PAGE RENDERING
+// PAGE RENDERING FUNCTIONS
 // ============================================
 
-function renderPage(page) {
+const renderSuperAdminPage = (page) => {
+  if (!window.adminViews) {
+    throw new Error('adminViews not loaded');
+  }
+  
+  switch(page) {
+    case 'home':
+      return window.adminViews.dashboard();
+    case 'members':
+      return window.adminViews.membersSection();
+    case 'activities':
+      return window.adminViews.activitiesSection();
+    case 'advertising':
+      return window.adminViews.advertisingSection();
+    case 'logs':
+      return window.adminViews.logsSection();
+    default:
+      return window.adminViews.dashboard();
+  }
+};
+
+const renderLevelAdminPage = (page) => {
+  if (!window.flightAdminViews) {
+    throw new Error('flightAdminViews not loaded');
+  }
+  
+  switch(page) {
+    case 'home':
+      return window.flightAdminViews.dashboard();
+    case 'attendance':
+      return window.flightAdminViews.attendanceSection();
+    case 'sessionControl':
+      return window.flightAdminViews.sessionControlSection();
+    case 'shuttle':
+      return window.flightAdminViews.shuttleSection();
+    case 'reports':
+      return window.flightAdminViews.reportsSection();
+    default:
+      return window.flightAdminViews.dashboard();
+  }
+};
+
+const renderPlayerPage = (page) => {
+  if (!window.views) {
+    throw new Error('views not loaded');
+  }
+  
+  switch(page) {
+    case 'home':
+      return window.views.home();
+    case 'timetable':
+      return window.views.timetable();
+    case 'attendance':
+      return window.views.attendance();
+    case 'logs':
+      return window.views.logs();
+    case 'wallet':
+      return window.views.wallet();
+    case 'bazaar':
+      return window.views.bazaar();
+    case 'profile':
+      return window.views.profile();
+    default:
+      return window.views.home();
+  }
+};
+
+const renderPage = (page) => {
   console.log('📄 Rendering page:', page);
   
   const userRole = localStorage.getItem('user_role');
@@ -243,92 +262,13 @@ function renderPage(page) {
     console.error('❌ Error rendering page:', error);
     pageContent.innerHTML = `<div class="card"><h2>Error Loading Page</h2><p>${error.message}</p></div>`;
   }
-}
+};
 
 // ============================================
-// SUPER ADMIN PAGES
+// MENU FUNCTIONS
 // ============================================
 
-function renderSuperAdminPage(page) {
-  if (!window.adminViews) {
-    throw new Error('adminViews not loaded');
-  }
-  
-  switch(page) {
-    case 'home':
-      return window.adminViews.dashboard();
-    case 'members':
-      return window.adminViews.membersSection();
-    case 'activities':
-      return window.adminViews.activitiesSection();
-    case 'advertising':
-      return window.adminViews.advertisingSection();
-    case 'logs':
-      return window.adminViews.logsSection();
-    default:
-      return window.adminViews.dashboard();
-  }
-}
-
-// ============================================
-// LEVEL ADMIN PAGES
-// ============================================
-
-function renderLevelAdminPage(page) {
-  if (!window.flightAdminViews) {
-    throw new Error('flightAdminViews not loaded');
-  }
-  
-  switch(page) {
-    case 'home':
-      return window.flightAdminViews.dashboard();
-    case 'attendance':
-      return window.flightAdminViews.attendanceSection();
-    case 'sessionControl':
-      return window.flightAdminViews.sessionControlSection();
-    case 'shuttle':
-      return window.flightAdminViews.shuttleSection();
-    case 'reports':
-      return window.flightAdminViews.reportsSection();
-    default:
-      return window.flightAdminViews.dashboard();
-  }
-}
-
-// ============================================
-// PLAYER PAGES
-// ============================================
-
-function renderPlayerPage(page) {
-  if (!window.views) {
-    throw new Error('views not loaded');
-  }
-  
-  switch(page) {
-    case 'home':
-      return window.views.home();
-    case 'timetable':
-      return window.views.timetable();
-    case 'attendance':
-      return window.views.attendance();
-    case 'logs':
-      return window.views.logs();
-    case 'wallet':
-      return window.views.wallet();
-    case 'bazaar':
-      return window.views.bazaar();
-    case 'profile':
-      return window.views.profile();
-    default:
-      return window.views.home();
-  }
-}
-
-// ============================================
-// ACTIVE MENU ITEM
-// ============================================
-
-function updateActiveMenu(page) {
+const updateActiveMenu = (page) => {
   document.querySelectorAll('.menu-item').forEach(item => {
     item.classList.remove('active');
   });
@@ -337,24 +277,33 @@ function updateActiveMenu(page) {
   if (activeItem) {
     activeItem.classList.add('active');
   }
-}
+};
 
 // ============================================
-// EVENT LISTENERS
+// SETUP FUNCTIONS
 // ============================================
 
-function setupEventListeners() {
+const setupEventListeners = () => {
   const signOutBtn = document.getElementById('signOutBtn');
   if (signOutBtn) {
     signOutBtn.addEventListener('click', handleSignOut);
   }
-}
+};
+
+const setupMainApp = () => {
+  console.log('🚀 Setting up main app...');
+  
+  updateUserHeader();
+  generateSidebarMenu();
+  renderPage('home');
+  setupEventListeners();
+};
 
 // ============================================
-// SIGN OUT
+// SIGN OUT FUNCTION
 // ============================================
 
-function handleSignOut() {
+const handleSignOut = () => {
   if (confirm('Are you sure you want to sign out?')) {
     localStorage.removeItem('firebase_auth_token');
     localStorage.removeItem('user_role');
@@ -362,13 +311,23 @@ function handleSignOut() {
     localStorage.removeItem('user_name');
     location.reload();
   }
-}
+};
 
 // ============================================
-// NOTIFICATIONS
+// NOTIFICATION FUNCTIONS
 // ============================================
 
-function showNotification(message, type = 'info') {
+const getIconForType = (type) => {
+  const icons = {
+    'success': 'check-circle',
+    'error': 'exclamation-circle',
+    'warning': 'exclamation-triangle',
+    'info': 'info-circle'
+  };
+  return icons[type] || 'info-circle';
+};
+
+const showNotification = (message, type = 'info') => {
   const container = document.getElementById('toastContainer');
   
   if (!container) {
@@ -388,17 +347,28 @@ function showNotification(message, type = 'info') {
   setTimeout(() => {
     toast.remove();
   }, 3000);
-}
+};
 
-function getIconForType(type) {
-  const icons = {
-    'success': 'check-circle',
-    'error': 'exclamation-circle',
-    'warning': 'exclamation-triangle',
-    'info': 'info-circle'
-  };
-  return icons[type] || 'info-circle';
-}
+// ============================================
+// INITIALIZATION
+// ============================================
+
+window.addEventListener('load', () => {
+  console.log('✅ Window loaded');
+  
+  const authToken = localStorage.getItem('firebase_auth_token');
+  const userRole = localStorage.getItem('user_role');
+  
+  if (authToken && userRole) {
+    console.log('✅ User authenticated as:', userRole);
+    showMainApp();
+    setupMainApp();
+  } else {
+    console.log('❌ User not authenticated, showing login');
+    showAuthScreen();
+    setupAuthScreen();
+  }
+});
 
 // ============================================
 // GLOBAL APP CONTROLLER
