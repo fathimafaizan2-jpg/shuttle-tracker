@@ -453,5 +453,5 @@ export const views = {
     `;
   }
 };
-export const views = views;
+export { views };
 console.log('✅ views.js loaded successfully');
