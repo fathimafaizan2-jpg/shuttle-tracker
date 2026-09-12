@@ -1,81 +1,127 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indian Club Bahrain - Member Portal</title>
+    <title>Indian Club Bahrain - Shuttle Tracker</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#667eea">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
 
+        /* ===== LOGIN PAGE ===== */
         #login { display: block; }
         #app { display: none; }
 
         .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; }
         .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
         .login-box h1 { text-align: center; color: #667eea; margin-bottom: 30px; font-size: 28px; }
-
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
         .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-
         .login-btn { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: background 0.3s; }
         .login-btn:hover { background: #5568d3; }
-
         .error-message { color: #ff4757; font-size: 14px; margin-top: 10px; text-align: center; }
 
-        .page-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        /* ===== APP LAYOUT ===== */
+        .app-wrapper { display: flex; height: 100vh; }
+        
+        /* Header */
+        .header { background: white; padding: 15px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-logo { font-size: 20px; font-weight: 700; color: #667eea; }
+        .header-title { font-size: 16px; color: #333; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .user-pill { display: flex; align-items: center; gap: 10px; background: #f5f7fa; padding: 8px 15px; border-radius: 20px; }
+        .user-pill .name { font-weight: 600; color: #333; }
+        .user-pill .role { font-size: 12px; background: #667eea; color: white; padding: 2px 8px; border-radius: 10px; }
+        .lang-switcher { background: #f5f7fa; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+        .logout-btn { background: #ff4757; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+        /* Sidebar */
+        .sidebar { width: 250px; background: #667eea; color: white; padding: 20px; overflow-y: auto; }
+        .sidebar h3 { margin-bottom: 15px; font-size: 14px; text-transform: uppercase; opacity: 0.8; }
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { margin-bottom: 10px; }
+        .sidebar-menu a { color: white; text-decoration: none; padding: 10px 15px; border-radius: 6px; display: block; transition: all 0.3s; }
+        .sidebar-menu a:hover { background: rgba(255,255,255,0.2); }
+        .sidebar-menu a.active { background: rgba(255,255,255,0.3); font-weight: 600; }
+        .sidebar-menu .hidden { display: none; }
+
+        /* Main Content */
+        .main-content { flex: 1; overflow-y: auto; padding: 20px; }
+        .page-container { max-width: 1400px; margin: 0 auto; }
         .page-header { margin-bottom: 30px; }
         .page-header h1 { font-size: 32px; color: #333; margin-bottom: 8px; }
         .page-header p { color: #666; font-size: 16px; }
 
+        /* Tabs */
+        .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e0e6ed; }
+        .tab-btn { padding: 12px 20px; background: none; border: none; cursor: pointer; font-weight: 600; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s; }
+        .tab-btn:hover { color: #667eea; }
+        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+
+        /* Cards */
         .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .card h2 { font-size: 20px; margin-bottom: 20px; color: #333; }
         .card h3 { font-size: 18px; margin-bottom: 15px; color: #333; }
 
+        /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; gap: 15px; align-items: flex-start; }
         .stat-icon { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; flex-shrink: 0; }
         .stat-content h3 { margin: 0 0 5px 0; font-size: 24px; color: #333; }
         .stat-content p { margin: 0 0 5px 0; color: #666; font-size: 14px; }
 
+        /* Tables */
         .data-table { width: 100%; border-collapse: collapse; }
         .data-table thead tr { background: #f5f7fa; border-bottom: 2px solid #e0e6ed; }
         .data-table th { padding: 12px; text-align: left; font-weight: 600; color: #333; }
         .data-table td { padding: 12px; border-bottom: 1px solid #e0e6ed; }
         .data-table tbody tr:hover { background: #f9fafb; }
 
+        /* Buttons */
         .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
         .btn-primary { background: #667eea; color: white; }
         .btn-primary:hover { background: #5568d3; }
         .btn-secondary { background: #00d4aa; color: white; }
         .btn-secondary:hover { background: #00b896; }
+        .btn-danger { background: #ff4757; color: white; }
+        .btn-danger:hover { background: #ff3838; }
 
-        .navbar { background: white; padding: 15px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-radius: 8px; }
-        .navbar h1 { font-size: 20px; color: #667eea; }
-        .navbar-menu { display: flex; gap: 10px; }
-        .navbar-menu button { padding: 8px 12px; background: #f5f7fa; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
-        .navbar-menu button:hover { background: #667eea; color: white; }
-        .navbar-menu button.active { background: #667eea; color: white; }
+        /* Badges */
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .badge-success { background: #00d4aa; color: white; }
+        .badge-danger { background: #ff4757; color: white; }
+        .badge-warning { background: #ffa502; color: white; }
+        .badge-info { background: #0099ff; color: white; }
 
-        .loading { text-align: center; padding: 20px; color: #999; }
+        /* Forms */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #e0e6ed; border-radius: 6px; font-size: 14px; }
+        .form-group textarea { resize: vertical; min-height: 100px; }
 
+        /* Responsive */
         @media (max-width: 768px) {
+            .app-wrapper { flex-direction: column; }
+            .sidebar { width: 100%; max-height: 200px; }
             .stats-grid { grid-template-columns: 1fr; }
             .page-header h1 { font-size: 24px; }
-            .navbar { flex-direction: column; gap: 10px; }
-            .navbar-menu { flex-wrap: wrap; }
         }
     </style>
 </head>
 <body>
-    <!-- Login Page -->
+    <!-- LOGIN PAGE -->
     <div id="login">
         <div class="login-container">
             <div class="login-box">
                 <h1>🏏 Indian Club Bahrain</h1>
+                <p style="text-align: center; color: #666; margin-bottom: 30px;">Shuttle Tracker</p>
                 <form onsubmit="handleLogin(event)">
                     <div class="form-group">
                         <label>Email</label>
@@ -100,32 +146,81 @@
         </div>
     </div>
 
-    <!-- App Page -->
+    <!-- APP PAGE -->
     <div id="app" style="display: none;">
-        <div class="navbar">
-            <h1>🏏 Indian Club Bahrain</h1>
-            <div class="navbar-menu">
-                <button onclick="navigateTo('home')" class="nav-btn active">Home</button>
-                <button onclick="navigateTo('members')" class="nav-btn" id="membersBtn" style="display: none;">Members</button>
-                <button onclick="navigateTo('attendance')" class="nav-btn">Attendance</button>
-                <button onclick="navigateTo('wallet')" class="nav-btn">Wallet</button>
-                <button onclick="handleLogout()" class="nav-btn">Logout</button>
-            </div>
-        </div>
+        <div class="app-wrapper">
+            <!-- SIDEBAR -->
+            <div class="sidebar">
+                <h3>Navigation</h3>
+                <ul class="sidebar-menu">
+                    <!-- PLAYER LINKS -->
+                    <li><a href="#" onclick="navigateTo('home')" class="nav-link">🏠 Home</a></li>
+                    <li><a href="#" onclick="navigateTo('timetable')" class="nav-link">📅 My Timetable</a></li>
+                    <li><a href="#" onclick="navigateTo('attendance')" class="nav-link">✓ Attendance</a></li>
+                    <li><a href="#" onclick="navigateTo('wallet')" class="nav-link">💰 Wallet & Payments</a></li>
+                    <li><a href="#" onclick="navigateTo('bazaar')" class="nav-link">🛍️ BaZaar</a></li>
+                    <li><a href="#" onclick="navigateTo('profile')" class="nav-link">👤 Profile</a></li>
+                    <li><a href="#" onclick="navigateTo('logs')" class="nav-link">📋 Activity Logs</a></li>
 
-        <div class="page-container">
-            <div id="content"></div>
+                    <!-- FLIGHT ADMIN LINKS -->
+                    <li class="flight-only-nav hidden"><a href="#" onclick="navigateTo('sessions')" class="nav-link">🎮 Session Control</a></li>
+                    <li class="flight-only-nav hidden"><a href="#" onclick="navigateTo('stock')" class="nav-link">📦 Shuttle Stock</a></li>
+                    <li class="flight-only-nav hidden"><a href="#" onclick="navigateTo('reports')" class="nav-link">📊 Reports</a></li>
+                    <li class="flight-only-nav hidden"><a href="#" onclick="navigateTo('flight-finance')" class="nav-link">💳 Flight Finance</a></li>
+
+                    <!-- SUPER ADMIN LINKS -->
+                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('overview')" class="nav-link">📈 Club Overview</a></li>
+                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('flights')" class="nav-link">✈️ Activities & Flights</a></li>
+                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('master')" class="nav-link">📆 Master Timetable</a></li>
+                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('admin-finance')" class="nav-link">💼 Executive Finance</a></li>
+                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('ads')" class="nav-link">📢 Ads & Notices</a></li>
+                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('audit')" class="nav-link">🔍 Audit History</a></li>
+                </ul>
+            </div>
+
+            <!-- MAIN CONTENT -->
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                <!-- HEADER -->
+                <div class="header">
+                    <div class="header-left">
+                        <div class="header-logo">🏏 Indian Club Bahrain</div>
+                        <div class="header-title">Shuttle Tracker</div>
+                    </div>
+                    <div class="header-right">
+                        <div class="user-pill">
+                            <span class="name" id="memberName">User</span>
+                            <span class="role" id="roleLabel">PLAYER</span>
+                        </div>
+                        <select class="lang-switcher" onchange="switchLanguage(this.value)">
+                            <option value="en">English</option>
+                            <option value="hi">हिंदी</option>
+                            <option value="ar">العربية</option>
+                        </select>
+                        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+                    </div>
+                </div>
+
+                <!-- CONTENT AREA -->
+                <div class="main-content">
+                    <div class="page-container">
+                        <div id="content"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // ===== APP STATE =====
         const appState = {
             user: null,
             role: null,
             token: null,
-            currentPage: 'home'
+            currentPage: 'home',
+            language: 'en'
         };
 
+        // ===== LOGIN HANDLER =====
         async function handleLogin(event) {
             event.preventDefault();
             const email = document.getElementById('email').value;
@@ -140,24 +235,36 @@
                     throw new Error('Please enter email and password');
                 }
 
+                // Normalize role
+                let normalizedRole = role;
+                if (['SUPERADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(role)) {
+                    normalizedRole = 'SUPER_ADMIN';
+                } else if (['LEVELADMIN', 'LEVEL_ADMIN', 'FLIGHT_ADMIN'].includes(role)) {
+                    normalizedRole = 'LEVEL_ADMIN';
+                } else {
+                    normalizedRole = 'PLAYER';
+                }
+
                 const token = 'token_' + Date.now();
 
                 localStorage.setItem('authToken', token);
-                localStorage.setItem('userRole', role);
+                localStorage.setItem('userRole', normalizedRole);
                 localStorage.setItem('userEmail', email);
 
-                appState.user = { email, role };
-                appState.role = role;
+                appState.user = { email, name: email.split('@')[0] };
+                appState.role = normalizedRole;
                 appState.token = token;
 
-                console.log('✅ Login successful! Role:', role);
+                console.log('✅ Login successful! Role:', normalizedRole);
 
+                // Update UI
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
+                document.getElementById('memberName').textContent = appState.user.name;
+                document.getElementById('roleLabel').textContent = normalizedRole;
 
-                if (role === 'SUPER_ADMIN') {
-                    document.getElementById('membersBtn').style.display = 'inline-block';
-                }
+                // Show/hide nav items based on role
+                updateNavigation();
 
                 setTimeout(() => {
                     renderPage('home');
@@ -169,6 +276,25 @@
             }
         }
 
+        // ===== UPDATE NAVIGATION =====
+        function updateNavigation() {
+            const role = appState.role;
+
+            // Hide all role-specific items
+            document.querySelectorAll('.flight-only-nav').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.super-nav').forEach(el => el.classList.add('hidden'));
+
+            // Show based on role
+            if (role === 'LEVEL_ADMIN') {
+                document.querySelectorAll('.flight-only-nav').forEach(el => el.classList.remove('hidden'));
+            }
+            if (role === 'SUPER_ADMIN') {
+                document.querySelectorAll('.super-nav').forEach(el => el.classList.remove('hidden'));
+                document.querySelectorAll('.flight-only-nav').forEach(el => el.classList.remove('hidden'));
+            }
+        }
+
+        // ===== LOGOUT HANDLER =====
         function handleLogout() {
             if (confirm('Are you sure you want to logout?')) {
                 localStorage.removeItem('authToken');
@@ -188,63 +314,97 @@
             }
         }
 
+        // ===== NAVIGATION =====
         function navigateTo(page) {
             appState.currentPage = page;
             renderPage(page);
         }
 
+        // ===== LANGUAGE SWITCHER =====
+        function switchLanguage(lang) {
+            appState.language = lang;
+            console.log('Language switched to:', lang);
+        }
+
+        // ===== RENDER PAGE =====
         function renderPage(page) {
             const content = document.getElementById('content');
             const role = appState.role;
 
+            // Check authorization
+            const playerPages = ['home', 'timetable', 'attendance', 'wallet', 'bazaar', 'profile', 'logs'];
+            const adminPages = ['sessions', 'stock', 'reports', 'flight-finance'];
+            const superPages = ['overview', 'flights', 'master', 'admin-finance', 'ads', 'audit'];
+
+            let authorized = false;
+
+            if (role === 'PLAYER' && playerPages.includes(page)) authorized = true;
+            if (role === 'LEVEL_ADMIN' && (playerPages.includes(page) || adminPages.includes(page))) authorized = true;
+            if (role === 'SUPER_ADMIN') authorized = true;
+
+            if (!authorized) {
+                content.innerHTML = '<div class="card"><h2>❌ Access Denied</h2><p>You do not have permission to open this page.</p></div>';
+                return;
+            }
+
+            // Render page
             switch(page) {
-                case 'home':
-                    content.innerHTML = renderHome();
-                    break;
-                case 'members':
-                    if (role === 'SUPER_ADMIN') {
-                        content.innerHTML = renderMembers();
-                    }
-                    break;
-                case 'attendance':
-                    content.innerHTML = renderAttendance();
-                    break;
-                case 'wallet':
-                    content.innerHTML = renderWallet();
-                    break;
-                default:
-                    content.innerHTML = '<p>Page not found</p>';
+                case 'home': content.innerHTML = renderHome(); break;
+                case 'timetable': content.innerHTML = renderTimetable(); break;
+                case 'attendance': content.innerHTML = renderAttendance(); break;
+                case 'wallet': content.innerHTML = renderWallet(); break;
+                case 'bazaar': content.innerHTML = renderBazaar(); break;
+                case 'profile': content.innerHTML = renderProfile(); break;
+                case 'logs': content.innerHTML = renderLogs(); break;
+                case 'sessions': content.innerHTML = renderSessions(); break;
+                case 'stock': content.innerHTML = renderStock(); break;
+                case 'reports': content.innerHTML = renderReports(); break;
+                case 'flight-finance': content.innerHTML = renderFlightFinance(); break;
+                case 'overview': content.innerHTML = renderOverview(); break;
+                case 'flights': content.innerHTML = renderFlights(); break;
+                case 'master': content.innerHTML = renderMaster(); break;
+                case 'admin-finance': content.innerHTML = renderAdminFinance(); break;
+                case 'ads': content.innerHTML = renderAds(); break;
+                case 'audit': content.innerHTML = renderAudit(); break;
+                default: content.innerHTML = '<p>Page not found</p>';
             }
         }
 
+        // ===== PAGE RENDERERS =====
         function renderHome() {
             const role = appState.role;
             let html = `
                 <div class="page-header">
-                    <h1>Welcome, ${appState.user.email}</h1>
+                    <h1>Welcome, ${appState.user.name}!</h1>
                     <p>Role: <strong>${role}</strong></p>
                 </div>
-
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon" style="background: #667eea;">📊</div>
                         <div class="stat-content">
-                            <h3>Dashboard</h3>
-                            <p>View your statistics</p>
+                            <h3>0</h3>
+                            <p>Sessions Attended</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon" style="background: #00d4aa;">💰</div>
                         <div class="stat-content">
-                            <h3>Wallet</h3>
-                            <p>0.000 BHD</p>
+                            <h3>0.000 BHD</h3>
+                            <p>Wallet Balance</p>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon" style="background: #ffa502;">✓</div>
+                        <div class="stat-icon" style="background: #ffa502;">⚠️</div>
                         <div class="stat-content">
-                            <h3>Attendance</h3>
-                            <p>0 sessions</p>
+                            <h3>0.000 BHD</h3>
+                            <p>Pending Amount</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #ff4757;">🔴</div>
+                        <div class="stat-content">
+                            <h3>0.000 BHD</h3>
+                            <p>Arrears</p>
                         </div>
                     </div>
                 </div>
@@ -253,25 +413,25 @@
             if (role === 'SUPER_ADMIN') {
                 html += `
                     <div class="card">
-                        <h2>Super Admin Dashboard</h2>
-                        <p>Manage members, timetable, advertising, and reports</p>
-                        <button class="btn btn-primary" onclick="navigateTo('members')">Go to Members</button>
-                    </div>
-                `;
-            } else if (role === 'LEVEL_ADMIN') {
-                html += `
-                    <div class="card">
-                        <h2>Flight Admin Dashboard</h2>
-                        <p>Manage attendance, session control, and shuttle stock</p>
-                        <button class="btn btn-primary" onclick="navigateTo('attendance')">Go to Attendance</button>
-                    </div>
-                `;
-            } else {
-                html += `
-                    <div class="card">
-                        <h2>Player Dashboard</h2>
-                        <p>View timetable, attendance, and wallet</p>
-                        <button class="btn btn-primary" onclick="navigateTo('attendance')">View Attendance</button>
+                        <h2>Executive Dashboard</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: #667eea;">🏃</div>
+                                <div class="stat-content"><h3>0</h3><p>Active Sports</p></div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: #00d4aa;">👥</div>
+                                <div class="stat-content"><h3>0</h3><p>Registered Players</p></div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: #ffa502;">👨‍💼</div>
+                                <div class="stat-content"><h3>0</h3><p>Flight Admins</p></div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: #0099ff;">💼</div>
+                                <div class="stat-content"><h3>0.000 BHD</h3><p>Club Wallet</p></div>
+                            </div>
+                        </div>
                     </div>
                 `;
             }
@@ -279,27 +439,26 @@
             return html;
         }
 
-        function renderMembers() {
+        function renderTimetable() {
             return `
                 <div class="page-header">
-                    <h1>Members Management</h1>
+                    <h1>My Timetable</h1>
+                    <p>Your weekly flight schedule</p>
                 </div>
-
                 <div class="card">
-                    <h2>All Members</h2>
+                    <h2>Weekly Schedule</h2>
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Status</th>
+                                <th>Day</th>
+                                <th>Flight</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Courts</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="4" class="loading">Loading members...</td>
-                            </tr>
+                            <tr><td colspan="5" style="text-align: center; padding: 20px;">Loading timetable...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -310,8 +469,8 @@
             return `
                 <div class="page-header">
                     <h1>Attendance</h1>
+                    <p>Track your session attendance</p>
                 </div>
-
                 <div class="card">
                     <h2>Attendance Log</h2>
                     <table class="data-table">
@@ -323,9 +482,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="3" class="loading">Loading attendance...</td>
-                            </tr>
+                            <tr><td colspan="3" style="text-align: center; padding: 20px;">Loading attendance...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -337,37 +494,226 @@
                 <div class="page-header">
                     <h1>Wallet & Payments</h1>
                 </div>
-
                 <div class="card">
                     <h2>Current Balance</h2>
                     <h3 style="color: #667eea; font-size: 32px;">0.000 BHD</h3>
                 </div>
-
                 <div class="card">
-                    <h2>Payment Options</h2>
-                    <button class="btn btn-primary">Pay by Cash</button>
-                    <button class="btn btn-secondary">Pay by Benefit</button>
+                    <h2>Make Payment</h2>
+                    <div class="form-group">
+                        <label>Payment Method</label>
+                        <select>
+                            <option>Select method...</option>
+                            <option value="BENEFIT_PAY">Benefit Pay</option>
+                            <option value="CASH">Cash</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Reference</label>
+                        <input type="text" placeholder="Enter reference number">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount (BHD)</label>
+                        <input type="number" placeholder="0.000" step="0.001">
+                    </div>
+                    <button class="btn btn-primary">Submit Payment</button>
                 </div>
             `;
         }
 
+        function renderBazaar() {
+            return `
+                <div class="page-header">
+                    <h1>BaZaar Directory</h1>
+                    <p>Explore local businesses and offers</p>
+                </div>
+                <div class="card">
+                    <h2>Featured Businesses</h2>
+                    <p>Loading businesses...</p>
+                </div>
+            `;
+        }
+
+        function renderProfile() {
+            return `
+                <div class="page-header">
+                    <h1>My Profile</h1>
+                </div>
+                <div class="card">
+                    <h2>Personal Information</h2>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" value="${appState.user.name}" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" value="${appState.user.email}" disabled>
+                    </div>
+                    <button class="btn btn-primary">Update Profile</button>
+                </div>
+            `;
+        }
+
+        function renderLogs() {
+            return `
+                <div class="page-header">
+                    <h1>Activity Logs</h1>
+                </div>
+                <div class="card">
+                    <h2>Your Activity History</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="3" style="text-align: center; padding: 20px;">Loading logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderSessions() {
+            return `
+                <div class="page-header">
+                    <h1>Session Control</h1>
+                </div>
+                <div class="card">
+                    <h2>Active Sessions</h2>
+                    <p>Loading sessions...</p>
+                </div>
+            `;
+        }
+
+        function renderStock() {
+            return `
+                <div class="page-header">
+                    <h1>Shuttle Stock</h1>
+                </div>
+                <div class="card">
+                    <h2>Inventory Management</h2>
+                    <p>Loading stock...</p>
+                </div>
+            `;
+        }
+
+        function renderReports() {
+            return `
+                <div class="page-header">
+                    <h1>Reports</h1>
+                </div>
+                <div class="card">
+                    <h2>Flight Reports</h2>
+                    <p>Loading reports...</p>
+                </div>
+            `;
+        }
+
+        function renderFlightFinance() {
+            return `
+                <div class="page-header">
+                    <h1>Flight Finance</h1>
+                </div>
+                <div class="card">
+                    <h2>Financial Management</h2>
+                    <p>Loading finance...</p>
+                </div>
+            `;
+        }
+
+        function renderOverview() {
+            return `
+                <div class="page-header">
+                    <h1>Club Overview</h1>
+                </div>
+                <div class="card">
+                    <h2>Executive Summary</h2>
+                    <p>Loading overview...</p>
+                </div>
+            `;
+        }
+
+        function renderFlights() {
+            return `
+                <div class="page-header">
+                    <h1>Activities & Flights</h1>
+                </div>
+                <div class="card">
+                    <h2>Manage Activities and Flights</h2>
+                    <p>Loading flights...</p>
+                </div>
+            `;
+        }
+
+        function renderMaster() {
+            return `
+                <div class="page-header">
+                    <h1>Master Timetable</h1>
+                </div>
+                <div class="card">
+                    <h2>Timetable Management</h2>
+                    <p>Loading master timetable...</p>
+                </div>
+            `;
+        }
+
+        function renderAdminFinance() {
+            return `
+                <div class="page-header">
+                    <h1>Executive Finance</h1>
+                </div>
+                <div class="card">
+                    <h2>Financial Management</h2>
+                    <p>Loading finance...</p>
+                </div>
+            `;
+        }
+
+        function renderAds() {
+            return `
+                <div class="page-header">
+                    <h1>Ads & Notices</h1>
+                </div>
+                <div class="card">
+                    <h2>Advertisement Management</h2>
+                    <p>Loading ads...</p>
+                </div>
+            `;
+        }
+
+        function renderAudit() {
+            return `
+                <div class="page-header">
+                    <h1>Audit History</h1>
+                </div>
+                <div class="card">
+                    <h2>System Audit Trail</h2>
+                    <p>Loading audit logs...</p>
+                </div>
+            `;
+        }
+
+        // ===== CHECK LOGIN ON LOAD =====
         window.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('authToken');
             const role = localStorage.getItem('userRole');
             const email = localStorage.getItem('userEmail');
 
             if (token && role && email) {
-                appState.user = { email, role };
+                appState.user = { email, name: email.split('@')[0] };
                 appState.role = role;
                 appState.token = token;
 
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('app').style.display = 'block';
+                document.getElementById('memberName').textContent = appState.user.name;
+                document.getElementById('roleLabel').textContent = role;
 
-                if (role === 'SUPER_ADMIN') {
-                    document.getElementById('membersBtn').style.display = 'inline-block';
-                }
-
+                updateNavigation();
                 renderPage('home');
             }
         });
@@ -378,3 +724,4 @@
     </script>
 </body>
 </html>
+
