@@ -470,6 +470,7 @@ const adminViews = {
 };
 
 // ✅ MAKE IT GLOBAL
-export const adminViews = adminViews;
+export { adminViews };
 console.log('✅ adminViews.js loaded successfully');
+
 
