@@ -482,7 +482,11 @@ const flightAdminViews = {
     `;
   }
 };
-
+// Make functions globally accessible
+window.flightAdminSessionControlView = flightAdminSessionControlView;
+window.flightAdminShuttleStockView = flightAdminShuttleStockView;
+window.flightAdminReportsView = flightAdminReportsView;
+window.bindFlightAdminViews = bindFlightAdminViews;
 console.log('✅ flightAdminViews.js loaded successfully');
 window.flightAdminViews = flightAdminViews;
 console.log('✅ flightAdminViews.js loaded successfully');
