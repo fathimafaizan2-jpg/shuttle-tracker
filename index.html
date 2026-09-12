@@ -258,9 +258,22 @@
         <div id="content"></div>
     </div>
 
-    <!-- Import main.js which imports all other modules -->
+    <!-- Import all modules -->
     <script type="module">
-        import('./js/modules/main.js').catch(err => console.error('Error loading main.js:', err));
+        (async () => {
+            try {
+                const { adminViews } = await import('./js/modules/adminViews.js');
+                const { flightAdminViews } = await import('./js/modules/flightAdminViews.js');
+                const { views } = await import('./js/modules/views.js');
+                const { router } = await import('./js/modules/router.js');
+                const { auth } = await import('./js/modules/auth.js');
+                const { default: main } = await import('./js/modules/main.js');
+                
+                console.log('✅ All modules imported successfully');
+            } catch (error) {
+                console.error('❌ Error loading modules:', error);
+            }
+        })();
     </script>
 </body>
 </html>
