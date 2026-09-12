@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,274 +6,99 @@
     <title>Indian Club Bahrain - Member Portal</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
-            color: #333;
-        }
-
-        .page-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .page-header {
-            margin-bottom: 30px;
-        }
-
-        .page-header h1 {
-            font-size: 32px;
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .page-header p {
-            color: #666;
-            font-size: 16px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .card h2 {
-            font-size: 20px;
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        .card h3 {
-            font-size: 18px;
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            display: flex;
-            gap: 15px;
-            align-items: flex-start;
-        }
-
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            flex-shrink: 0;
-        }
-
-        .stat-content h3 {
-            margin: 0 0 5px 0;
-            font-size: 24px;
-            color: #333;
-        }
-
-        .stat-content p {
-            margin: 0 0 5px 0;
-            color: #666;
-            font-size: 14px;
-        }
-
-        .stat-change {
-            display: inline-block;
-            font-size: 12px;
-            color: #999;
-            background: #f5f7fa;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-table thead tr {
-            background: #f5f7fa;
-            border-bottom: 2px solid #e0e6ed;
-        }
-
-        .data-table th {
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .data-table td {
-            padding: 12px;
-            border-bottom: 1px solid #e0e6ed;
-        }
-
-        .data-table tbody tr:hover {
-            background: #f9fafb;
-        }
-
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5568d3;
-        }
-
-        .btn-secondary {
-            background: #00d4aa;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background: #00b896;
-        }
-
-        .btn-info {
-            background: #0099ff;
-            color: white;
-        }
-
-        .btn-info:hover {
-            background: #0080cc;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background: #00d4aa;
-            color: white;
-        }
-
-        .badge-danger {
-            background: #ff4757;
-            color: white;
-        }
-
-        .badge-warning {
-            background: #ffa502;
-            color: white;
-        }
-
-        .badge-info {
-            background: #0099ff;
-            color: white;
-        }
-
-        .badge-cr {
-            background: #ff4757;
-            color: white;
-        }
-
-        #login {
-            display: block;
-        }
-
-        #app {
-            display: none;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .notification {
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .page-header h1 {
-                font-size: 24px;
-            }
-
-            .data-table {
-                font-size: 14px;
-            }
-
-            .data-table th,
-            .data-table td {
-                padding: 8px;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+        .page-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .page-header { margin-bottom: 30px; }
+        .page-header h1 { font-size: 32px; color: #333; margin-bottom: 8px; }
+        .page-header p { color: #666; font-size: 16px; }
+        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .card h2 { font-size: 20px; margin-bottom: 20px; color: #333; }
+        .card h3 { font-size: 18px; margin-bottom: 15px; color: #333; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; gap: 15px; align-items: flex-start; }
+        .stat-icon { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; flex-shrink: 0; }
+        .stat-content h3 { margin: 0 0 5px 0; font-size: 24px; color: #333; }
+        .stat-content p { margin: 0 0 5px 0; color: #666; font-size: 14px; }
+        .stat-change { display: inline-block; font-size: 12px; color: #999; background: #f5f7fa; padding: 4px 8px; border-radius: 4px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table thead tr { background: #f5f7fa; border-bottom: 2px solid #e0e6ed; }
+        .data-table th { padding: 12px; text-align: left; font-weight: 600; color: #333; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #e0e6ed; }
+        .data-table tbody tr:hover { background: #f9fafb; }
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-secondary { background: #00d4aa; color: white; }
+        .btn-secondary:hover { background: #00b896; }
+        .btn-info { background: #0099ff; color: white; }
+        .btn-info:hover { background: #0080cc; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .badge-success { background: #00d4aa; color: white; }
+        .badge-danger { background: #ff4757; color: white; }
+        .badge-warning { background: #ffa502; color: white; }
+        .badge-info { background: #0099ff; color: white; }
+        .badge-cr { background: #ff4757; color: white; }
+        #login { display: block; }
+        #app { display: none; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .notification { animation: slideIn 0.3s ease-out; }
+        @media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } .page-header h1 { font-size: 24px; } .data-table { font-size: 14px; } .data-table th, .data-table td { padding: 8px; } }
     </style>
 </head>
 <body>
-    <!-- Login Section -->
-    <div id="login"></div>
+    <div id="login">
+        <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
+            <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px;">
+                <h1 style="text-align: center; color: #667eea; margin-bottom: 30px;">Indian Club Bahrain</h1>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Email</label>
+                    <input type="email" id="email" placeholder="Enter your email" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Role</label>
+                    <select id="role" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box;">
+                        <option value="player">Player</option>
+                        <option value="flightadmin">Flight Admin</option>
+                        <option value="superadmin">Super Admin</option>
+                    </select>
+                </div>
+                <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px;">Login</button>
+            </div>
+        </div>
+    </div>
 
-    <!-- App Section -->
     <div id="app" style="display: none;">
         <div id="navigation"></div>
         <div id="content"></div>
     </div>
 
-    <!-- Import all modules -->
-    <script type="module">
-        (async () => {
-            try {
-                const { adminViews } = await import('./js/modules/adminViews.js');
-                const { flightAdminViews } = await import('./js/modules/flightAdminViews.js');
-                const { views } = await import('./js/modules/views.js');
-                const { router } = await import('./js/modules/router.js');
-                const { auth } = await import('./js/modules/auth.js');
-                const { default: main } = await import('./js/modules/main.js');
-                
-                console.log('✅ All modules imported successfully');
-            } catch (error) {
-                console.error('❌ Error loading modules:', error);
+    <script>
+        function handleLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
             }
-        })();
+
+            localStorage.setItem('authToken', 'token_' + Date.now());
+            localStorage.setItem('userRole', role);
+            localStorage.setItem('userEmail', email);
+
+            alert('Welcome ' + email + '!');
+            window.location.reload();
+        }
+    </script>
+
+    <script type="module">
+        import('./js/modules/main.js').catch(err => console.error('Error loading main.js:', err));
     </script>
 </body>
 </html>
-
