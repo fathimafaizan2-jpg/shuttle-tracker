@@ -88,13 +88,38 @@
                 return;
             }
 
+            // Save to localStorage
             localStorage.setItem('authToken', 'token_' + Date.now());
             localStorage.setItem('userRole', role);
             localStorage.setItem('userEmail', email);
 
-            alert('Welcome ' + email + '!');
-            window.location.reload();
+            console.log('✅ Login successful! Role:', role);
+
+            // Show app, hide login
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+
+            // Initialize the app
+            setTimeout(() => {
+                if (window.appController) {
+                    window.appController.init();
+                }
+            }, 100);
         }
+
+        // Check if already logged in
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                setTimeout(() => {
+                    if (window.appController) {
+                        window.appController.init();
+                    }
+                }, 100);
+            }
+        });
     </script>
 
     <script type="module">
