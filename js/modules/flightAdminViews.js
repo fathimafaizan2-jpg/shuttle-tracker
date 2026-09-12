@@ -462,5 +462,6 @@ const flightAdminViews = {
 };
 
 // ✅ MAKE IT GLOBAL
-export const flightAdminViews = flightAdminViews;
+export{ flightAdminViews };
 console.log('✅ flightAdminViews.js loaded successfully');
+
