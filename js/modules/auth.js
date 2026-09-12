@@ -1,152 +1,74 @@
-import { setAuthToken, clearAuthToken, setMember, loadMember } from './router.js';
 
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+// ============================================
+// auth.js - Authentication Module
+// ============================================
 
-const mockUsers = {
-  "superadmin@club.com": {
-    uid: "admin001",
-    email: "superadmin@club.com",
-    fullName: "Admin User",
-    role: "SUPER_ADMIN",
-    level: "Professional",
-    phone: "+973 1234 5678",
-    joinDate: "2024-01-01"
-  },
-  "leveladmin@club.com": {
-    uid: "admin002",
-    email: "leveladmin@club.com",
-    fullName: "Level Admin",
-    role: "LEVEL_ADMIN",
-    level: "Advanced",
-    phone: "+973 1234 5679",
-    joinDate: "2024-02-01"
-  },
-  "player@club.com": {
-    uid: "player001",
-    email: "player@club.com",
-    fullName: "John Player",
-    role: "PLAYER",
-    level: "Intermediate",
-    phone: "+973 1234 5680",
-    joinDate: "2024-03-01"
-  }
-};
+export const auth = {
+  checkAuth: () => {
+    const token = localStorage.getItem('authToken');
+    const loginDiv = document.getElementById('login');
+    const appDiv = document.getElementById('app');
 
-export async function login(email, password) {
-  try {
-    console.log("🔐 Attempting login with:", email);
-    
-    const user = mockUsers[email];
-    
-    if (!user) {
-      throw new Error("User not found");
+    if (!token) {
+      if (loginDiv) loginDiv.style.display = 'block';
+      if (appDiv) appDiv.style.display = 'none';
+      auth.setupLoginForm();
+    } else {
+      if (loginDiv) loginDiv.style.display = 'none';
+      if (appDiv) appDiv.style.display = 'block';
     }
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const token = "mock_token_" + Date.now();
-    setAuthToken(token);
-    setMember(user);
-    
-    console.log("✅ Login successful:", user);
-    return user;
-    
-  } catch (error) {
-    console.error("❌ Login error:", error);
-    throw error;
+  },
+
+  setupLoginForm: () => {
+    const loginDiv = document.getElementById('login');
+    if (!loginDiv) return;
+
+    loginDiv.innerHTML = `
+      <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
+        <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px;">
+          <h1 style="text-align: center; color: #667eea; margin-bottom: 30px;">Indian Club Bahrain</h1>
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Email</label>
+            <input type="email" id="email" placeholder="Enter your email" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box;">
+          </div>
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Password</label>
+            <input type="password" id="password" placeholder="Enter your password" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box;">
+          </div>
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Role</label>
+            <select id="role" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box;">
+              <option value="player">Player</option>
+              <option value="flightadmin">Flight Admin</option>
+              <option value="superadmin">Super Admin</option>
+            </select>
+          </div>
+          <button onclick="auth.login()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px;">Login</button>
+        </div>
+      </div>
+    `;
+  },
+
+  login: () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const role = document.getElementById('role').value;
+
+    if (!email || !password) {
+      appController.showNotification('Please enter email and password', 'error');
+      return;
+    }
+
+    localStorage.setItem('authToken', 'token_' + Date.now());
+    localStorage.setItem('userRole', role);
+    localStorage.setItem('userEmail', email);
+
+    appController.showNotification(`Welcome ${email}!`, 'success');
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   }
-}
+};
 
-export async function logout() {
-  try {
-    console.log("🔓 Logging out...");
-    clearAuthToken();
-    localStorage.removeItem("member_data");
-    console.log("✅ Logout successful");
-  } catch (error) {
-    console.error("❌ Logout error:", error);
-    throw error;
-  }
-}
-
-export function isAuthenticated() {
-  const token = localStorage.getItem("firebase_auth_token");
-  const member = localStorage.getItem("member_data");
-  return !!(token && member);
-}
-
-export function getCurrentUser() {
-  return loadMember();
-}
-
-export async function register(email, password, fullName) {
-  try {
-    console.log("📝 Attempting registration with:", email);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const newUser = {
-      uid: "user_" + Date.now(),
-      email: email,
-      fullName: fullName,
-      role: "PLAYER",
-      level: "Beginner",
-      phone: "",
-      joinDate: new Date().toISOString().split('T')[0]
-    };
-    
-    const token = "mock_token_" + Date.now();
-    setAuthToken(token);
-    setMember(newUser);
-    
-    console.log("✅ Registration successful:", newUser);
-    return newUser;
-    
-  } catch (error) {
-    console.error("❌ Registration error:", error);
-    throw error;
-  }
-}
-
-export async function resetPassword(email) {
-  try {
-    console.log("🔑 Password reset requested for:", email);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    console.log("✅ Password reset email sent");
-    return true;
-    
-  } catch (error) {
-    console.error("❌ Password reset error:", error);
-    throw error;
-  }
-}
-
-export async function updateProfile(updates) {
-  try {
-    const user = getCurrentUser();
-    const updatedUser = { ...user, ...updates };
-    setMember(updatedUser);
-    
-    console.log("✅ Profile updated:", updatedUser);
-    return updatedUser;
-    
-  } catch (error) {
-    console.error("❌ Profile update error:", error);
-    throw error;
-  }
-}
-
-export function getMockUsers() {
-  return mockUsers;
-}
-
-console.log('✅ auth.js loaded');
+console.log('✅ auth.js loaded successfully');
