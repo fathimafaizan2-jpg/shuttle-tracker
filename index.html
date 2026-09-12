@@ -91,33 +91,8 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <!-- ============================================
-         SCRIPT LOADING ORDER - CRITICAL!
-         PATHS CORRECTED FOR js/modules/ FOLDER
+         LOAD MAIN.JS AS MODULE
          ============================================ -->
-
-    <!-- 1. LOAD CONFIG FIRST -->
-    <script src="js/modules/config.js"></script>
-
-    <!-- 2. LOAD AUTH -->
-    <script src="js/modules/auth.js"></script>
-
-    <!-- 3. LOAD ROUTER -->
-    <script src="js/modules/router.js"></script>
-
-    <!-- 4. LOAD ALL VIEW FILES (SUPER IMPORTANT!) -->
-    <script src="js/modules/adminViews.js"></script>
-    <script src="js/modules/flightAdminViews.js"></script>
-    <script src="js/modules/views.js"></script>
-
-    <!-- 5. LOAD APP CONTROLLER LAST -->
-    <script src="js/modules/app.js"></script>
-
-    <!-- 6. LOAD SERVICE WORKER -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('js/modules/sw.js').catch(err => console.log('SW registration failed:', err));
-        }
-    </script>
+    <script type="module" src="js/modules/main.js"></script>
 </body>
 </html>
-
