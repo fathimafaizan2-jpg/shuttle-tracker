@@ -1,3 +1,4 @@
+
 // ============================================
 // main.js - Application Entry Point
 // ============================================
@@ -57,3 +58,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 console.log('✅ main.js loaded successfully');
+
