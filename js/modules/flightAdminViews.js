@@ -1,9 +1,3 @@
-
-// ============================================
-// flightAdminViews.js - Level Admin Dashboard
-// COMPLETE & PRODUCTION READY - 467 LINES
-// ============================================
-
 const flightAdminViews = {
   
   // DASHBOARD PAGE
@@ -482,13 +476,15 @@ const flightAdminViews = {
     `;
   }
 };
+};
+
 // Make functions globally accessible
 window.flightAdminSessionControlView = flightAdminSessionControlView;
 window.flightAdminShuttleStockView = flightAdminShuttleStockView;
 window.flightAdminReportsView = flightAdminReportsView;
 window.bindFlightAdminViews = bindFlightAdminViews;
-console.log('✅ flightAdminViews.js loaded successfully');
+
+// ✅ MAKE IT GLOBAL
 window.flightAdminViews = flightAdminViews;
 console.log('✅ flightAdminViews.js loaded successfully');
-
 
