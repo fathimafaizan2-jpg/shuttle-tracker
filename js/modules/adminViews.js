@@ -387,5 +387,7 @@ const adminViews = {
   `
 };
 
+window.adminViews = adminViews;
 export { adminViews };
 console.log('✅ adminViews.js loaded successfully');
+
