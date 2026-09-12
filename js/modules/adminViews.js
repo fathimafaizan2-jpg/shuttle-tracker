@@ -506,10 +506,21 @@ const adminViews = {
     `;
   }
 };
+// Make functions globally accessible
+window.superAdminHomeView = superAdminHomeView;
+window.superAdminActivityLogView = superAdminActivityLogView;
+window.superAdminWalletLogView = superAdminWalletLogView;
+window.superAdminSessionLogView = superAdminSessionLogView;
+window.superAdminStockLogView = superAdminStockLogView;
+window.activitiesAndFlightsView = activitiesAndFlightsView;
+window.superAdminTimetableView = superAdminTimetableView;
+window.financeAdminView = financeAdminView;
+window.auditHistoryView = auditHistoryView;
+window.advertisingApprovalView = advertisingApprovalView;
+window.bindAdminViews = bindAdminViews;
 
 // ✅ MAKE IT GLOBAL
 window.adminViews = adminViews;
-
 console.log('✅ adminViews.js loaded successfully');
 window.adminViews = adminViews;
 console.log('✅ adminViews loaded');
