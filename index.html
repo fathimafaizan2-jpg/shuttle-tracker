@@ -206,7 +206,7 @@
         }
 
         #login {
-            display: none;
+            display: block;
         }
 
         #app {
@@ -258,13 +258,10 @@
         <div id="content"></div>
     </div>
 
-    <!-- Import all modules -->
-    <script type="module" src="js/modules/adminViews.js"></script>
-    <script type="module" src="js/modules/flightAdminViews.js"></script>
-    <script type="module" src="js/modules/views.js"></script>
-    <script type="module" src="js/modules/router.js"></script>
-    <script type="module" src="js/modules/auth.js"></script>
-    <script type="module" src="js/main.js"></script>
+    <!-- Import main.js which imports all other modules -->
+    <script type="module">
+        import('./js/modules/main.js').catch(err => console.error('Error loading main.js:', err));
+    </script>
 </body>
 </html>
 
