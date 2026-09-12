@@ -563,7 +563,10 @@ const views = {
     `;
   }
 };
-
+// Make functions globally accessible
+window.playerDashboardView = playerDashboardView;
+window.playerProfileView = playerProfileView;
+window.bindPlayerViews = bindPlayerViews;
 console.log('✅ views.js loaded successfully');
 window.views = views;
 console.log('✅ views.js loaded successfully');
