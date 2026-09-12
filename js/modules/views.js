@@ -1,9 +1,3 @@
-
-// ============================================
-// views.js - Player Dashboard
-// COMPLETE & PRODUCTION READY - 566 LINES
-// ============================================
-
 const views = {
   
   // HOME PAGE
@@ -563,11 +557,14 @@ const views = {
     `;
   }
 };
+};
+
 // Make functions globally accessible
 window.playerDashboardView = playerDashboardView;
 window.playerProfileView = playerProfileView;
 window.bindPlayerViews = bindPlayerViews;
-console.log('✅ views.js loaded successfully');
+
+// ✅ MAKE IT GLOBAL
 window.views = views;
 console.log('✅ views.js loaded successfully');
 
