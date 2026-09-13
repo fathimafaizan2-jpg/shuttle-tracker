@@ -865,7 +865,7 @@
   <!-- ============================================
        SCRIPTS - LOAD AS ES6 MODULES
        ============================================ -->
-  <script type="module">
+    <script type="module">
     // Import all modules
     import { appState, setPage, setLoading, onEvent, emitEvent } from './js/modules/state.js';
     import * as utils from './js/modules/utils.js';
@@ -877,12 +877,42 @@
     import * as router from './js/modules/router.js';
     import * as main from './js/modules/main.js';
 
-    // Make modules globally available
+    // Make ALL utils functions globally available
+    window.setState = utils.setState;
+    window.getState = utils.getState;
+    window.normalizeRole = utils.normalizeRole;
+    window.bhdToFils = utils.bhdToFils;
+    window.filsToBhd = utils.filsToBhd;
+    window.formatDate = utils.formatDate;
+    window.formatDateTime = utils.formatDateTime;
+    window.formatTime = utils.formatTime;
+    window.formatLevelName = utils.formatLevelName;
+    window.validateEmail = utils.validateEmail;
+    window.validatePhone = utils.validatePhone;
+    window.validatePassword = utils.validatePassword;
+    window.validateCSV = utils.validateCSV;
+    window.validateImage = utils.validateImage;
+    window.showToast = utils.showToast;
+    window.showConfirm = utils.showConfirm;
+    window.logActivity = utils.logActivity;
+    window.logAudit = utils.logAudit;
+    window.requireSuperAdmin = utils.requireSuperAdmin;
+    window.requireLevelAdmin = utils.requireLevelAdmin;
+    window.requirePlayer = utils.requirePlayer;
+    window.updateUserUI = utils.updateUserUI;
+    window.handleLogout = utils.handleLogout;
+    window.printTable = utils.printTable;
+    window.generateWhatsAppLink = utils.generateWhatsAppLink;
+    window.switchLanguage = utils.switchLanguage;
+
+    // Make state functions globally available
     window.appState = appState;
     window.setPage = setPage;
     window.setLoading = setLoading;
     window.onEvent = onEvent;
     window.emitEvent = emitEvent;
+
+    // Make other modules globally available
     window.utils = utils;
     window.api = api;
     window.auth = auth;
@@ -944,7 +974,6 @@
 
       console.log('✅ App initialization complete');
     });
-  </script>
+</script>
 </body>
 </html>
-
