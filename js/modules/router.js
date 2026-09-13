@@ -3,207 +3,363 @@
 // router.js - ROUTING & NAVIGATION SYSTEM
 // ============================================
 
-// ===== ROUTE DEFINITIONS =====
-const routes = {
-  PLAYER: [
-    'home', 'timetable', 'attendance', 'wallet', 'profile', 'bazaar', 'logs'
-  ],
-  LEVEL_ADMIN: [
-    'home', 'timetable', 'attendance', 'wallet', 'profile', 'bazaar', 'logs',
-    'sessions', 'stock', 'reports', 'flight-finance'
-  ],
-  SUPER_ADMIN: [
-    'home', 'timetable', 'attendance', 'wallet', 'profile', 'bazaar', 'logs',
-    'sessions', 'stock', 'reports', 'flight-finance',
-    'overview', 'flights', 'master', 'admin-finance', 'ads', 'audit'
-  ]
+import * as views from './views.js';
+import * as flightAdminViews from './flightAdminViews.js';
+import * as adminViews from './adminViews.js';
+
+// ===== ROLE-BASED PAGE ACCESS =====
+const pageAccess = {
+  // PLAYER pages (accessible to PLAYER, LEVEL_ADMIN, SUPER_ADMIN)
+  PLAYER: ['home', 'timetable', 'attendance', 'wallet', 'profile', 'bazaar', 'logs'],
+  
+  // FLIGHT ADMIN pages (accessible to LEVEL_ADMIN, SUPER_ADMIN)
+  LEVEL_ADMIN: ['home', 'timetable', 'attendance', 'wallet', 'profile', 'bazaar', 'logs', 'sessions', 'stock', 'reports'],
+  
+  // SUPER ADMIN pages (accessible to SUPER_ADMIN only)
+  SUPER_ADMIN: ['home', 'overview', 'flights', 'master', 'admin-finance', 'ads', 'audit', 'bazaar', 'logs']
 };
 
-// ===== GET ALLOWED ROUTES =====
-export function getAllowedRoutes(role) {
-  const normalized = window.normalizeRole(role);
-  return routes[normalized] || routes.PLAYER;
-}
+// ===== CURRENT ROUTE STATE =====
+let currentRoute = 'home';
+let currentLevel = 'premier'; // Default level filter
 
-// ===== CHECK IF USER CAN ACCESS ROUTE =====
-export function canAccessRoute(page, role) {
-  const allowed = getAllowedRoutes(role);
-  return allowed.includes(page);
-}
-
-// ===== REDIRECT IF UNAUTHORIZED =====
-export function redirectIfUnauthorized(page, role) {
-  if (!canAccessRoute(page, role)) {
-    console.warn(`⚠️ Access denied to page: ${page}`);
-    return 'home';
-  }
-  return page;
-}
-
-// ===== RENDER PAGE CONTENT =====
-export function renderPage(page) {
-  const member = window.appState?.member;
-  if (!member) {
-    return '<p>Please login first</p>';
-  }
-
-  const role = window.normalizeRole(member.role);
+// ===== INITIALIZE ROUTER =====
+export function initializeRouter() {
+  const userRole = window.appState?.role || 'PLAYER';
   
-  // Check authorization
-  if (!canAccessRoute(page, role)) {
-    return `<div class="card"><h2>❌ Access Denied</h2><p>You don't have permission to access this page.</p></div>`;
+  console.log(`🔀 Router initialized for role: ${userRole}`);
+  
+  // Set up navigation event listeners
+  setupNavigationListeners();
+  
+  // Navigate to home
+  navigateTo('home');
+}
+
+// ===== SETUP NAVIGATION LISTENERS =====
+function setupNavigationListeners() {
+  // Player navigation
+  document.getElementById('nav-home')?.addEventListener('click', () => navigateTo('home'));
+  document.getElementById('nav-timetable')?.addEventListener('click', () => navigateTo('timetable'));
+  document.getElementById('nav-attendance')?.addEventListener('click', () => navigateTo('attendance'));
+  document.getElementById('nav-wallet')?.addEventListener('click', () => navigateTo('wallet'));
+  document.getElementById('nav-profile')?.addEventListener('click', () => navigateTo('profile'));
+  document.getElementById('nav-bazaar')?.addEventListener('click', () => navigateTo('bazaar'));
+  document.getElementById('nav-logs')?.addEventListener('click', () => navigateTo('logs'));
+  
+  // Flight Admin navigation
+  document.getElementById('nav-sessions')?.addEventListener('click', () => navigateTo('sessions'));
+  document.getElementById('nav-stock')?.addEventListener('click', () => navigateTo('stock'));
+  document.getElementById('nav-reports')?.addEventListener('click', () => navigateTo('reports'));
+  
+  // Super Admin navigation
+  document.getElementById('nav-overview')?.addEventListener('click', () => navigateTo('overview'));
+  document.getElementById('nav-flights')?.addEventListener('click', () => navigateTo('flights'));
+  document.getElementById('nav-master')?.addEventListener('click', () => navigateTo('master'));
+  document.getElementById('nav-admin-finance')?.addEventListener('click', () => navigateTo('admin-finance'));
+  document.getElementById('nav-ads')?.addEventListener('click', () => navigateTo('ads'));
+  document.getElementById('nav-audit')?.addEventListener('click', () => navigateTo('audit'));
+  
+  // Logout
+  document.getElementById('nav-logout')?.addEventListener('click', () => logout());
+}
+
+// ===== CHECK AUTHORIZATION =====
+function checkAuthorization(page) {
+  const userRole = window.appState?.role || 'PLAYER';
+  const allowedPages = pageAccess[userRole] || [];
+  
+  if (!allowedPages.includes(page)) {
+    console.warn(`❌ Access denied to page: ${page} for role: ${userRole}`);
+    return false;
   }
+  
+  return true;
+}
 
-  // Render based on role
-  let content = '';
-
-  if (role === 'PLAYER') {
-    if (window.views && window.views[page]) {
-      content = window.views[page]();
+// ===== REQUIRE SUPER ADMIN =====
+export function requireSuperAdmin() {
+  const userRole = window.appState?.role;
+  if (userRole !== 'SUPER_ADMIN') {
+    console.error('❌ Super Admin access required!');
+    if (window.showToast) {
+      window.showToast('❌ You do not have permission to access this feature');
     }
-  } else if (role === 'LEVEL_ADMIN') {
-    // Try flight admin views first
-    if (window.flightAdminViews && window.flightAdminViews[page]) {
-      content = window.flightAdminViews[page]();
-    }
-    // Fall back to player views
-    else if (window.views && window.views[page]) {
-      content = window.views[page]();
-    }
-  } else if (role === 'SUPER_ADMIN') {
-    // Try super admin views first
-    if (window.adminViews && window.adminViews[page]) {
-      content = window.adminViews[page]();
-    }
-    // Fall back to flight admin views
-    else if (window.flightAdminViews && window.flightAdminViews[page]) {
-      content = window.flightAdminViews[page]();
-    }
-    // Fall back to player views
-    else if (window.views && window.views[page]) {
-      content = window.views[page]();
-    }
+    return false;
   }
+  return true;
+}
 
-  if (!content) {
-    content = `<div class="card"><h2>⚠️ Page Not Found</h2><p>The page "${page}" could not be found.</p></div>`;
+// ===== REQUIRE FLIGHT ADMIN =====
+export function requireFlightAdmin() {
+  const userRole = window.appState?.role;
+  if (userRole !== 'LEVEL_ADMIN' && userRole !== 'SUPER_ADMIN') {
+    console.error('❌ Flight Admin access required!');
+    if (window.showToast) {
+      window.showToast('❌ You do not have permission to access this feature');
+    }
+    return false;
   }
-
-  return content;
+  return true;
 }
 
 // ===== NAVIGATE TO PAGE =====
 export function navigateTo(page) {
-  const member = window.appState?.member;
-  if (!member) {
-    console.warn('Not authenticated');
+  // Check authorization
+  if (!checkAuthorization(page)) {
+    if (window.showToast) {
+      window.showToast('❌ You do not have access to this page');
+    }
     return;
   }
 
-  const role = window.normalizeRole(member.role);
-  const safePage = redirectIfUnauthorized(page, role);
+  currentRoute = page;
+  renderPage(page);
+  updateActiveNavigation(page);
+  
+  console.log(`✅ Navigated to: ${page}`);
+}
 
-  // Update content
-  const contentDiv = document.getElementById('content');
-  if (contentDiv) {
-    contentDiv.innerHTML = renderPage(safePage);
+// ===== RENDER PAGE CONTENT =====
+function renderPage(page) {
+  const contentArea = document.getElementById('content');
+  if (!contentArea) {
+    console.error('❌ Content area not found');
+    return;
   }
 
-  // Update active nav
-  updateActiveNav(safePage);
+  let html = '';
+  const userRole = window.appState?.role || 'PLAYER';
 
-  // Update page state
-  if (window.setPage) {
-    window.setPage(safePage);
+  try {
+    // PLAYER pages
+    if (page === 'home' && userRole !== 'SUPER_ADMIN') {
+      html = views.views.home();
+    } else if (page === 'timetable' && userRole !== 'SUPER_ADMIN') {
+      html = views.views.timetable();
+    } else if (page === 'attendance' && userRole !== 'SUPER_ADMIN') {
+      html = views.views.attendance();
+    } else if (page === 'wallet' && userRole !== 'SUPER_ADMIN') {
+      html = views.views.wallet();
+    } else if (page === 'profile') {
+      html = views.views.profile();
+    } else if (page === 'bazaar') {
+      html = views.views.bazaar();
+    } else if (page === 'logs') {
+      html = views.views.logs();
+    }
+    
+    // FLIGHT ADMIN pages
+    else if (page === 'sessions' && (userRole === 'LEVEL_ADMIN' || userRole === 'SUPER_ADMIN')) {
+      html = flightAdminViews.flightAdminViews.sessions();
+    } else if (page === 'stock' && (userRole === 'LEVEL_ADMIN' || userRole === 'SUPER_ADMIN')) {
+      html = flightAdminViews.flightAdminViews.stock();
+    } else if (page === 'reports' && (userRole === 'LEVEL_ADMIN' || userRole === 'SUPER_ADMIN')) {
+      html = flightAdminViews.flightAdminViews.reports();
+    }
+    
+    // SUPER ADMIN pages
+    else if (page === 'overview' && userRole === 'SUPER_ADMIN') {
+      html = adminViews.adminViews.overview();
+    } else if (page === 'flights' && userRole === 'SUPER_ADMIN') {
+      html = adminViews.adminViews.flights();
+    } else if (page === 'master' && userRole === 'SUPER_ADMIN') {
+      html = adminViews.adminViews.master();
+    } else if (page === 'admin-finance' && userRole === 'SUPER_ADMIN') {
+      html = adminViews.adminViews['admin-finance']();
+    } else if (page === 'ads' && userRole === 'SUPER_ADMIN') {
+      html = adminViews.adminViews.ads();
+    } else if (page === 'audit' && userRole === 'SUPER_ADMIN') {
+      html = adminViews.adminViews.audit();
+    }
+    
+    // Default to home
+    else {
+      html = views.views.home();
+    }
+
+    contentArea.innerHTML = html;
+    
+    // Trigger render event for custom initialization
+    window.dispatchEvent(new CustomEvent('indianclub:render', { detail: { page: page } }));
+    
+  } catch (error) {
+    console.error(`❌ Error rendering page ${page}:`, error);
+    contentArea.innerHTML = `<div class="error-message">❌ Error loading page. Please try again.</div>`;
   }
-
-  console.log(`✅ Navigated to: ${safePage}`);
 }
 
 // ===== UPDATE ACTIVE NAVIGATION =====
-export function updateActiveNav(page) {
-  // Remove active from all nav links
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.classList.remove('active');
+function updateActiveNavigation(page) {
+  // Remove active class from all nav items
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active');
   });
 
-  // Add active to current page
-  const activeLink = document.querySelector(`[data-page="${page}"]`);
-  if (activeLink) {
-    activeLink.classList.add('active');
+  // Add active class to current nav item
+  const navItem = document.getElementById(`nav-${page}`);
+  if (navItem) {
+    navItem.classList.add('active');
   }
 }
 
-// ===== SETUP NAVIGATION LISTENERS =====
-export function setupNavigation() {
-  const navLinks = document.querySelectorAll('.nav-link');
-  
-  navLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const page = link.getAttribute('data-page');
-      if (page) {
-        navigateTo(page);
-      }
-    });
-  });
-
-  console.log('✅ Navigation setup complete');
+// ===== LOGOUT =====
+function logout() {
+  if (window.logout) {
+    window.logout();
+  }
 }
 
-// ===== UPDATE NAVIGATION VISIBILITY =====
-export function updateNavigationVisibility() {
+// ===== GET CURRENT ROUTE =====
+export function getCurrentRoute() {
+  return currentRoute;
+}
+
+// ===== GET CURRENT LEVEL =====
+export function getCurrentLevel() {
+  return currentLevel;
+}
+
+// ===== SET CURRENT LEVEL =====
+export function setCurrentLevel(level) {
+  currentLevel = level;
+  console.log(`📍 Level filter set to: ${level}`);
+}
+
+// ===== SWITCH LOGIN TAB =====
+window.switchLoginTab = function(tab) {
+  document.querySelectorAll('.login-tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.login-tab-btn').forEach(el => el.classList.remove('active'));
+  
+  document.getElementById(`${tab}-form`)?.classList.add('active');
+  event.target?.classList.add('active');
+};
+
+// ===== SHOW TOAST NOTIFICATION =====
+window.showToast = function(message) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #333;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    z-index: 9999;
+    animation: slideIn 0.3s ease-in-out;
+  `;
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-in-out';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+};
+
+// ===== NORMALIZE ROLE =====
+window.normalizeRole = function(role) {
+  if (!role) return 'PLAYER';
+  
+  const roleUpper = role.toUpperCase();
+  
+  if (roleUpper === 'SUPERADMIN' || roleUpper === 'ADMIN') {
+    return 'SUPER_ADMIN';
+  } else if (roleUpper === 'LEVELADMIN' || roleUpper === 'FLIGHT_ADMIN') {
+    return 'LEVEL_ADMIN';
+  }
+  
+  return 'PLAYER';
+};
+
+// ===== VALIDATE EMAIL =====
+window.validateEmail = function(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// ===== VALIDATE PHONE =====
+window.validatePhone = function(phone) {
+  const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+  return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 7;
+};
+
+// ===== VALIDATE PASSWORD =====
+window.validatePassword = function(password) {
+  return password && password.length >= 6;
+};
+
+// ===== UPDATE USER UI =====
+window.updateUserUI = function() {
   const member = window.appState?.member;
+  const role = window.appState?.role;
+  
   if (!member) return;
 
-  const role = window.normalizeRole(member.role);
-  const allowed = getAllowedRoutes(role);
+  // Update user name in header
+  const userNameEl = document.getElementById('userName');
+  if (userNameEl) {
+    userNameEl.textContent = member.fullName || 'User';
+  }
 
-  // Hide/show nav links based on role
-  document.querySelectorAll('.nav-link').forEach(link => {
-    const page = link.getAttribute('data-page');
-    if (page && allowed.includes(page)) {
-      link.classList.remove('hidden');
-    } else {
-      link.classList.add('hidden');
-    }
+  // Update role badge
+  const roleEl = document.getElementById('userRole');
+  if (roleEl) {
+    roleEl.textContent = role || 'PLAYER';
+  }
+
+  // Show/hide navigation based on role
+  updateNavigationVisibility(role);
+};
+
+// ===== UPDATE NAVIGATION VISIBILITY =====
+function updateNavigationVisibility(role) {
+  // Hide all nav items first
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.style.display = 'none';
   });
 
-  // Hide/show nav sections based on role
-  document.querySelectorAll('.flight-only-nav').forEach(el => {
-    if (role === 'LEVEL_ADMIN' || role === 'SUPER_ADMIN') {
-      el.classList.remove('hidden');
-    } else {
-      el.classList.add('hidden');
-    }
+  // Show items based on role
+  const playerItems = ['nav-home', 'nav-timetable', 'nav-attendance', 'nav-wallet', 'nav-profile', 'nav-bazaar', 'nav-logs'];
+  const flightAdminItems = [...playerItems, 'nav-sessions', 'nav-stock', 'nav-reports'];
+  const superAdminItems = ['nav-home', 'nav-overview', 'nav-flights', 'nav-master', 'nav-admin-finance', 'nav-ads', 'nav-audit', 'nav-bazaar', 'nav-logs'];
+
+  let itemsToShow = playerItems;
+  
+  if (role === 'LEVEL_ADMIN') {
+    itemsToShow = flightAdminItems;
+  } else if (role === 'SUPER_ADMIN') {
+    itemsToShow = superAdminItems;
+  }
+
+  itemsToShow.forEach(itemId => {
+    const item = document.getElementById(itemId);
+    if (item) item.style.display = 'block';
   });
 
-  document.querySelectorAll('.super-nav').forEach(el => {
-    if (role === 'SUPER_ADMIN') {
-      el.classList.remove('hidden');
-    } else {
-      el.classList.add('hidden');
-    }
-  });
-
-  console.log(`✅ Navigation visibility updated for role: ${role}`);
+  // Always show logout
+  const logoutBtn = document.getElementById('nav-logout');
+  if (logoutBtn) logoutBtn.style.display = 'block';
 }
 
-// ===== INITIALIZE ROUTER =====
-export function initializeRouter() {
-  console.log('🚀 Initializing Router...');
-
-  // Setup navigation listeners
-  setupNavigation();
-
-  // Update navigation visibility
-  updateNavigationVisibility();
-
-  // Navigate to home
-  navigateTo('home');
-
-  console.log('✅ Router initialized successfully');
-}
+// ===== FILTER BY LEVEL =====
+window.filterByLevel = function() {
+  const levelSelects = document.querySelectorAll('[id$="LevelFilter"]');
+  
+  levelSelects.forEach(select => {
+    const level = select.value;
+    if (level) {
+      setCurrentLevel(level);
+      console.log(`📍 Filtering by level: ${level}`);
+      
+      // Re-render current page with new filter
+      renderPage(currentRoute);
+    }
+  });
+};
 
 console.log('✅ router.js loaded successfully');
 
