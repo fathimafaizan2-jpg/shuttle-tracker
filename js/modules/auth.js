@@ -1,74 +1,161 @@
 
 // ============================================
-// auth.js - Authentication Module
+// auth.js - AUTHENTICATION & SESSION MANAGEMENT
 // ============================================
 
-export const auth = {
-  checkAuth: () => {
-    const token = localStorage.getItem('authToken');
-    const loginDiv = document.getElementById('login');
-    const appDiv = document.getElementById('app');
+// ===== LOGIN HANDLER =====
+window.handleLogin = async function(event) {
+  event.preventDefault();
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const role = document.getElementById('role').value;
+  const errorEl = document.getElementById('errorMessage');
 
-    if (!token) {
-      if (loginDiv) loginDiv.style.display = 'block';
-      if (appDiv) appDiv.style.display = 'none';
-      auth.setupLoginForm();
-    } else {
-      if (loginDiv) loginDiv.style.display = 'none';
-      if (appDiv) appDiv.style.display = 'block';
-    }
-  },
-
-  setupLoginForm: () => {
-    const loginDiv = document.getElementById('login');
-    if (!loginDiv) return;
-
-    loginDiv.innerHTML = `
-      <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
-        <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px;">
-          <h1 style="text-align: center; color: #667eea; margin-bottom: 30px;">Indian Club Bahrain</h1>
-          <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Email</label>
-            <input type="email" id="email" placeholder="Enter your email" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box;">
-          </div>
-          <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Password</label>
-            <input type="password" id="password" placeholder="Enter your password" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box;">
-          </div>
-          <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Role</label>
-            <select id="role" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box;">
-              <option value="player">Player</option>
-              <option value="flightadmin">Flight Admin</option>
-              <option value="superadmin">Super Admin</option>
-            </select>
-          </div>
-          <button onclick="auth.login()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px;">Login</button>
-        </div>
-      </div>
-    `;
-  },
-
-  login: () => {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const role = document.getElementById('role').value;
+  try {
+    errorEl.textContent = '';
 
     if (!email || !password) {
-      appController.showNotification('Please enter email and password', 'error');
-      return;
+      throw new Error('Please enter email and password');
     }
 
-    localStorage.setItem('authToken', 'token_' + Date.now());
-    localStorage.setItem('userRole', role);
+    // Normalize role
+    let normalizedRole = role;
+    if (['SUPERADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(role)) {
+      normalizedRole = 'SUPER_ADMIN';
+    } else if (['LEVELADMIN', 'LEVEL_ADMIN', 'FLIGHT_ADMIN'].includes(role)) {
+      normalizedRole = 'LEVEL_ADMIN';
+    } else {
+      normalizedRole = 'PLAYER';
+    }
+
+    // Simulate authentication
+    const token = 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    // Store session
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('userRole', normalizedRole);
     localStorage.setItem('userEmail', email);
+    localStorage.setItem('userName', email.split('@')[0]);
+    localStorage.setItem('loginTime', new Date().toISOString());
 
-    appController.showNotification(`Welcome ${email}!`, 'success');
+    console.log('✅ Login successful! Role:', normalizedRole);
 
+    // Update UI
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('memberName').textContent = email.split('@')[0];
+    document.getElementById('roleLabel').textContent = normalizedRole;
+
+    // Show/hide nav items based on role
+    updateNavigation();
+
+    // Log activity
+    logActivity('LOGIN', `User logged in as ${normalizedRole}`);
+
+    // Navigate to home
     setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+      navigateTo('home');
+    }, 100);
+
+  } catch (error) {
+    errorEl.textContent = error.message;
+    console.error('Login error:', error);
   }
 };
 
+// ===== LOGOUT HANDLER =====
+window.handleLogout = function() {
+  if (confirm('Are you sure you want to logout?')) {
+    const email = localStorage.getItem('userEmail');
+    
+    // Log activity
+    logActivity('LOGOUT', `User logged out`);
+
+    // Clear session
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('loginTime');
+
+    // Reset UI
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'block';
+
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('errorMessage').textContent = '';
+
+    console.log('✅ Logout successful');
+  }
+};
+
+// ===== UPDATE NAVIGATION =====
+window.updateNavigation = function() {
+  const role = localStorage.getItem('userRole') || 'PLAYER';
+
+  // Hide all role-specific items
+  document.querySelectorAll('.flight-only-nav').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.super-nav').forEach(el => el.classList.add('hidden'));
+
+  // Show based on role
+  if (role === 'LEVEL_ADMIN') {
+    document.querySelectorAll('.flight-only-nav').forEach(el => el.classList.remove('hidden'));
+  }
+  if (role === 'SUPER_ADMIN') {
+    document.querySelectorAll('.super-nav').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.flight-only-nav').forEach(el => el.classList.remove('hidden'));
+  }
+};
+
+// ===== SWITCH LANGUAGE =====
+window.switchLanguage = function(lang) {
+  localStorage.setItem('language', lang);
+  console.log('Language switched to:', lang);
+  // TODO: Implement language switching
+};
+
+// ===== LOG ACTIVITY =====
+function logActivity(action, details) {
+  const activityLogs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
+  activityLogs.push({
+    timestamp: new Date().toLocaleString(),
+    action,
+    details
+  });
+  localStorage.setItem('activityLogs', JSON.stringify(activityLogs));
+}
+
+// ===== LOG AUDIT =====
+window.logAudit = function(category, action, target, details) {
+  const auditLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+  auditLogs.push({
+    timestamp: new Date().toLocaleString(),
+    category,
+    action,
+    target,
+    details,
+    actor: localStorage.getItem('userName') || 'System'
+  });
+  localStorage.setItem('auditLogs', JSON.stringify(auditLogs));
+};
+
+// ===== CHECK SESSION =====
+window.addEventListener('DOMContentLoaded', () => {
+  const token = localStorage.getItem('authToken');
+  const role = localStorage.getItem('userRole');
+  const email = localStorage.getItem('userEmail');
+
+  if (token && role && email) {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('memberName').textContent = email.split('@')[0];
+    document.getElementById('roleLabel').textContent = role;
+
+    updateNavigation();
+    navigateTo('home');
+  }
+});
+
 console.log('✅ auth.js loaded successfully');
+
