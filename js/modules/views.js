@@ -9,6 +9,22 @@ export const views = {
     const member = window.appState?.member;
     if (!member) return '<p>Loading...</p>';
 
+    // Get metrics from state
+    const sessionsAttended = window.appState?.sessionsAttended || 12;
+    const pendingAmount = window.appState?.pendingAmount || 150;
+    const arrears = window.appState?.arrears || 50;
+    const walletBalance = (window.appState?.walletBalanceFils || 50000) / 1000;
+
+    // Get upcoming session
+    const upcomingSession = window.appState?.upcomingSession || {
+      status: 'SCHEDULED',
+      date: 'Sep 14, 2026',
+      time: '6:00 AM - 7:30 AM',
+      activity: 'Badminton',
+      flight: 'Premier',
+      sessionId: 'session_001'
+    };
+
     return `
       <div class="page-header">
         <h1>👋 Welcome, ${member.fullName}!</h1>
@@ -19,73 +35,55 @@ export const views = {
         <div class="stat-card">
           <div class="stat-icon" style="background: #667eea;">📅</div>
           <div class="stat-content">
-            <h3>5</h3>
-            <p>Upcoming Sessions</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #2ed573;">✓</div>
-          <div class="stat-content">
-            <h3>12</h3>
+            <h3>${sessionsAttended}</h3>
             <p>Sessions Attended</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: #ffa502;">💰</div>
+          <div class="stat-icon" style="background: #ff6b6b;">⏳</div>
           <div class="stat-content">
-            <h3>50 BHD</h3>
-            <p>Wallet Balance</p>
+            <h3>${pendingAmount} BHD</h3>
+            <p>Pending Amount</p>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: #ff6b6b;">📊</div>
+          <div class="stat-icon" style="background: #ffa502;">⚠️</div>
           <div class="stat-content">
-            <h3>85%</h3>
-            <p>Attendance Rate</p>
+            <h3>${arrears} BHD</h3>
+            <p>Arrears (24h+)</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #2ed573;">💰</div>
+          <div class="stat-content">
+            <h3>${walletBalance.toFixed(3)} BHD</h3>
+            <p>Wallet Credit</p>
           </div>
         </div>
       </div>
 
+      ${upcomingSession.status === 'SCHEDULED' ? `
       <div class="card">
-        <h2>📋 Upcoming Sessions</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Activity</th>
-              <th>Flight</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Sep 14, 2026</td>
-              <td>6:00 AM - 7:30 AM</td>
-              <td>Badminton</td>
-              <td>Premier</td>
-              <td><span class="badge badge-success">Scheduled</span></td>
-            </tr>
-            <tr>
-              <td>Sep 16, 2026</td>
-              <td>6:00 AM - 7:30 AM</td>
-              <td>Badminton</td>
-              <td>Premier</td>
-              <td><span class="badge badge-success">Scheduled</span></td>
-            </tr>
-            <tr>
-              <td>Sep 18, 2026</td>
-              <td>6:00 AM - 7:30 AM</td>
-              <td>Badminton</td>
-              <td>Premier</td>
-              <td><span class="badge badge-info">Pending</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <h2>📅 Upcoming Session</h2>
+        <div style="background: #f0f3ff; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+          <p><strong>Date:</strong> ${upcomingSession.date}</p>
+          <p><strong>Time:</strong> ${upcomingSession.time}</p>
+          <p><strong>Activity:</strong> ${upcomingSession.activity}</p>
+          <p><strong>Flight:</strong> ${upcomingSession.flight}</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <button class="btn btn-success" data-self-attendance="PRESENT" onclick="window.respondToSession('${upcomingSession.sessionId}', 'PRESENT')">
+            ✓ I am coming
+          </button>
+          <button class="btn btn-danger" data-self-attendance="ABSENT" onclick="window.respondToSession('${upcomingSession.sessionId}', 'ABSENT')">
+            ✕ Not coming
+          </button>
+        </div>
       </div>
+      ` : ''}
 
       <div class="card">
-        <h2>💳 Recent Transactions</h2>
+        <h2>📋 Recent Transactions</h2>
         <table class="data-table">
           <thead>
             <tr>
@@ -97,15 +95,21 @@ export const views = {
           </thead>
           <tbody>
             <tr>
+              <td>Sep 11, 2026</td>
+              <td>Game Cost - Badminton</td>
+              <td>-25 BHD</td>
+              <td><span class="badge badge-success">Paid</span></td>
+            </tr>
+            <tr>
               <td>Sep 10, 2026</td>
-              <td>Monthly Membership Fee</td>
+              <td>Monthly Membership</td>
               <td>-100 BHD</td>
               <td><span class="badge badge-success">Paid</span></td>
             </tr>
             <tr>
               <td>Sep 05, 2026</td>
               <td>Wallet Top-up</td>
-              <td>+50 BHD</td>
+              <td>+150 BHD</td>
               <td><span class="badge badge-success">Completed</span></td>
             </tr>
           </tbody>
@@ -116,6 +120,9 @@ export const views = {
 
   // ===== TIMETABLE PAGE =====
   timetable: function() {
+    const member = window.appState?.member;
+    const flightId = member?.flightId || 'premier';
+
     return `
       <div class="page-header">
         <h1>📅 My Timetable</h1>
@@ -123,16 +130,15 @@ export const views = {
       </div>
 
       <div class="card">
-        <h2>Weekly Schedule</h2>
+        <h2>Weekly Schedule (Flight: ${flightId})</h2>
         <table class="data-table">
           <thead>
             <tr>
               <th>Day</th>
               <th>Time</th>
               <th>Activity</th>
-              <th>Flight</th>
-              <th>Venue</th>
-              <th>Coach</th>
+              <th>Level</th>
+              <th>Court</th>
             </tr>
           </thead>
           <tbody>
@@ -142,7 +148,6 @@ export const views = {
               <td>Badminton</td>
               <td>Premier</td>
               <td>Court 1</td>
-              <td>Ahmed Al-Mansouri</td>
             </tr>
             <tr>
               <td>Wednesday</td>
@@ -150,7 +155,6 @@ export const views = {
               <td>Badminton</td>
               <td>Premier</td>
               <td>Court 1</td>
-              <td>Ahmed Al-Mansouri</td>
             </tr>
             <tr>
               <td>Friday</td>
@@ -158,26 +162,16 @@ export const views = {
               <td>Badminton</td>
               <td>Premier</td>
               <td>Court 1</td>
-              <td>Ahmed Al-Mansouri</td>
             </tr>
             <tr>
               <td>Saturday</td>
               <td>7:00 - 8:30 AM</td>
               <td>Cricket</td>
-              <td>Flight 1</td>
+              <td>Premier</td>
               <td>Ground A</td>
-              <td>Mohammed Al-Khalifa</td>
             </tr>
           </tbody>
         </table>
-      </div>
-
-      <div class="card">
-        <h2>📝 Notes</h2>
-        <p>• Sessions are held at the club premises</p>
-        <p>• Please arrive 10 minutes early</p>
-        <p>• Bring your own equipment</p>
-        <p>• Contact your flight admin for any changes</p>
       </div>
     `;
   },
@@ -186,86 +180,64 @@ export const views = {
   attendance: function() {
     return `
       <div class="page-header">
-        <h1>✓ Attendance Record</h1>
-        <p>Your attendance history and statistics</p>
+        <h1>✓ Attendance Roster</h1>
+        <p>Real-time headcount for upcoming sessions</p>
       </div>
 
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon" style="background: #2ed573;">✓</div>
           <div class="stat-content">
-            <h3>12</h3>
-            <p>Sessions Attended</p>
+            <h3>18</h3>
+            <p>Present</p>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="background: #ff6b6b;">✕</div>
           <div class="stat-content">
+            <h3>4</h3>
+            <p>Absent</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #ffa502;">❓</div>
+          <div class="stat-content">
             <h3>2</h3>
-            <p>Sessions Missed</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ffa502;">⏱</div>
-          <div class="stat-content">
-            <h3>1</h3>
-            <p>Late Arrivals</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #667eea;">📊</div>
-          <div class="stat-content">
-            <h3>85%</h3>
-            <p>Attendance Rate</p>
+            <p>No Response</p>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <h2>Attendance History</h2>
+        <h2>👥 Players Present (Status = PRESENT)</h2>
         <table class="data-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Activity</th>
-              <th>Flight</th>
-              <th>Status</th>
+              <th>Member Name</th>
               <th>Time In</th>
-              <th>Time Out</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Sep 11, 2026</td>
-              <td>Badminton</td>
-              <td>Premier</td>
-              <td><span class="badge badge-success">Present</span></td>
+              <td>Ahmed Al-Mansouri</td>
               <td>5:55 AM</td>
-              <td>7:35 AM</td>
+              <td><span class="badge badge-success">Present</span></td>
             </tr>
             <tr>
-              <td>Sep 09, 2026</td>
-              <td>Badminton</td>
-              <td>Premier</td>
+              <td>Fatima Hassan</td>
+              <td>6:00 AM</td>
               <td><span class="badge badge-success">Present</span></td>
+            </tr>
+            <tr>
+              <td>Mohammed Ali</td>
               <td>6:05 AM</td>
-              <td>7:30 AM</td>
-            </tr>
-            <tr>
-              <td>Sep 07, 2026</td>
-              <td>Badminton</td>
-              <td>Premier</td>
-              <td><span class="badge badge-danger">Absent</span></td>
-              <td>-</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td>Sep 05, 2026</td>
-              <td>Badminton</td>
-              <td>Premier</td>
               <td><span class="badge badge-success">Present</span></td>
-              <td>5:58 AM</td>
-              <td>7:32 AM</td>
+            </tr>
+            <tr>
+              <td>Sara Ahmed</td>
+              <td>6:10 AM</td>
+              <td><span class="badge badge-success">Present</span></td>
             </tr>
           </tbody>
         </table>
@@ -275,6 +247,8 @@ export const views = {
 
   // ===== WALLET PAGE =====
   wallet: function() {
+    const walletBalance = (window.appState?.walletBalanceFils || 50000) / 1000;
+
     return `
       <div class="page-header">
         <h1>💰 Wallet & Payments</h1>
@@ -285,46 +259,53 @@ export const views = {
         <div class="stat-card">
           <div class="stat-icon" style="background: #2ed573;">💳</div>
           <div class="stat-content">
-            <h3>50 BHD</h3>
+            <h3>${walletBalance.toFixed(3)} BHD</h3>
             <p>Current Balance</p>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="background: #667eea;">📊</div>
           <div class="stat-content">
-            <h3>100 BHD</h3>
+            <h3>500 BHD</h3>
             <p>Total Paid</p>
           </div>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="background: #ffa502;">⏳</div>
           <div class="stat-content">
-            <h3>0 BHD</h3>
+            <h3>150 BHD</h3>
             <p>Pending</p>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <h2>💳 Top-up Wallet</h2>
-        <div class="form-group">
-          <label>Amount (BHD) *</label>
-          <input type="number" placeholder="Enter amount" min="1" step="0.1">
+        <h2>💳 Submit Payment</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Payment Method *</label>
+            <select id="paymentMethod">
+              <option value="">Select payment method</option>
+              <option value="BENEFIT_PAY">BenefitPay</option>
+              <option value="CASH">Cash</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Reference Number *</label>
+            <input type="text" id="paymentRef" placeholder="e.g., BenefitPay reference ID">
+          </div>
         </div>
-        <div class="form-group">
-          <label>Payment Method *</label>
-          <select>
-            <option>Select payment method</option>
-            <option>Credit Card</option>
-            <option>Debit Card</option>
-            <option>Bank Transfer</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (BHD) *</label>
+            <input type="number" id="paymentAmount" placeholder="0.000" min="0" step="0.001">
+          </div>
         </div>
-        <button class="btn btn-primary">Top-up Now</button>
+        <button class="btn btn-primary" id="submitPaymentBtn" onclick="window.submitPayment()">Submit Payment</button>
       </div>
 
       <div class="card">
-        <h2>📋 Transaction History</h2>
+        <h2>📋 Statement History</h2>
         <table class="data-table">
           <thead>
             <tr>
@@ -332,34 +313,37 @@ export const views = {
               <th>Description</th>
               <th>Type</th>
               <th>Amount</th>
-              <th>Balance</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             <tr>
+              <td>Sep 11, 2026</td>
+              <td>Game Cost - Badminton</td>
+              <td>Charge</td>
+              <td>-25 BHD</td>
+              <td><span class="badge badge-success">Paid</span></td>
+            </tr>
+            <tr>
               <td>Sep 10, 2026</td>
+              <td>Payment Received</td>
+              <td>Credit</td>
+              <td>+100 BHD</td>
+              <td><span class="badge badge-success">Verified</span></td>
+            </tr>
+            <tr>
+              <td>Sep 09, 2026</td>
               <td>Monthly Membership</td>
-              <td>Debit</td>
+              <td>Charge</td>
               <td>-100 BHD</td>
-              <td>50 BHD</td>
               <td><span class="badge badge-success">Paid</span></td>
             </tr>
             <tr>
               <td>Sep 05, 2026</td>
-              <td>Wallet Top-up</td>
+              <td>Payment Submitted</td>
               <td>Credit</td>
               <td>+150 BHD</td>
-              <td>150 BHD</td>
-              <td><span class="badge badge-success">Completed</span></td>
-            </tr>
-            <tr>
-              <td>Aug 28, 2026</td>
-              <td>Monthly Membership</td>
-              <td>Debit</td>
-              <td>-100 BHD</td>
-              <td>0 BHD</td>
-              <td><span class="badge badge-success">Paid</span></td>
+              <td><span class="badge badge-warning">Pending</span></td>
             </tr>
           </tbody>
         </table>
@@ -447,79 +431,90 @@ export const views = {
   bazaar: function() {
     return `
       <div class="page-header">
-        <h1>🛍️ BaZaar</h1>
-        <p>Buy and sell items within the club community</p>
+        <h1>🛍️ BaZaar - Community Directory</h1>
+        <p>Buy, sell, and discover local business offers</p>
       </div>
 
-      <div class="card">
-        <h2>📢 Post New Item</h2>
-        <div class="form-group">
-          <label>Item Title *</label>
-          <input type="text" placeholder="What are you selling?">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Category *</label>
-            <select>
-              <option>Select category</option>
-              <option>Sports Equipment</option>
-              <option>Clothing</option>
-              <option>Electronics</option>
-              <option>Other</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Price (BHD) *</label>
-            <input type="number" placeholder="0.00" min="0" step="0.1">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Description *</label>
-          <textarea placeholder="Describe your item..." rows="4"></textarea>
-        </div>
-        <button class="btn btn-primary">Post Item</button>
+      <div class="tabs-container">
+        <button class="tab-btn active" onclick="window.switchBazaarTab('browse')">Browse Ads</button>
+        <button class="tab-btn" onclick="window.switchBazaarTab('post')">Post Your Ad</button>
       </div>
 
-      <div class="card">
-        <h2>🏪 Available Items</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Category</th>
-              <th>Seller</th>
-              <th>Price</th>
-              <th>Posted</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Badminton Racket</td>
-              <td>Sports Equipment</td>
-              <td>Ali Ahmed</td>
-              <td>25 BHD</td>
-              <td>Sep 10, 2026</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Contact</button></td>
-            </tr>
-            <tr>
-              <td>Tennis Shoes</td>
-              <td>Clothing</td>
-              <td>Fatima Hassan</td>
-              <td>35 BHD</td>
-              <td>Sep 08, 2026</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Contact</button></td>
-            </tr>
-            <tr>
-              <td>Cricket Bat</td>
-              <td>Sports Equipment</td>
-              <td>Mohammed Ali</td>
-              <td>50 BHD</td>
-              <td>Sep 05, 2026</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Contact</button></td>
-            </tr>
-          </tbody>
-        </table>
+      <div id="bazaar-browse" class="tab-content active">
+        <div class="card">
+          <h2>🏪 Approved Business Listings</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Category</th>
+                <th>Offer</th>
+                <th>Location</th>
+                <th>Contact</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Al-Noor Restaurant</td>
+                <td>Food & Dining</td>
+                <td>20% Discount</td>
+                <td>Manama</td>
+                <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Contact</button></td>
+              </tr>
+              <tr>
+                <td>Fitness Plus Gym</td>
+                <td>Health & Fitness</td>
+                <td>Free Trial</td>
+                <td>Juffair</td>
+                <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Contact</button></td>
+              </tr>
+              <tr>
+                <td>Tech Solutions</td>
+                <td>Technology</td>
+                <td>15% Off</td>
+                <td>Seef</td>
+                <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Contact</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="bazaar-post" class="tab-content">
+        <div class="card">
+          <h2>📢 Submit Your Business Ad</h2>
+          <div class="form-group">
+            <label>Business Name *</label>
+            <input type="text" placeholder="Your business name">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category *</label>
+              <select>
+                <option>Select category</option>
+                <option>Food & Dining</option>
+                <option>Health & Fitness</option>
+                <option>Technology</option>
+                <option>Retail</option>
+                <option>Services</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Location *</label>
+              <input type="text" placeholder="Business location">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Promotional Offer *</label>
+            <input type="text" placeholder="e.g., 20% Discount">
+          </div>
+          <div class="form-group">
+            <label>Upload Image (PNG/JPEG/WebP, max 2MB) *</label>
+            <input type="file" accept="image/png,image/jpeg,image/webp">
+          </div>
+          <button class="btn btn-primary">Submit for Approval</button>
+          <p style="color: #999; font-size: 12px; margin-top: 10px;">Your ad will be reviewed by Super Admin and featured if approved.</p>
+        </div>
       </div>
     `;
   },
@@ -533,11 +528,37 @@ export const views = {
       </div>
 
       <div class="card">
-        <h2>Recent Activities</h2>
+        <h2>🔎 Filter Logs</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="logCategory">
+              <option value="">All Categories</option>
+              <option value="LOGIN">Login & Authentication</option>
+              <option value="ATTENDANCE">Attendance</option>
+              <option value="WALLET">Wallet & Payments</option>
+              <option value="PROFILE">Profile Updates</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date From</label>
+            <input type="date" id="logDateFrom">
+          </div>
+          <div class="form-group">
+            <label>Date To</label>
+            <input type="date" id="logDateTo">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="window.filterLogs()">Filter</button>
+      </div>
+
+      <div class="card">
+        <h2>📋 Recent Activities</h2>
         <table class="data-table">
           <thead>
             <tr>
               <th>Date & Time</th>
+              <th>Category</th>
               <th>Activity</th>
               <th>Details</th>
               <th>Status</th>
@@ -547,37 +568,90 @@ export const views = {
             <tr>
               <td>Sep 13, 2026 - 5:20 PM</td>
               <td>Login</td>
+              <td>User Login</td>
               <td>Logged in to member portal</td>
               <td><span class="badge badge-success">Success</span></td>
             </tr>
             <tr>
               <td>Sep 11, 2026 - 6:00 AM</td>
               <td>Attendance</td>
-              <td>Marked present in Badminton session</td>
+              <td>Session Attendance</td>
+              <td>Marked present in Badminton</td>
               <td><span class="badge badge-success">Completed</span></td>
             </tr>
             <tr>
               <td>Sep 10, 2026 - 2:30 PM</td>
-              <td>Payment</td>
-              <td>Monthly membership fee paid</td>
-              <td><span class="badge badge-success">Completed</span></td>
+              <td>Wallet</td>
+              <td>Payment Submitted</td>
+              <td>Payment of 100 BHD submitted</td>
+              <td><span class="badge badge-warning">Pending</span></td>
             </tr>
             <tr>
               <td>Sep 05, 2026 - 10:15 AM</td>
-              <td>Wallet Top-up</td>
-              <td>Added 150 BHD to wallet</td>
-              <td><span class="badge badge-success">Completed</span></td>
-            </tr>
-            <tr>
-              <td>Sep 01, 2026 - 8:45 AM</td>
-              <td>Profile Update</td>
-              <td>Updated phone number</td>
+              <td>Wallet</td>
+              <td>Credit Added</td>
+              <td>150 BHD added to wallet</td>
               <td><span class="badge badge-success">Completed</span></td>
             </tr>
           </tbody>
         </table>
       </div>
     `;
+  }
+};
+
+// ===== HELPER FUNCTIONS =====
+window.respondToSession = function(sessionId, status) {
+  console.log(`Responding to session ${sessionId} with status: ${status}`);
+  if (window.showToast) {
+    window.showToast(`✅ Your response (${status}) has been recorded!`);
+  }
+};
+
+window.submitPayment = function() {
+  const method = document.getElementById('paymentMethod')?.value;
+  const ref = document.getElementById('paymentRef')?.value?.trim();
+  const amount = parseFloat(document.getElementById('paymentAmount')?.value || 0);
+
+  if (!method) {
+    if (window.showToast) window.showToast('❌ Please select a payment method');
+    return;
+  }
+
+  if (!ref) {
+    if (window.showToast) window.showToast('❌ Please enter a reference number');
+    return;
+  }
+
+  if (amount <= 0) {
+    if (window.showToast) window.showToast('❌ Amount must be greater than 0');
+    return;
+  }
+
+  const amountFils = Math.round(amount * 1000);
+  console.log(`Payment submitted: ${method}, Ref: ${ref}, Amount: ${amountFils} Fils`);
+  
+  if (window.showToast) {
+    window.showToast(`✅ Payment of ${amount.toFixed(3)} BHD submitted for verification!`);
+  }
+};
+
+window.switchBazaarTab = function(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  
+  document.getElementById(`bazaar-${tab}`)?.classList.add('active');
+  event.target.classList.add('active');
+};
+
+window.filterLogs = function() {
+  const category = document.getElementById('logCategory')?.value;
+  const dateFrom = document.getElementById('logDateFrom')?.value;
+  const dateTo = document.getElementById('logDateTo')?.value;
+  
+  console.log(`Filtering logs: Category=${category}, From=${dateFrom}, To=${dateTo}`);
+  if (window.showToast) {
+    window.showToast('✅ Logs filtered successfully!');
   }
 };
 
