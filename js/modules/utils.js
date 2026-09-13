@@ -1,157 +1,280 @@
 
 // ============================================
-// utils.js - UTILITY FUNCTIONS & HELPERS
+// utils.js - UTILITY FUNCTIONS
 // ============================================
 
-// ===== CURRENCY CONVERSIONS =====
-window.bhdToFils = function(bhdAmount) {
-  return Math.round(parseFloat(bhdAmount) * 1000);
-};
+// ===== CURRENCY CONVERSION =====
+export function bhdToFils(bhdAmount) {
+  return Math.round(bhdAmount * 1000);
+}
 
-window.filsToBhd = function(filsAmount) {
+export function filsToBhd(filsAmount) {
   return (filsAmount / 1000).toFixed(3);
-};
+}
 
-window.formatBHD = function(filsAmount) {
-  return filsToBhd(filsAmount) + ' BHD';
-};
+// ===== ROLE NORMALIZATION =====
+export function normalizeRole(role) {
+  if (!role) return 'PLAYER';
+  const normalized = role.toUpperCase().trim();
+  if (normalized === 'SUPER_ADMIN' || normalized === 'SUPERADMIN') return 'SUPER_ADMIN';
+  if (normalized === 'LEVEL_ADMIN' || normalized === 'LEVELADMIN' || normalized === 'FLIGHT_ADMIN') return 'LEVEL_ADMIN';
+  return 'PLAYER';
+}
 
-// ===== COST SPLIT CALCULATION =====
-window.calculateCostSplit = function(shuttlesUsed, tubePriceFils, presentCount) {
-  if (presentCount === 0) throw new Error('No players present');
-  
-  const costPerShuttleFils = Math.round(tubePriceFils / 12);
-  const totalGameCostFils = Math.ceil(shuttlesUsed * costPerShuttleFils);
-  const perPlayerShareFils = Math.ceil(totalGameCostFils / presentCount);
-  
-  return {
-    costPerShuttleFils,
-    totalGameCostFils,
-    perPlayerShareFils,
-    totalGameCostBHD: filsToBhd(totalGameCostFils),
-    perPlayerShareBHD: filsToBhd(perPlayerShareFils)
-  };
-};
-
-// ===== ARREARS CALCULATION =====
-window.calculateArrears = function(charges) {
-  const now = Date.now();
-  const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
-  
-  return charges
-    .filter(charge => new Date(charge.createdAt).getTime() < twentyFourHoursAgo)
-    .reduce((sum, charge) => sum + charge.amountFils, 0);
-};
-
-// ===== ATTENDANCE FILTERING =====
-window.filterPresentPlayers = function(attendance, sessionId) {
-  return attendance.filter(a => a.sessionId === sessionId && a.status === 'PRESENT');
-};
-
-// ===== DATE FORMATTING =====
-window.formatDate = function(dateString) {
-  return new Date(dateString).toLocaleDateString();
-};
-
-window.formatDateTime = function(dateString) {
-  return new Date(dateString).toLocaleString();
-};
-
-window.formatTime = function(timeString) {
-  return timeString; // Already in HH:MM format
-};
-
-// ===== FLIGHT NAME FORMATTING =====
-window.formatLevelName = function(flightId) {
-  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-  for (const activity of activities) {
-    const flight = activity.flights?.find(f => f.id === flightId);
-    if (flight) return `${activity.name} - ${flight.name}`;
+// ===== STATE MANAGEMENT =====
+export function setState(key, value) {
+  if (window.appState) {
+    window.appState[key] = value;
+    if (window.emitEvent) {
+      window.emitEvent('indianclub:statechange', { key, value });
+    }
   }
-  return 'Unknown Flight';
-};
+}
 
-// ===== PHONE SANITIZATION =====
-window.sanitizePhone = function(phone) {
-  return phone.replace(/\D/g, '');
-};
+export function getState(key) {
+  return window.appState ? window.appState[key] : null;
+}
 
-// ===== WHATSAPP LINK GENERATOR =====
-window.generateWhatsAppLink = function(phone, message) {
-  const sanitized = sanitizePhone(phone);
-  const encoded = encodeURIComponent(message);
-  return `https://wa.me/${sanitized}?text=${encoded}`;
-};
+// ===== DATE & TIME FORMATTING =====
+export function formatDate(dateString) {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return dateString;
+  }
+}
 
-// ===== TOAST NOTIFICATIONS =====
-window.showToast = function(message, type = 'info', duration = 3000) {
-  const toast = document.createElement('div');
-  toast.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    background: ${type === 'error' ? '#ff4757' : type === 'success' ? '#00d4aa' : type === 'warning' ? '#ffa502' : '#0099ff'};
-    color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    z-index: 9999;
-    animation: slideIn 0.3s ease;
-    font-weight: 600;
-  `;
-  toast.textContent = message;
-  document.body.appendChild(toast);
+export function formatDateTime(dateString) {
+  if (!dateString) return '-';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return dateString;
+  }
+}
+
+export function formatTime(timeString) {
+  if (!timeString) return '-';
+  return timeString;
+}
+
+// ===== LEVEL NAME FORMATTING =====
+export function formatLevelName(flightId) {
+  if (!flightId) return 'Unknown';
   
-  setTimeout(() => {
-    toast.style.animation = 'slideOut 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
-};
+  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+  
+  for (const activity of activities) {
+    if (activity.flights) {
+      const flight = activity.flights.find(f => f.id === flightId);
+      if (flight) {
+        return `${activity.name} - ${flight.name}`;
+      }
+    }
+  }
+  
+  return flightId;
+}
 
-// ===== CONFIRMATION DIALOG =====
-window.showConfirm = function(message) {
-  return confirm(message);
-};
+// ===== VALIDATION =====
+export function validateEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+}
 
-// ===== LOADING STATE =====
-window.setLoading = function(isLoading) {
-  window.appState.loading = isLoading;
-  fireEvent('indianclub:loading', isLoading);
-};
+export function validatePhone(phone) {
+  const regex = /^[\d\s\-\+\(\)]+$/;
+  return regex.test(phone) && phone.length >= 7;
+}
 
-// ===== CSV VALIDATION =====
-window.validateCSV = function(csvText, expectedColumns) {
-  const lines = csvText.trim().split('\n');
+export function validatePassword(password) {
+  return password && password.length >= 6;
+}
+
+export function validateCSV(csvText, expectedColumns) {
+  const lines = csvText.trim().split('\n').filter(line => line.trim());
   const errors = [];
+  
+  if (lines.length === 0) {
+    errors.push('CSV is empty');
+    return { valid: false, errors };
+  }
   
   lines.forEach((line, index) => {
     const columns = line.split(',').map(col => col.trim());
     if (columns.length !== expectedColumns) {
-      errors.push(`Row ${index + 1}: Expected ${expectedColumns} columns, got ${columns.length}`);
+      errors.push(`Line ${index + 1}: Expected ${expectedColumns} columns, got ${columns.length}`);
     }
   });
   
   return { valid: errors.length === 0, errors };
-};
+}
 
-// ===== IMAGE VALIDATION =====
-window.validateImage = function(file) {
+export function validateImage(file) {
+  const maxSize = 2 * 1024 * 1024; // 2MB
   const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
-  const maxSize = 2 * 1024 * 1024; // 2 MB
+  
+  if (file.size > maxSize) {
+    return { valid: false, error: 'Image must be less than 2MB' };
+  }
   
   if (!allowedTypes.includes(file.type)) {
     return { valid: false, error: 'Only PNG, JPEG, and WebP images are allowed' };
   }
   
-  if (file.size > maxSize) {
-    return { valid: false, error: 'Image size must be less than 2 MB' };
+  return { valid: true };
+}
+
+// ===== NOTIFICATIONS =====
+export function showToast(message, type = 'info') {
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+    max-width: 400px;
+  `;
+  
+  // Set colors based on type
+  const colors = {
+    success: { bg: '#d4edda', text: '#155724', icon: '✓' },
+    error: { bg: '#f8d7da', text: '#721c24', icon: '✕' },
+    warning: { bg: '#fff3cd', text: '#856404', icon: '⚠' },
+    info: { bg: '#d1ecf1', text: '#0c5460', icon: 'ℹ' }
+  };
+  
+  const color = colors[type] || colors.info;
+  toast.style.background = color.bg;
+  toast.style.color = color.text;
+  toast.innerHTML = `${color.icon} ${message}`;
+  
+  document.body.appendChild(toast);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+export function showConfirm(message) {
+  return confirm(message);
+}
+
+// ===== LOGGING =====
+export function logActivity(action, details) {
+  const log = {
+    timestamp: new Date().toISOString(),
+    action,
+    details,
+    memberUid: window.appState?.member?.uid || 'unknown'
+  };
+  
+  const logs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
+  logs.push(log);
+  localStorage.setItem('activityLogs', JSON.stringify(logs));
+}
+
+export function logAudit(category, action, target, details) {
+  const log = {
+    timestamp: new Date().toISOString(),
+    category,
+    action,
+    target,
+    details,
+    actor: window.appState?.member?.fullName || 'System'
+  };
+  
+  const logs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+  logs.push(log);
+  localStorage.setItem('auditLogs', JSON.stringify(logs));
+}
+
+// ===== AUTHORIZATION =====
+export function requireSuperAdmin() {
+  const role = normalizeRole(window.appState?.member?.role);
+  if (role !== 'SUPER_ADMIN') {
+    throw new Error('Super Admin access required');
+  }
+}
+
+export function requireLevelAdmin() {
+  const role = normalizeRole(window.appState?.member?.role);
+  if (role !== 'LEVEL_ADMIN' && role !== 'SUPER_ADMIN') {
+    throw new Error('Flight Admin access required');
+  }
+}
+
+export function requirePlayer() {
+  const role = normalizeRole(window.appState?.member?.role);
+  if (!['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'].includes(role)) {
+    throw new Error('Player access required');
+  }
+}
+
+// ===== UI HELPERS =====
+export function updateUserUI() {
+  const member = window.appState?.member;
+  if (!member) return;
+  
+  // Update avatar
+  const avatar = document.getElementById('memberAvatar');
+  if (avatar) {
+    const initials = member.fullName
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+    avatar.textContent = initials;
   }
   
-  return { valid: true };
-};
+  // Update name
+  const nameEl = document.getElementById('memberName');
+  if (nameEl) nameEl.textContent = member.fullName;
+  
+  // Update role
+  const roleEl = document.getElementById('sideRole');
+  if (roleEl) roleEl.textContent = member.flightName || 'All activities';
+  
+  // Update role badge
+  const roleLabel = document.getElementById('roleLabel');
+  if (roleLabel) {
+    const role = normalizeRole(member.role);
+    roleLabel.textContent = role === 'SUPER_ADMIN' ? 'SUPER ADMIN' : role === 'LEVEL_ADMIN' ? 'FLIGHT ADMIN' : 'PLAYER';
+  }
+}
 
-// ===== PRINT FUNCTIONALITY =====
-window.printTable = function(tableId, title) {
+export function handleLogout() {
+  if (!showConfirm('Are you sure you want to logout?')) return;
+  
+  sessionStorage.removeItem('authToken');
+  localStorage.removeItem('currentMember');
+  window.appState.member = null;
+  
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  
+  showToast('Logged out successfully', 'success');
+}
+
+// ===== PRINTING =====
+export function printTable(tableId, title) {
   const table = document.getElementById(tableId);
   if (!table) {
     showToast('Table not found', 'error');
@@ -160,36 +283,26 @@ window.printTable = function(tableId, title) {
   
   const printWindow = window.open('', '', 'height=600,width=800');
   printWindow.document.write('<html><head><title>' + title + '</title>');
-  printWindow.document.write('<style>');
-  printWindow.document.write('body { font-family: Arial, sans-serif; }');
-  printWindow.document.write('table { border-collapse: collapse; width: 100%; }');
-  printWindow.document.write('th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }');
-  printWindow.document.write('th { background-color: #667eea; color: white; }');
-  printWindow.document.write('</style></head><body>');
+  printWindow.document.write('<style>table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }</style>');
+  printWindow.document.write('</head><body>');
   printWindow.document.write('<h2>' + title + '</h2>');
   printWindow.document.write(table.outerHTML);
   printWindow.document.write('</body></html>');
   printWindow.document.close();
   printWindow.print();
-};
+}
 
-// ===== DEBOUNCE FUNCTION =====
-window.debounce = function(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-};
+// ===== WHATSAPP LINK GENERATOR =====
+export function generateWhatsAppLink(phone, message) {
+  const encodedMessage = encodeURIComponent(message);
+  return `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodedMessage}`;
+}
 
-// ===== DEEP CLONE =====
-window.deepClone = function(obj) {
-  return JSON.parse(JSON.stringify(obj));
-};
+// ===== SWITCH LANGUAGE =====
+export function switchLanguage(lang) {
+  setState('language', lang);
+  showToast(`Language switched to ${lang === 'en' ? 'English' : 'العربية'}`, 'success');
+}
 
 console.log('✅ utils.js loaded successfully');
 
