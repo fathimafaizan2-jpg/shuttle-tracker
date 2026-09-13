@@ -1,110 +1,110 @@
 
 // ============================================
-// router.js - Application Router
+// router.js - NAVIGATION & AUTHORIZATION
 // ============================================
 
-export const router = {
-  currentPage: 'dashboard',
+// ===== ROLE NORMALIZATION =====
+function normalizeRole(role) {
+  if (['SUPERADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(role)) {
+    return 'SUPER_ADMIN';
+  } else if (['LEVELADMIN', 'LEVEL_ADMIN', 'FLIGHT_ADMIN'].includes(role)) {
+    return 'LEVEL_ADMIN';
+  } else {
+    return 'PLAYER';
+  }
+}
 
-  init: () => {
-    console.log('🔄 Router Initializing...');
-    router.setupNavigation();
-    router.navigate('dashboard');
-  },
+// ===== PAGE AUTHORIZATION =====
+function canOpenPage(page, role) {
+  const playerPages = ['home', 'timetable', 'attendance', 'wallet', 'bazaar', 'profile', 'logs'];
+  const adminPages = ['sessions', 'stock', 'reports', 'flight-finance'];
+  const superPages = ['overview', 'flights', 'master', 'admin-finance', 'ads', 'audit'];
 
-  navigate: (page) => {
-    const contentDiv = document.getElementById('content');
-    const userRole = localStorage.getItem('userRole') || 'player';
+  if (role === 'PLAYER') {
+    return playerPages.includes(page);
+  } else if (role === 'LEVEL_ADMIN') {
+    return playerPages.includes(page) || adminPages.includes(page);
+  } else if (role === 'SUPER_ADMIN') {
+    return true;
+  }
 
-    console.log(`📍 Route: ${page} | Role: ${userRole}`);
+  return false;
+}
 
-    let html = '';
+// ===== NAVIGATE TO PAGE =====
+window.navigateTo = function(page) {
+  const role = normalizeRole(localStorage.getItem('userRole') || 'PLAYER');
 
-    if (userRole === 'superadmin') {
-      switch(page) {
-        case 'dashboard': html = window.adminViews.dashboard(); break;
-        case 'members': html = window.adminViews.membersSection(); break;
-        case 'timetable': html = window.adminViews.timetableSection(); break;
-        case 'advertising': html = window.adminViews.advertisingSection(); break;
-        case 'finance': html = window.adminViews.financeSection(); break;
-        case 'audit': html = window.adminViews.auditSection(); break;
-        default: html = window.adminViews.dashboard();
-      }
-    } else if (userRole === 'flightadmin') {
-      switch(page) {
-        case 'dashboard': html = window.flightAdminViews.dashboard(); break;
-        case 'attendance': html = window.flightAdminViews.attendanceSection(); break;
-        case 'sessionControl': html = window.flightAdminViews.sessionControlSection(); break;
-        case 'shuttle': html = window.flightAdminViews.shuttleSection(); break;
-        case 'reports': html = window.flightAdminViews.reportsSection(); break;
-        default: html = window.flightAdminViews.dashboard();
-      }
-    } else {
-      switch(page) {
-        case 'home': html = window.views.home(); break;
-        case 'timetable': html = window.views.timetable(); break;
-        case 'attendance': html = window.views.attendance(); break;
-        case 'wallet': html = window.views.wallet(); break;
-        case 'bazaar': html = window.views.bazaar(); break;
-        case 'logs': html = window.views.logs(); break;
-        case 'profile': html = window.views.profile(); break;
-        default: html = window.views.home();
+  // Check authorization
+  if (!canOpenPage(page, role)) {
+    showNotification('You do not have permission to open this page.', 'error');
+    return;
+  }
+
+  // Get appropriate view module
+  let viewModule = null;
+  if (page === 'home' || page === 'timetable' || page === 'attendance' || page === 'wallet' || page === 'bazaar' || page === 'profile' || page === 'logs') {
+    viewModule = window.appModules.views;
+  } else if (page === 'sessions' || page === 'stock' || page === 'reports' || page === 'flight-finance') {
+    viewModule = window.appModules.flightAdminViews;
+  } else if (page === 'overview' || page === 'flights' || page === 'master' || page === 'admin-finance' || page === 'ads' || page === 'audit') {
+    viewModule = window.appModules.adminViews;
+  }
+
+  // Render page
+  if (viewModule && viewModule[page]) {
+    const content = document.getElementById('content');
+    if (content) {
+      try {
+        content.innerHTML = viewModule[page]();
+        console.log(`✅ Rendered page: ${page}`);
+      } catch (error) {
+        console.error(`❌ Error rendering page ${page}:`, error);
+        content.innerHTML = `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
       }
     }
+  } else {
+    console.error(`❌ Page not found: ${page}`);
+  }
+};
 
-    if (contentDiv) {
-      contentDiv.innerHTML = html;
-    }
-    router.currentPage = page;
-  },
+// ===== SHOW NOTIFICATION =====
+window.showNotification = function(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: ${type === 'error' ? '#ff4757' : type === 'success' ? '#00d4aa' : '#0099ff'};
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+  `;
+  notification.textContent = message;
+  document.body.appendChild(notification);
 
-  setupNavigation: () => {
-    const userRole = localStorage.getItem('userRole') || 'player';
-    const navDiv = document.getElementById('navigation');
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+};
 
-    if (!navDiv) return;
+// ===== REQUIRE SUPER ADMIN =====
+window.requireSuperAdmin = function() {
+  const role = normalizeRole(localStorage.getItem('userRole') || 'PLAYER');
+  if (role !== 'SUPER_ADMIN') {
+    throw new Error('Only Super Admin can access this module');
+  }
+};
 
-    let navHTML = '';
-
-    if (userRole === 'superadmin') {
-      navHTML = `
-        <nav style="background: #667eea; padding: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-          <button onclick="appController.navigate('dashboard')" style="padding: 10px 15px; background: white; color: #667eea; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Dashboard</button>
-          <button onclick="appController.navigate('members')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Members</button>
-          <button onclick="appController.navigate('timetable')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Timetable</button>
-          <button onclick="appController.navigate('advertising')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Advertising</button>
-          <button onclick="appController.navigate('finance')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Finance</button>
-          <button onclick="appController.navigate('audit')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Audit</button>
-          <button onclick="appController.logout()" style="padding: 10px 15px; background: #ff4757; color: white; border: none; border-radius: 6px; cursor: pointer; margin-left: auto;">Logout</button>
-        </nav>
-      `;
-    } else if (userRole === 'flightadmin') {
-      navHTML = `
-        <nav style="background: #f5576c; padding: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-          <button onclick="appController.navigate('dashboard')" style="padding: 10px 15px; background: white; color: #f5576c; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Dashboard</button>
-          <button onclick="appController.navigate('attendance')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Attendance</button>
-          <button onclick="appController.navigate('sessionControl')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Sessions</button>
-          <button onclick="appController.navigate('shuttle')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Shuttle</button>
-          <button onclick="appController.navigate('reports')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Reports</button>
-          <button onclick="appController.logout()" style="padding: 10px 15px; background: #ff4757; color: white; border: none; border-radius: 6px; cursor: pointer; margin-left: auto;">Logout</button>
-        </nav>
-      `;
-    } else {
-      navHTML = `
-        <nav style="background: #00d4aa; padding: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-          <button onclick="appController.navigate('home')" style="padding: 10px 15px; background: white; color: #00d4aa; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Home</button>
-          <button onclick="appController.navigate('timetable')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Timetable</button>
-          <button onclick="appController.navigate('attendance')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Attendance</button>
-          <button onclick="appController.navigate('wallet')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Wallet</button>
-          <button onclick="appController.navigate('bazaar')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">BaZaar</button>
-          <button onclick="appController.navigate('logs')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Logs</button>
-          <button onclick="appController.navigate('profile')" style="padding: 10px 15px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">Profile</button>
-          <button onclick="appController.logout()" style="padding: 10px 15px; background: #ff4757; color: white; border: none; border-radius: 6px; cursor: pointer; margin-left: auto;">Logout</button>
-        </nav>
-      `;
-    }
-
-    navDiv.innerHTML = navHTML;
+// ===== REQUIRE LEVEL ADMIN =====
+window.requireLevelAdmin = function() {
+  const role = normalizeRole(localStorage.getItem('userRole') || 'PLAYER');
+  if (role !== 'LEVEL_ADMIN' && role !== 'SUPER_ADMIN') {
+    throw new Error('Only Flight Admin can access this module');
   }
 };
 
