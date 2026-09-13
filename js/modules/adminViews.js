@@ -1,393 +1,1135 @@
 
-const adminViews = {
-  dashboard: () => `
-    <div class="page-container">
+// ============================================
+// adminViews.js - SUPER ADMIN MODULE
+// ============================================
+
+export const adminViews = {
+  // CLUB OVERVIEW PAGE
+  overview: () => {
+    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+    const members = JSON.parse(localStorage.getItem('members') || '[]');
+    const admins = members.filter(m => m.role === 'LEVEL_ADMIN');
+    const walletCredit = JSON.parse(localStorage.getItem('clubWallet') || '{"total": 0}');
+
+    let html = `
       <div class="page-header">
-        <h1>Super Admin Dashboard</h1>
-        <p>Manage Members, Activities, Finance & Audit</p>
+        <h1>Club Overview</h1>
+        <p>Executive dashboard</p>
       </div>
+
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><i class="fas fa-users"></i></div>
-          <div class="stat-content"><h3>1,245</h3><p>Total Members</p><span class="stat-change">+12% this month</span></div>
+          <div class="stat-icon" style="background: #667eea;">🏃</div>
+          <div class="stat-content">
+            <h3>${activities.length}</h3>
+            <p>Active Sports</p>
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><i class="fas fa-calendar-check"></i></div>
-          <div class="stat-content"><h3>156</h3><p>Sessions This Month</p><span class="stat-change">+8% from last month</span></div>
+          <div class="stat-icon" style="background: #00d4aa;">👥</div>
+          <div class="stat-content">
+            <h3>${members.length}</h3>
+            <p>Registered Players</p>
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"><i class="fas fa-money-bill-wave"></i></div>
-          <div class="stat-content"><h3>BHD 45,230</h3><p>Total Revenue</p><span class="stat-change">+15% this quarter</span></div>
+          <div class="stat-icon" style="background: #ffa502;">👨‍💼</div>
+          <div class="stat-content">
+            <h3>${admins.length}</h3>
+            <p>Flight Admins</p>
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"><i class="fas fa-check-circle"></i></div>
-          <div class="stat-content"><h3>23</h3><p>Pending Approvals</p><span class="stat-change">Action needed</span></div>
+          <div class="stat-icon" style="background: #0099ff;">💼</div>
+          <div class="stat-content">
+            <h3>${walletCredit.total.toFixed(3)} BHD</h3>
+            <p>Club Wallet</p>
+          </div>
         </div>
       </div>
-      <div class="quick-actions">
-        <h3>Quick Actions</h3>
-        <div class="action-buttons" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
-          <button class="action-btn" onclick="appController.navigate('members')" style="background: white; border: 1px solid #e0e6ed; padding: 15px; border-radius: 8px; cursor: pointer; text-align: center;"><i class="fas fa-user-plus" style="font-size: 24px; color: #667eea; display: block; margin-bottom: 8px;"></i><span>Manage Members</span></button>
-          <button class="action-btn" onclick="appController.navigate('timetable')" style="background: white; border: 1px solid #e0e6ed; padding: 15px; border-radius: 8px; cursor: pointer; text-align: center;"><i class="fas fa-calendar-alt" style="font-size: 24px; color: #f5576c; display: block; margin-bottom: 8px;"></i><span>Timetable</span></button>
-          <button class="action-btn" onclick="appController.navigate('advertising')" style="background: white; border: 1px solid #e0e6ed; padding: 15px; border-radius: 8px; cursor: pointer; text-align: center;"><i class="fas fa-megaphone" style="font-size: 24px; color: #00d4aa; display: block; margin-bottom: 8px;"></i><span>Advertising</span></button>
-          <button class="action-btn" onclick="appController.navigate('finance')" style="background: white; border: 1px solid #e0e6ed; padding: 15px; border-radius: 8px; cursor: pointer; text-align: center;"><i class="fas fa-money-bill" style="font-size: 24px; color: #ffa502; display: block; margin-bottom: 8px;"></i><span>Finance</span></button>
-          <button class="action-btn" onclick="appController.navigate('audit')" style="background: white; border: 1px solid #e0e6ed; padding: 15px; border-radius: 8px; cursor: pointer; text-align: center;"><i class="fas fa-history" style="font-size: 24px; color: #667eea; display: block; margin-bottom: 8px;"></i><span>Audit Logs</span></button>
-        </div>
-      </div>
+
       <div class="card">
         <h2>Recent Activities</h2>
-        <div class="activity-list">
-          <div class="activity-item" style="display: flex; gap: 15px; padding: 15px 0; border-bottom: 1px solid #e0e6ed;">
-            <div class="activity-icon" style="background: #e94560; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;"><i class="fas fa-user-check"></i></div>
-            <div class="activity-content" style="flex: 1;">
-              <h4 style="margin: 0 0 5px 0;">New Member Registered</h4>
-              <p style="margin: 0 0 5px 0; color: #666;">Ahmed Al-Mansouri joined the club</p>
-              <span class="activity-time" style="font-size: 12px; color: #999;">2 hours ago</span>
-            </div>
-          </div>
-          <div class="activity-item" style="display: flex; gap: 15px; padding: 15px 0; border-bottom: 1px solid #e0e6ed;">
-            <div class="activity-icon" style="background: #00d4aa; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;"><i class="fas fa-calendar-check"></i></div>
-            <div class="activity-content" style="flex: 1;">
-              <h4 style="margin: 0 0 5px 0;">Session Completed</h4>
-              <p style="margin: 0 0 5px 0; color: #666;">Badminton Level 2 - 24 attendees</p>
-              <span class="activity-time" style="font-size: 12px; color: #999;">4 hours ago</span>
-            </div>
-          </div>
-          <div class="activity-item" style="display: flex; gap: 15px; padding: 15px 0;">
-            <div class="activity-icon" style="background: #ffa502; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;"><i class="fas fa-money-bill"></i></div>
-            <div class="activity-content" style="flex: 1;">
-              <h4 style="margin: 0 0 5px 0;">Payment Received</h4>
-              <p style="margin: 0 0 5px 0; color: #666;">BHD 150 from wallet top-up</p>
-              <span class="activity-time" style="font-size: 12px; color: #999;">6 hours ago</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `,
-
-  membersSection: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Members Management</h1>
-        <div class="header-actions" style="display: flex; gap: 10px;">
-          <button class="btn btn-primary" onclick="appController.showNotification('Add Member modal opening...', 'info')" style="padding: 10px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-user-plus"></i> Add Member</button>
-          <button class="btn btn-secondary" onclick="appController.showNotification('Pre-register modal opening...', 'info')" style="padding: 10px 15px; background: #00d4aa; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-file-import"></i> Pre-Register</button>
-          <button class="btn btn-info" onclick="appController.showNotification('Members exported to CSV', 'success')" style="padding: 10px 15px; background: #0099ff; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-download"></i> Export</button>
-        </div>
-      </div>
-      <div class="card">
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+        <table class="data-table">
           <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Name</th>
-              <th style="padding: 12px; text-align: left;">Email</th>
-              <th style="padding: 12px; text-align: left;">Phone</th>
-              <th style="padding: 12px; text-align: left;">Role</th>
-              <th style="padding: 12px; text-align: left;">Flight</th>
-              <th style="padding: 12px; text-align: left;">Status</th>
-              <th style="padding: 12px; text-align: left;">Actions</th>
+            <tr>
+              <th>Activity Name</th>
+              <th>Status</th>
+              <th>Flights</th>
+              <th>Members</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;"><strong>Ahmed Al-Mansouri</strong></td>
-              <td style="padding: 12px;">ahmed@example.com</td>
-              <td style="padding: 12px;">+973 1234 5680</td>
-              <td style="padding: 12px;"><span class="badge badge-info" style="background: #0099ff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Flight Admin</span></td>
-              <td style="padding: 12px;">Badminton A</td>
-              <td style="padding: 12px;"><span class="badge badge-success" style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Active</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Edit member', 'info')" style="padding: 6px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;"><strong>Fatima Al-Dosari</strong></td>
-              <td style="padding: 12px;">fatima@example.com</td>
-              <td style="padding: 12px;">+973 3344 5566</td>
-              <td style="padding: 12px;"><span class="badge badge-success" style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Player</span></td>
-              <td style="padding: 12px;">Badminton A</td>
-              <td style="padding: 12px;"><span class="badge badge-success" style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Active</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Member promoted', 'success')" style="padding: 6px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Promote</button></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;"><strong>Mohammed Al-Khalifa</strong></td>
-              <td style="padding: 12px;">mohammed@example.com</td>
-              <td style="padding: 12px;">+973 5566 7788</td>
-              <td style="padding: 12px;"><span class="badge badge-success" style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Player</span></td>
-              <td style="padding: 12px;">Cricket B</td>
-              <td style="padding: 12px;"><span class="badge badge-danger" style="background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Inactive</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Member activated', 'success')" style="padding: 6px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Activate</button></td>
-            </tr>
+    `;
+
+    if (activities.length === 0) {
+      html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No activities yet</td></tr>`;
+    } else {
+      activities.forEach(activity => {
+        const activityMembers = members.filter(m => m.activityId === activity.id);
+        html += `
+          <tr>
+            <td>${activity.name}</td>
+            <td><span class="badge badge-success">${activity.status || 'ACTIVE'}</span></td>
+            <td>${activity.flights ? activity.flights.length : 0}</td>
+            <td>${activityMembers.length}</td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
           </tbody>
         </table>
       </div>
-    </div>
-  `,
+    `;
 
-  timetableSection: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Timetable Master</h1>
-        <div class="header-actions" style="display: flex; gap: 10px;">
-          <button class="btn btn-primary" onclick="appController.showNotification('Create Activity modal opening...', 'info')" style="padding: 10px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-plus"></i> Create Activity</button>
-          <button class="btn btn-secondary" onclick="appController.showNotification('Bulk import modal opening...', 'info')" style="padding: 10px 15px; background: #00d4aa; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-upload"></i> Bulk Import</button>
-          <button class="btn btn-info" onclick="appController.showNotification('Monthly sessions published', 'success')" style="padding: 10px 15px; background: #0099ff; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-calendar-check"></i> Publish</button>
-        </div>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 8px; color: white; margin-bottom: 15px;">
-            <h3 style="margin: 0; color: white;">Badminton Level 1</h3>
-            <span style="background: rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 4px; font-size: 12px;">Flight A</span>
-          </div>
-          <p><i class="fas fa-calendar"></i> Monday & Wednesday</p>
-          <p><i class="fas fa-clock"></i> 6:00 PM - 7:30 PM</p>
-          <p><i class="fas fa-users"></i> 30 Capacity</p>
-          <p><i class="fas fa-user-tie"></i> Coach: Ali Ahmed</p>
-          <p><i class="fas fa-map-marker"></i> Court A</p>
-          <div style="margin-top: 15px; display: flex; gap: 10px;">
-            <button onclick="appController.showNotification('Activity updated', 'success')" style="padding: 8px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Edit</button>
-            <button onclick="appController.showNotification('Activity deleted', 'success')" style="padding: 8px 12px; background: #ff4757; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Delete</button>
-          </div>
-        </div>
-        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 15px; border-radius: 8px; color: white; margin-bottom: 15px;">
-            <h3 style="margin: 0; color: white;">Cricket Training</h3>
-            <span style="background: rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 4px; font-size: 12px;">Flight B</span>
-          </div>
-          <p><i class="fas fa-calendar"></i> Tuesday & Thursday</p>
-          <p><i class="fas fa-clock"></i> 7:00 PM - 8:30 PM</p>
-          <p><i class="fas fa-users"></i> 20 Capacity</p>
-          <p><i class="fas fa-user-tie"></i> Coach: Hassan Khan</p>
-          <p><i class="fas fa-map-marker"></i> Ground B</p>
-          <div style="margin-top: 15px; display: flex; gap: 10px;">
-            <button onclick="appController.showNotification('Activity updated', 'success')" style="padding: 8px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Edit</button>
-            <button onclick="appController.showNotification('Activity deleted', 'success')" style="padding: 8px 12px; background: #ff4757; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Delete</button>
-          </div>
-        </div>
-        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 15px; border-radius: 8px; color: white; margin-bottom: 15px;">
-            <h3 style="margin: 0; color: white;">Tennis Coaching</h3>
-            <span style="background: rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 4px; font-size: 12px;">Flight C</span>
-          </div>
-          <p><i class="fas fa-calendar"></i> Saturday & Sunday</p>
-          <p><i class="fas fa-clock"></i> 5:00 PM - 6:30 PM</p>
-          <p><i class="fas fa-users"></i> 15 Capacity</p>
-          <p><i class="fas fa-user-tie"></i> Coach: Fatima Al-Dosari</p>
-          <p><i class="fas fa-map-marker"></i> Court C</p>
-          <div style="margin-top: 15px; display: flex; gap: 10px;">
-            <button onclick="appController.showNotification('Activity updated', 'success')" style="padding: 8px 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Edit</button>
-            <button onclick="appController.showNotification('Activity deleted', 'success')" style="padding: 8px 12px; background: #ff4757; color: white; border: none; border-radius: 6px; cursor: pointer; flex: 1;">Delete</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `,
+    return html;
+  },
 
-  advertisingSection: () => `
-    <div class="page-container">
+  // ACTIVITIES & FLIGHTS PAGE
+  flights: () => {
+    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+    const members = JSON.parse(localStorage.getItem('members') || '[]');
+
+    let html = `
       <div class="page-header">
-        <h1>Advertising & BaZaar</h1>
-        <div class="header-actions" style="display: flex; gap: 10px;">
-          <button class="btn btn-primary" onclick="appController.showNotification('Post Advertisement modal opening...', 'info')" style="padding: 10px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-megaphone"></i> Post Ad</button>
-          <button class="btn btn-secondary" onclick="appController.showNotification('Official notice modal opening...', 'info')" style="padding: 10px 15px; background: #00d4aa; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-bullhorn"></i> Official Notice</button>
-        </div>
+        <h1>Activities & Flights</h1>
+        <p>Manage sports activities and flight levels</p>
       </div>
+
       <div class="card">
-        <h2>Featured Carousel (Max 10)</h2>
+        <h2>Create New Activity</h2>
+        <form onsubmit="createActivity(event)">
+          <div class="form-group">
+            <label>Activity Name *</label>
+            <input type="text" id="activityName" placeholder="e.g., Badminton, Cricket" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Create Activity</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Activities & Flight Management</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Activity</th>
+              <th>Status</th>
+              <th>Flights</th>
+              <th>Display Order</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (activities.length === 0) {
+      html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No activities created yet</td></tr>`;
+    } else {
+      activities.forEach(activity => {
+        html += `
+          <tr>
+            <td>${activity.name}</td>
+            <td><span class="badge ${activity.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}">${activity.status || 'ACTIVE'}</span></td>
+            <td>${activity.flights ? activity.flights.length : 0}</td>
+            <td>${activity.displayOrder || 0}</td>
+            <td>
+              <button class="btn btn-secondary" onclick="toggleActivityStatus('${activity.id}')">
+                ${activity.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Add Flight Level</h2>
+        <form onsubmit="addFlight(event)">
+          <div class="form-group">
+            <label>Select Activity *</label>
+            <select id="flightActivityId" required>
+              <option value="">Select activity...</option>
+      `;
+
+    activities.forEach(activity => {
+      html += `<option value="${activity.id}">${activity.name}</option>`;
+    });
+
+    html += `
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Flight Name *</label>
+            <input type="text" id="flightName" placeholder="e.g., Premier, Flight 1" required>
+          </div>
+          <div class="form-group">
+            <label>Display Order</label>
+            <input type="number" id="flightOrder" placeholder="0" value="0">
+          </div>
+          <button type="submit" class="btn btn-primary">Add Flight</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Pre-Register Member</h2>
+        <form onsubmit="preRegisterMember(event)">
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="memberName" placeholder="Enter member name" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number *</label>
+            <input type="tel" id="memberPhone" placeholder="Enter phone number" required>
+          </div>
+          <div class="form-group">
+            <label>Role *</label>
+            <select id="memberRole" required>
+              <option value="PLAYER">Player</option>
+              <option value="LEVEL_ADMIN">Flight Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assigned Flight *</label>
+            <select id="memberFlight" required>
+              <option value="">Select flight...</option>
+      `;
+
+    activities.forEach(activity => {
+      if (activity.flights) {
+        activity.flights.forEach(flight => {
+          html += `<option value="${flight.id}">${activity.name} - ${flight.name}</option>`;
+        });
+      }
+    });
+
+    html += `
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Pre-Register Member</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>All Members Roster</h2>
+        <div style="margin-bottom: 15px;">
+          <input type="text" id="memberSearch" placeholder="Search member..." style="padding: 10px; border: 1px solid #e0e6ed; border-radius: 6px; width: 100%;">
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Flight</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (members.length === 0) {
+      html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No members registered</td></tr>`;
+    } else {
+      members.slice(0, 50).forEach(member => {
+        html += `
+          <tr>
+            <td>${member.name}</td>
+            <td>${member.email}</td>
+            <td>${member.role}</td>
+            <td>${member.flight || 'N/A'}</td>
+            <td><span class="badge ${member.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}">${member.status || 'ACTIVE'}</span></td>
+            <td>
+              <button class="btn btn-secondary" onclick="toggleMemberStatus('${member.uid}')">Toggle</button>
+              <button class="btn btn-danger" onclick="deleteMember('${member.uid}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
+          </tbody>
+        </table>
+        <p style="margin-top: 10px; color: #999; font-size: 12px;">Showing ${Math.min(50, members.length)} of ${members.length} members</p>
+      </div>
+    `;
+
+    return html;
+  },
+
+  // MASTER TIMETABLE PAGE
+  master: () => {
+    const timetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
+    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+
+    let html = `
+      <div class="page-header">
+        <h1>Master Timetable</h1>
+        <p>Manage club-wide timetable</p>
+      </div>
+
+      <div class="card">
+        <h2>Timetable Controls</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-          <div style="background: #f5f7fa; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="background: #e0e6ed; height: 120px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-image" style="font-size: 40px; color: #999;"></i></div>
-            <p style="margin: 0 0 8px 0; font-weight: 600;">New Coaching Program</p>
-            <p style="margin: 0 0 10px 0; font-size: 12px; color: #666;">Sep 10 - Sep 20</p>
-            <button onclick="appController.showNotification('Ad removed from carousel', 'success')" style="padding: 6px 10px; background: #ff4757; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Remove</button>
+          <div class="form-group">
+            <label>Month (YYYY-MM)</label>
+            <input type="month" id="selectedMonth" value="2026-09">
           </div>
-          <div style="background: #f5f7fa; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="background: #e0e6ed; height: 120px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-image" style="font-size: 40px; color: #999;"></i></div>
-            <p style="margin: 0 0 8px 0; font-weight: 600;">Equipment Sale</p>
-            <p style="margin: 0 0 10px 0; font-size: 12px; color: #666;">Sep 12 - Sep 25</p>
-            <button onclick="appController.showNotification('Ad removed from carousel', 'success')" style="padding: 6px 10px; background: #ff4757; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Remove</button>
+          <div class="form-group">
+            <label>Activity</label>
+            <select id="selectedActivity">
+              <option value="">All Activities</option>
+      `;
+
+    activities.forEach(activity => {
+      html += `<option value="${activity.id}">${activity.name}</option>`;
+    });
+
+    html += `
+            </select>
           </div>
-          <div style="background: #f5f7fa; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="background: #e0e6ed; height: 120px; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-plus" style="font-size: 40px; color: #999;"></i></div>
-            <p style="margin: 0 0 8px 0; font-weight: 600;">Add New Ad</p>
-            <p style="margin: 0 0 10px 0; font-size: 12px; color: #666;">Slots available: 8</p>
-            <button onclick="appController.showNotification('Add ad modal opening...', 'info')" style="padding: 6px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Add</button>
+          <div style="display: flex; gap: 10px; align-items: flex-end;">
+            <button class="btn btn-primary" onclick="loadTimetable()">Load Timetable</button>
+            <button class="btn btn-secondary" onclick="publishMonth()">Publish Month</button>
+            <button class="btn btn-danger" onclick="clearMonth()">Clear Entire Month</button>
           </div>
         </div>
       </div>
+
       <div class="card">
-        <h2>Pending Business Submissions (23)</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+        <h2>Weekly Pattern</h2>
+        <table class="data-table">
           <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Business Name</th>
-              <th style="padding: 12px; text-align: left;">Owner</th>
-              <th style="padding: 12px; text-align: left;">Category</th>
-              <th style="padding: 12px; text-align: left;">Status</th>
-              <th style="padding: 12px; text-align: left;">Actions</th>
+            <tr>
+              <th>Day</th>
+              <th>Flight</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Courts</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;"><strong>Premium Sports Gear</strong></td>
-              <td style="padding: 12px;">Khalid Al-Sulaiti</td>
-              <td style="padding: 12px;">Sports Equipment</td>
-              <td style="padding: 12px;"><span style="background: #ffa502; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Pending</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Business approved', 'success')" style="padding: 6px 10px; background: #00d4aa; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Approve</button></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;"><strong>Nutrition & Wellness</strong></td>
-              <td style="padding: 12px;">Sara Al-Dosari</td>
-              <td style="padding: 12px;">Health & Fitness</td>
-              <td style="padding: 12px;"><span style="background: #ffa502; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Pending</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Business approved', 'success')" style="padding: 6px 10px; background: #00d4aa; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Approve</button></td>
-            </tr>
+    `;
+
+    if (timetable.length === 0) {
+      html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No timetable entries</td></tr>`;
+    } else {
+      timetable.forEach(slot => {
+        html += `
+          <tr>
+            <td>${slot.day}</td>
+            <td>${slot.flight}</td>
+            <td>${slot.startTime}</td>
+            <td>${slot.endTime}</td>
+            <td>${slot.courts || 'Courts 1 & 2'}</td>
+            <td><button class="btn btn-danger" onclick="removeSlot('${slot.id}')">Remove</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
           </tbody>
         </table>
       </div>
-    </div>
-  `,
 
-  financeSection: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Finance Management</h1>
-        <div class="header-actions" style="display: flex; gap: 10px;">
-          <button class="btn btn-primary" onclick="appController.showNotification('Add wallet credit modal opening...', 'info')" style="padding: 10px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-plus"></i> Add Wallet Credit</button>
-          <button class="btn btn-secondary" onclick="appController.showNotification('Finance report exported', 'success')" style="padding: 10px 15px; background: #00d4aa; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-download"></i> Export Report</button>
-        </div>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><i class="fas fa-wallet"></i></div>
-          <div class="stat-content"><h3>BHD 125,450</h3><p>Total Wallet Credits</p><span class="stat-change">Active credits</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><i class="fas fa-money-bill-wave"></i></div>
-          <div class="stat-content"><h3>BHD 45,230</h3><p>Pending Payments</p><span class="stat-change">From 234 players</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"><i class="fas fa-check-circle"></i></div>
-          <div class="stat-content"><h3>BHD 89,560</h3><p>Paid Payments</p><span class="stat-change">From 567 players</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"><i class="fas fa-chart-line"></i></div>
-          <div class="stat-content"><h3>BHD 12,340</h3><p>This Month Revenue</p><span class="stat-change">+8% from last month</span></div>
-        </div>
-      </div>
       <div class="card">
-        <h2>Wallet Credits by Flight</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Flight</th>
-              <th style="padding: 12px; text-align: left;">Total Credits</th>
-              <th style="padding: 12px; text-align: left;">Used</th>
-              <th style="padding: 12px; text-align: left;">Available</th>
-              <th style="padding: 12px; text-align: left;">Players</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;"><strong>Badminton A</strong></td>
-              <td style="padding: 12px;">BHD 45,230</td>
-              <td style="padding: 12px;">BHD 23,450</td>
-              <td style="padding: 12px;">BHD 21,780</td>
-              <td style="padding: 12px;">245</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;"><strong>Cricket B</strong></td>
-              <td style="padding: 12px;">BHD 32,150</td>
-              <td style="padding: 12px;">BHD 15,670</td>
-              <td style="padding: 12px;">BHD 16,480</td>
-              <td style="padding: 12px;">156</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;"><strong>Tennis C</strong></td>
-              <td style="padding: 12px;">BHD 28,070</td>
-              <td style="padding: 12px;">BHD 12,340</td>
-              <td style="padding: 12px;">BHD 15,730</td>
-              <td style="padding: 12px;">98</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `,
+        <h2>Add Weekly Slot</h2>
+        <form onsubmit="addWeeklySlot(event)">
+          <div class="form-group">
+            <label>Day *</label>
+            <select id="slotDay" required>
+              <option value="">Select day...</option>
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
+              <option value="Sunday">Sunday</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Flight *</label>
+            <select id="slotFlight" required>
+              <option value="">Select flight...</option>
+      `;
 
-  auditSection: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Audit Logs</h1>
-        <p>Complete activity history and audit trail</p>
+    activities.forEach(activity => {
+      if (activity.flights) {
+        activity.flights.forEach(flight => {
+          html += `<option value="${flight.id}">${activity.name} - ${flight.name}</option>`;
+        });
+      }
+    });
+
+    html += `
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Start Time *</label>
+            <input type="time" id="slotStart" required>
+          </div>
+          <div class="form-group">
+            <label>End Time *</label>
+            <input type="time" id="slotEnd" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Save Weekly Slot</button>
+        </form>
       </div>
+
       <div class="card">
-        <h2>Filter Logs</h2>
+        <h2>Bulk CSV Import</h2>
+        <p style="margin-bottom: 15px; color: #666;">Format: weekday,flight,startTime,endTime (one per line)</p>
+        <form onsubmit="importCSV(event)">
+          <div class="form-group">
+            <label>CSV Data</label>
+            <textarea id="csvData" placeholder="Monday,Premier,06:00,07:30&#10;Tuesday,Flight 1,07:30,09:00" style="min-height: 150px;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Import CSV Grid</button>
+        </form>
+      </div>
+    `;
+
+    return html;
+  },
+
+  // EXECUTIVE FINANCE PAGE
+  finance: () => {
+    const members = JSON.parse(localStorage.getItem('members') || '[]');
+    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+    const creditedPlayers = members.filter(m => (m.balance || 0) > 0);
+    const unpaidPlayers = members.filter(m => (m.balance || 0) < 0);
+    const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+
+    let html = `
+      <div class="page-header">
+        <h1>Executive Finance</h1>
+        <p>Manage club finances and member credits</p>
+      </div>
+
+      <div class="tabs-container">
+        <button class="tab-btn active" onclick="switchFinanceTab('credited')">Credited Players</button>
+        <button class="tab-btn" onclick="switchFinanceTab('pending')">Pending Payments</button>
+        <button class="tab-btn" onclick="switchFinanceTab('paid')">Paid Players</button>
+        <button class="tab-btn" onclick="switchFinanceTab('unpaid')">Unpaid Players</button>
+      </div>
+
+      <div class="card">
+        <h2>Filter</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-          <select style="width: 100%; padding: 10px; border: 1px solid #e0e6ed; border-radius: 8px;">
-            <option>All Types</option>
-            <option>Member Actions</option>
-            <option>Attendance</option>
-            <option>Wallet/Payment</option>
-            <option>Session Control</option>
-            <option>Shuttle Stock</option>
-          </select>
-          <select style="width: 100%; padding: 10px; border: 1px solid #e0e6ed; border-radius: 8px;">
-            <option>All Flights</option>
-            <option>Badminton A</option>
-            <option>Cricket B</option>
-            <option>Tennis C</option>
-          </select>
-          <input type="date" style="width: 100%; padding: 10px; border: 1px solid #e0e6ed; border-radius: 8px;">
-          <button class="btn btn-primary" onclick="appController.showNotification('Logs filtered', 'success')" style="padding: 10px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-filter"></i> Filter</button>
+          <div class="form-group">
+            <label>Activity</label>
+            <select id="financeActivity">
+              <option value="">All Activities</option>
+      `;
+
+    activities.forEach(activity => {
+      html += `<option value="${activity.id}">${activity.name}</option>`;
+    });
+
+    html += `
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Flight Level</label>
+            <select id="financeFlight">
+              <option value="">All Flights</option>
+            </select>
+          </div>
         </div>
       </div>
+
       <div class="card">
-        <h2>Activity Logs</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+        <h2>Member Credit Management</h2>
+        <div class="form-group">
+          <label>Select Member *</label>
+          <select id="financeSelectedMember" onchange="updateFinanceMemberBalance()">
+            <option value="">Select member...</option>
+      `;
+
+    members.forEach(member => {
+      html += `<option value="${member.uid}">${member.name}</option>`;
+    });
+
+    html += `
+          </select>
+        </div>
+
+        <div id="memberFinanceBalance" style="background: #f5f7fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
+          <p><strong>Current Balance:</strong> <span id="financeBalanceAmount">0.000</span> BHD</p>
+        </div>
+
+        <h3>Add Verified Credit</h3>
+        <form onsubmit="addFinanceCredit(event)">
+          <div class="form-group">
+            <label>Amount (BHD) *</label>
+            <input type="number" id="financeAddAmount" placeholder="0.000" step="0.001" min="0.001" required>
+          </div>
+          <div class="form-group">
+            <label>Note</label>
+            <textarea id="financeAddNote" placeholder="Add a note..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-secondary" id="financeAddBtn" disabled>Add Verified Credit</button>
+        </form>
+
+        <h3 style="margin-top: 30px;">Deduct Selected Wallet Credit</h3>
+        <form onsubmit="deductFinanceCredit(event)">
+          <div class="form-group">
+            <label>Amount (BHD) *</label>
+            <input type="number" id="financeDeductAmount" placeholder="0.000" step="0.001" min="0.001" required>
+          </div>
+          <div class="form-group">
+            <label>Reason *</label>
+            <input type="text" id="financeDeductReason" placeholder="Enter deduction reason" required>
+          </div>
+          <button type="submit" class="btn btn-danger" id="financeDeductBtn" disabled>Deduct Selected Wallet Credit</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Pending Payments Verification</h2>
+        <table class="data-table">
           <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Timestamp</th>
-              <th style="padding: 12px; text-align: left;">Type</th>
-              <th style="padding: 12px; text-align: left;">User</th>
-              <th style="padding: 12px; text-align: left;">Flight</th>
-              <th style="padding: 12px; text-align: left;">Action</th>
-              <th style="padding: 12px; text-align: left;">Details</th>
+            <tr>
+              <th>Player Name</th>
+              <th>Amount (BHD)</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th>Date</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 12, 2024 6:30 PM</td>
-              <td style="padding: 12px;"><span style="background: #0099ff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Member</span></td>
-              <td style="padding: 12px;">Admin User</td>
-              <td style="padding: 12px;">Badminton A</td>
-              <td style="padding: 12px;">Member Added</td>
-              <td style="padding: 12px;">New member: Ahmed Al-Mansouri</td>
+    `;
+
+    if (pendingPayments.length === 0) {
+      html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No pending payments</td></tr>`;
+    } else {
+      pendingPayments.forEach(payment => {
+        html += `
+          <tr>
+            <td>${payment.playerName}</td>
+            <td>${payment.amount.toFixed(3)}</td>
+            <td>${payment.method}</td>
+            <td>${payment.reference}</td>
+            <td>${payment.date}</td>
+            <td><button class="btn btn-primary" onclick="verifyFinancePayment('${payment.id}')">Verify</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
+          </tbody>
+        </table>
+        <button class="btn btn-primary" onclick="window.print()" style="margin-top: 20px;">🖨️ Print Current Tab</button>
+      </div>
+    `;
+
+    return html;
+  },
+
+  // ADS & NOTICES PAGE
+  ads: () => {
+    const carousel = JSON.parse(localStorage.getItem('carouselAds') || '[]');
+    const pendingAds = JSON.parse(localStorage.getItem('pendingAds') || '[]');
+    const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
+    const carouselLimit = parseInt(localStorage.getItem('carouselLimit') || '10');
+
+    let html = `
+      <div class="page-header">
+        <h1>Ads & Notice Control</h1>
+        <p>Manage advertisements and official notices</p>
+      </div>
+
+      <div class="card">
+        <h2>Carousel Limit Control</h2>
+        <form onsubmit="updateCarouselLimit(event)">
+          <div class="form-group">
+            <label>Maximum Active Carousel Ads (Max 10)</label>
+            <input type="number" id="carouselLimitInput" value="${carouselLimit}" min="1" max="10">
+          </div>
+          <button type="submit" class="btn btn-primary">Save Carousel Count</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Create Official Notice</h2>
+        <form onsubmit="publishNotice(event)">
+          <div class="form-group">
+            <label>Title *</label>
+            <input type="text" id="noticeTitle" placeholder="Enter notice title" required>
+          </div>
+          <div class="form-group">
+            <label>Message *</label>
+            <textarea id="noticeMessage" placeholder="Enter notice message" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Image</label>
+            <input type="file" id="noticeImage" accept="image/*">
+          </div>
+          <button type="submit" class="btn btn-primary">Publish Official Notice</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Pending Business Approvals (${pendingAds.length})</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+    `;
+
+    if (pendingAds.length === 0) {
+      html += `<p>No pending approvals</p>`;
+    } else {
+      pendingAds.forEach(ad => {
+        html += `
+          <div style="background: white; border: 1px solid #e0e6ed; border-radius: 8px; padding: 15px;">
+            <h3>${ad.name}</h3>
+            <p><strong>Category:</strong> ${ad.category}</p>
+            <p><strong>Offer:</strong> ${ad.offer}</p>
+            <p><strong>Address:</strong> ${ad.address}</p>
+            ${ad.link ? `<p><strong>Link:</strong> <a href="${ad.link}" target="_blank">${ad.link}</a></p>` : ''}
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+              <button class="btn btn-secondary" onclick="approveAd('${ad.id}')">Approve & Publish</button>
+              <button class="btn btn-danger" onclick="rejectAd('${ad.id}')">Reject</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Published Directory (${publishedAds.length})</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Business Name</th>
+              <th>Category</th>
+              <th>Offer</th>
+              <th>Feature Start</th>
+              <th>Feature End</th>
+              <th>Front Page</th>
+              <th>Actions</th>
             </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 12, 2024 5:45 PM</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Attendance</span></td>
-              <td style="padding: 12px;">Flight Admin</td>
-              <td style="padding: 12px;">Badminton A</td>
-              <td style="padding: 12px;">Attendance Finalized</td>
-              <td style="padding: 12px;">24 present, 6 absent</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 12, 2024 4:20 PM</td>
-              <td style="padding: 12px;"><span style="background: #ffa502; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Payment</span></td>
-              <td style="padding: 12px;">Player</td>
-              <td style="padding: 12px;">Cricket B</td>
-              <td style="padding: 12px;">Payment Received</td>
-              <td style="padding: 12px;">BHD 50 wallet credit</td>
-            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (publishedAds.length === 0) {
+      html += `<tr><td colspan="7" style="text-align: center; padding: 20px;">No published ads</td></tr>`;
+    } else {
+      publishedAds.forEach(ad => {
+        const now = new Date();
+        const endDate = new Date(ad.featureEndAt);
+        const isExpired = now > endDate;
+
+        html += `
+          <tr>
+            <td>${ad.name}</td>
+            <td>${ad.category}</td>
+            <td>${ad.offer}</td>
+            <td><input type="date" value="${ad.featureStartAt}" onchange="updateAdDate('${ad.id}', 'start', this.value)"></td>
+            <td><input type="date" value="${ad.featureEndAt}" onchange="updateAdDate('${ad.id}', 'end', this.value)"></td>
+            <td><input type="checkbox" ${ad.isFeatured ? 'checked' : ''} onchange="toggleAdFeature('${ad.id}')"></td>
+            <td>
+              <button class="btn btn-danger" onclick="deleteAd('${ad.id}')">Delete</button>
+              ${isExpired ? '<span class="badge badge-danger">EXPIRED</span>' : ''}
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
           </tbody>
         </table>
       </div>
-    </div>
-  `
+    `;
+
+    return html;
+  },
+
+  // AUDIT HISTORY PAGE
+  audit: () => {
+    const auditLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+
+    let html = `
+      <div class="page-header">
+        <h1>System Audit History</h1>
+        <p>Track all system activities and changes</p>
+      </div>
+
+      <div class="card">
+        <h2>Filter Audit Logs</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="auditCategory">
+              <option value="">All</option>
+              <option value="MEMBER">Member</option>
+              <option value="ATTENDANCE">Attendance</option>
+              <option value="WALLET">Wallet/Payment</option>
+              <option value="SESSION">Session Control</option>
+              <option value="STOCK">Shuttle Stock</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Activity</label>
+            <select id="auditActivity">
+              <option value="">All Activities</option>
+      `;
+
+    activities.forEach(activity => {
+      html += `<option value="${activity.id}">${activity.name}</option>`;
+    });
+
+    html += `
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="auditDate">
+          </div>
+          <div class="form-group">
+            <label>Member Name</label>
+            <input type="text" id="auditMember" placeholder="Search member...">
+          </div>
+          <div style="display: flex; gap: 10px; align-items: flex-end;">
+            <button class="btn btn-primary" onclick="filterAuditLogs()">Filter</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Print Log</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Audit Trail</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Category</th>
+              <th>Action</th>
+              <th>Target</th>
+              <th>Details</th>
+              <th>Actor</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (auditLogs.length === 0) {
+      html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No audit logs</td></tr>`;
+    } else {
+      auditLogs.slice(0, 100).forEach(log => {
+        html += `
+          <tr>
+            <td>${log.timestamp}</td>
+            <td><span class="badge badge-info">${log.category}</span></td>
+            <td>${log.action}</td>
+            <td>${log.target || 'N/A'}</td>
+            <td>${log.details}</td>
+            <td>${log.actor}</td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
+          </tbody>
+        </table>
+        <p style="margin-top: 10px; color: #999; font-size: 12px;">Showing ${Math.min(100, auditLogs.length)} of ${auditLogs.length} logs</p>
+      </div>
+    `;
+
+    return html;
+  }
 };
 
-window.adminViews = adminViews;
-export { adminViews };
+// ===== HELPER FUNCTIONS =====
+window.createActivity = function(event) {
+  event.preventDefault();
+  const name = document.getElementById('activityName').value;
+  if (!name) {
+    alert('Please enter activity name');
+    return;
+  }
+
+  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+  activities.push({
+    id: 'activity_' + Date.now(),
+    name,
+    status: 'ACTIVE',
+    flights: [],
+    displayOrder: activities.length
+  });
+  localStorage.setItem('activities', JSON.stringify(activities));
+  alert('Activity created');
+  event.target.reset();
+  location.reload();
+};
+
+window.toggleActivityStatus = function(activityId) {
+  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+  const activity = activities.find(a => a.id === activityId);
+  if (activity) {
+    activity.status = activity.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    localStorage.setItem('activities', JSON.stringify(activities));
+    location.reload();
+  }
+};
+
+window.addFlight = function(event) {
+  event.preventDefault();
+  const activityId = document.getElementById('flightActivityId').value;
+  const flightName = document.getElementById('flightName').value;
+  const flightOrder = parseInt(document.getElementById('flightOrder').value) || 0;
+
+  if (!activityId || !flightName) {
+    alert('Please fill all required fields');
+    return;
+  }
+
+  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+  const activity = activities.find(a => a.id === activityId);
+  if (activity) {
+    if (!activity.flights) activity.flights = [];
+    activity.flights.push({
+      id: 'flight_' + Date.now(),
+      name: flightName,
+      displayOrder: flightOrder
+    });
+    localStorage.setItem('activities', JSON.stringify(activities));
+    alert('Flight added');
+    event.target.reset();
+    location.reload();
+  }
+};
+
+window.preRegisterMember = function(event) {
+  event.preventDefault();
+  const name = document.getElementById('memberName').value;
+  const phone = document.getElementById('memberPhone').value;
+  const role = document.getElementById('memberRole').value;
+  const flightId = document.getElementById('memberFlight').value;
+
+  if (!name || !phone || !flightId) {
+    alert('Please fill all required fields');
+    return;
+  }
+
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  members.push({
+    uid: 'member_' + Date.now(),
+    name,
+    phone,
+    role,
+    flightId,
+    status: 'ACTIVE',
+    balance: 0,
+    createdAt: new Date().toISOString()
+  });
+  localStorage.setItem('members', JSON.stringify(members));
+  alert(`Member pre-registered. WhatsApp link: https://wa.me/${phone}`);
+  event.target.reset();
+  location.reload();
+};
+
+window.toggleMemberStatus = function(memberId) {
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === memberId);
+  if (member) {
+    member.status = member.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    localStorage.setItem('members', JSON.stringify(members));
+    location.reload();
+  }
+};
+
+window.deleteMember = function(memberId) {
+  if (!confirm('Are you sure you want to permanently delete this member?')) return;
+
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === memberId);
+  if (member) {
+    const deletedMembers = JSON.parse(localStorage.getItem('deletedMembers') || '[]');
+    deletedMembers.push({ ...member, deletedAt: new Date().toISOString() });
+    localStorage.setItem('deletedMembers', JSON.stringify(deletedMembers));
+
+    const filtered = members.filter(m => m.uid !== memberId);
+    localStorage.setItem('members', JSON.stringify(filtered));
+    alert('Member deleted permanently');
+    location.reload();
+  }
+};
+
+window.loadTimetable = function() {
+  alert('Timetable loaded');
+};
+
+window.publishMonth = function() {
+  alert('Month published');
+};
+
+window.clearMonth = function() {
+  if (!confirm('Are you sure you want to clear the entire month timetable?')) return;
+  const month = document.getElementById('selectedMonth').value;
+  localStorage.removeItem('masterTimetable_' + month);
+  alert('Month cleared');
+  location.reload();
+};
+
+window.addWeeklySlot = function(event) {
+  event.preventDefault();
+  const day = document.getElementById('slotDay').value;
+  const flight = document.getElementById('slotFlight').value;
+  const startTime = document.getElementById('slotStart').value;
+  const endTime = document.getElementById('slotEnd').value;
+
+  if (!day || !flight || !startTime || !endTime) {
+    alert('Please fill all fields');
+    return;
+  }
+
+  const timetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
+  timetable.push({
+    id: 'slot_' + Date.now(),
+    day,
+    flight,
+    startTime,
+    endTime,
+    courts: 'Courts 1 & 2'
+  });
+  localStorage.setItem('masterTimetable', JSON.stringify(timetable));
+  alert('Weekly slot added');
+  event.target.reset();
+  location.reload();
+};
+
+window.removeSlot = function(slotId) {
+  const timetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
+  const filtered = timetable.filter(s => s.id !== slotId);
+  localStorage.setItem('masterTimetable', JSON.stringify(filtered));
+  location.reload();
+};
+
+window.importCSV = function(event) {
+  event.preventDefault();
+  const csvData = document.getElementById('csvData').value;
+  const lines = csvData.trim().split('\n');
+  const timetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
+
+  let errorRow = null;
+  lines.forEach((line, index) => {
+    const parts = line.split(',');
+    if (parts.length !== 4) {
+      errorRow = index + 1;
+      return;
+    }
+
+    const [day, flight, startTime, endTime] = parts.map(p => p.trim());
+    timetable.push({
+      id: 'slot_' + Date.now() + '_' + index,
+      day,
+      flight,
+      startTime,
+      endTime,
+      courts: 'Courts 1 & 2'
+    });
+  });
+
+  if (errorRow) {
+    alert(`Row ${errorRow} invalid.`);
+    return;
+  }
+
+  localStorage.setItem('masterTimetable', JSON.stringify(timetable));
+  alert('CSV imported successfully');
+  event.target.reset();
+  location.reload();
+};
+
+window.updateFinanceMemberBalance = function() {
+  const memberUid = document.getElementById('financeSelectedMember').value;
+  const addBtn = document.getElementById('financeAddBtn');
+  const deductBtn = document.getElementById('financeDeductBtn');
+
+  if (memberUid) {
+    const members = JSON.parse(localStorage.getItem('members') || '[]');
+    const member = members.find(m => m.uid === memberUid);
+    if (member) {
+      document.getElementById('memberFinanceBalance').style.display = 'block';
+      document.getElementById('financeBalanceAmount').textContent = (member.balance || 0).toFixed(3);
+      addBtn.disabled = false;
+      deductBtn.disabled = false;
+    }
+  } else {
+    document.getElementById('memberFinanceBalance').style.display = 'none';
+    addBtn.disabled = true;
+    deductBtn.disabled = true;
+  }
+};
+
+window.addFinanceCredit = function(event) {
+  event.preventDefault();
+  const memberUid = document.getElementById('financeSelectedMember').value;
+  const amount = parseFloat(document.getElementById('financeAddAmount').value);
+  const note = document.getElementById('financeAddNote').value;
+
+  if (!memberUid || amount <= 0) {
+    alert('Please select member and enter valid amount');
+    return;
+  }
+
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === memberUid);
+  if (member) {
+    member.balance = (member.balance || 0) + amount;
+    localStorage.setItem('members', JSON.stringify(members));
+    alert(`Added ${amount.toFixed(3)} BHD to ${member.name}`);
+    event.target.reset();
+  }
+};
+
+window.deductFinanceCredit = function(event) {
+  event.preventDefault();
+  const memberUid = document.getElementById('financeSelectedMember').value;
+  const amount = parseFloat(document.getElementById('financeDeductAmount').value);
+  const reason = document.getElementById('financeDeductReason').value;
+
+  if (!memberUid || amount <= 0) {
+    alert('Please select member and enter valid amount');
+    return;
+  }
+
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === memberUid);
+  if (member) {
+    member.balance = Math.max(0, (member.balance || 0) - amount);
+    localStorage.setItem('members', JSON.stringify(members));
+    alert(`Deducted ${amount.toFixed(3)} BHD from ${member.name}`);
+    event.target.reset();
+  }
+};
+
+window.verifyFinancePayment = function(paymentId) {
+  const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+  const payment = pendingPayments.find(p => p.id === paymentId);
+  if (payment) {
+    pendingPayments.splice(pendingPayments.indexOf(payment), 1);
+    localStorage.setItem('pendingPayments', JSON.stringify(pendingPayments));
+    alert('Payment verified');
+    location.reload();
+  }
+};
+
+window.updateCarouselLimit = function(event) {
+  event.preventDefault();
+  const limit = parseInt(document.getElementById('carouselLimitInput').value);
+  if (limit < 1 || limit > 10) {
+    alert('Carousel limit must be between 1 and 10');
+    return;
+  }
+  localStorage.setItem('carouselLimit', limit.toString());
+  alert('Carousel limit updated');
+};
+
+window.publishNotice = function(event) {
+  event.preventDefault();
+  const title = document.getElementById('noticeTitle').value;
+  const message = document.getElementById('noticeMessage').value;
+
+  if (!title || !message) {
+    alert('Please fill all required fields');
+    return;
+  }
+
+  const notice = {
+    id: 'notice_' + Date.now(),
+    title,
+    message,
+    publishedAt: new Date().toISOString()
+  };
+
+  const notices = JSON.parse(localStorage.getItem('notices') || '[]');
+  notices.push(notice);
+  localStorage.setItem('notices', JSON.stringify(notices));
+  alert('Notice published');
+  event.target.reset();
+};
+
+window.approveAd = function(adId) {
+  const pendingAds = JSON.parse(localStorage.getItem('pendingAds') || '[]');
+  const ad = pendingAds.find(a => a.id === adId);
+  if (ad) {
+    pendingAds.splice(pendingAds.indexOf(ad), 1);
+    const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
+    ad.featureStartAt = new Date().toISOString().split('T')[0];
+    ad.featureEndAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    ad.isFeatured = false;
+    publishedAds.push(ad);
+    localStorage.setItem('pendingAds', JSON.stringify(pendingAds));
+    localStorage.setItem('publishedAds', JSON.stringify(publishedAds));
+    alert('Ad approved and published');
+    location.reload();
+  }
+};
+
+window.rejectAd = function(adId) {
+  const pendingAds = JSON.parse(localStorage.getItem('pendingAds') || '[]');
+  const filtered = pendingAds.filter(a => a.id !== adId);
+  localStorage.setItem('pendingAds', JSON.stringify(filtered));
+  alert('Ad rejected');
+  location.reload();
+};
+
+window.deleteAd = function(adId) {
+  if (!confirm('Are you sure you want to delete this ad permanently?')) return;
+  const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
+  const filtered = publishedAds.filter(a => a.id !== adId);
+  localStorage.setItem('publishedAds', JSON.stringify(filtered));
+  alert('Ad deleted');
+  location.reload();
+};
+
+window.updateAdDate = function(adId, type, date) {
+  const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
+  const ad = publishedAds.find(a => a.id === adId);
+  if (ad) {
+    if (type === 'start') ad.featureStartAt = date;
+    if (type === 'end') ad.featureEndAt = date;
+    localStorage.setItem('publishedAds', JSON.stringify(publishedAds));
+  }
+};
+
+window.toggleAdFeature = function(adId) {
+  const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
+  const ad = publishedAds.find(a => a.id === adId);
+  if (ad) {
+    ad.isFeatured = !ad.isFeatured;
+    localStorage.setItem('publishedAds', JSON.stringify(publishedAds));
+  }
+};
+
+window.filterAuditLogs = function() {
+  alert('Audit logs filtered');
+};
+
+window.switchFinanceTab = function(tab) {
+  alert('Switched to ' + tab + ' tab');
+};
+
 console.log('✅ adminViews.js loaded successfully');
 
