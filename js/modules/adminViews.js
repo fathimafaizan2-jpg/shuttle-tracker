@@ -1,1134 +1,1235 @@
 
 // ============================================
-// adminViews.js - SUPER ADMIN MODULE
+// adminViews.js - SUPER ADMIN MODULES
 // ============================================
 
 export const adminViews = {
-  // CLUB OVERVIEW PAGE
-  overview: () => {
-    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-    const members = JSON.parse(localStorage.getItem('members') || '[]');
-    const admins = members.filter(m => m.role === 'LEVEL_ADMIN');
-    const walletCredit = JSON.parse(localStorage.getItem('clubWallet') || '{"total": 0}');
-
-    let html = `
-      <div class="page-header">
-        <h1>Club Overview</h1>
-        <p>Executive dashboard</p>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #667eea;">🏃</div>
-          <div class="stat-content">
-            <h3>${activities.length}</h3>
-            <p>Active Sports</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #00d4aa;">👥</div>
-          <div class="stat-content">
-            <h3>${members.length}</h3>
-            <p>Registered Players</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ffa502;">👨‍💼</div>
-          <div class="stat-content">
-            <h3>${admins.length}</h3>
-            <p>Flight Admins</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #0099ff;">💼</div>
-          <div class="stat-content">
-            <h3>${walletCredit.total.toFixed(3)} BHD</h3>
-            <p>Club Wallet</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Recent Activities</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Activity Name</th>
-              <th>Status</th>
-              <th>Flights</th>
-              <th>Members</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    if (activities.length === 0) {
-      html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No activities yet</td></tr>`;
-    } else {
-      activities.forEach(activity => {
-        const activityMembers = members.filter(m => m.activityId === activity.id);
-        html += `
-          <tr>
-            <td>${activity.name}</td>
-            <td><span class="badge badge-success">${activity.status || 'ACTIVE'}</span></td>
-            <td>${activity.flights ? activity.flights.length : 0}</td>
-            <td>${activityMembers.length}</td>
-          </tr>
-        `;
-      });
-    }
-
-    html += `
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    return html;
-  },
-
-  // ACTIVITIES & FLIGHTS PAGE
+  // ===== ACTIVITIES, FLIGHTS & MEMBERS =====
   flights: () => {
-    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-    const members = JSON.parse(localStorage.getItem('members') || '[]');
+    try {
+      requireSuperAdmin();
+      
+      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+      const members = JSON.parse(localStorage.getItem('members') || '[]');
 
-    let html = `
-      <div class="page-header">
-        <h1>Activities & Flights</h1>
-        <p>Manage sports activities and flight levels</p>
-      </div>
+      let html = `
+        <div class="page-header">
+          <h1>✈️ Activities, Flights & Members</h1>
+          <p>Manage sports activities, flight levels, and member registrations</p>
+        </div>
 
-      <div class="card">
-        <h2>Create New Activity</h2>
-        <form onsubmit="createActivity(event)">
-          <div class="form-group">
-            <label>Activity Name *</label>
-            <input type="text" id="activityName" placeholder="e.g., Badminton, Cricket" required>
+        <div class="tabs-container">
+          <button class="tab-btn active" onclick="switchAdminTab('activities')">Activities & Flights</button>
+          <button class="tab-btn" onclick="switchAdminTab('members')">Member Roster</button>
+        </div>
+
+        <!-- ACTIVITIES & FLIGHTS TAB -->
+        <div id="activities-tab" class="tab-content">
+          <div class="card">
+            <h2>➕ Create New Sport / Activity</h2>
+            <form onsubmit="createActivity(event)">
+              <div class="form-group">
+                <label>Activity Name *</label>
+                <input type="text" id="newActivityName" placeholder="e.g., Badminton, Cricket, Tennis" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Create Activity</button>
+            </form>
           </div>
-          <button type="submit" class="btn btn-primary">Create Activity</button>
-        </form>
-      </div>
 
-      <div class="card">
-        <h2>Activities & Flight Management</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Activity</th>
-              <th>Status</th>
-              <th>Flights</th>
-              <th>Display Order</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
+          <div class="card">
+            <h2>📋 Manage Activities & Flights</h2>
+      `;
 
-    if (activities.length === 0) {
-      html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No activities created yet</td></tr>`;
-    } else {
+      if (activities.length === 0) {
+        html += `<p style="color: #999;">No activities created yet</p>`;
+      } else {
+        activities.forEach(activity => {
+          html += `
+            <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3>${activity.name}</h3>
+                <button class="btn btn-danger" onclick="toggleActivity('${activity.id}')">
+                  ${activity.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                </button>
+              </div>
+
+              <div style="margin-bottom: 15px;">
+                <h4>Flights:</h4>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Flight Name</th>
+                      <th>Display Order</th>
+                      <th>Members</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+          `;
+
+          if (!activity.flights || activity.flights.length === 0) {
+            html += `<tr><td colspan="3" style="text-align: center; padding: 10px;">No flights</td></tr>`;
+          } else {
+            activity.flights.forEach(flight => {
+              const flightMemberCount = members.filter(m => m.flightId === flight.id).length;
+              html += `
+                <tr>
+                  <td>${flight.name}</td>
+                  <td>${flight.displayOrder}</td>
+                  <td>${flightMemberCount}</td>
+                </tr>
+              `;
+            });
+          }
+
+          html += `
+                  </tbody>
+                </table>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <div class="form-group">
+                  <label>Flight Name</label>
+                  <input type="text" id="flightName-${activity.id}" placeholder="e.g., Premier, Flight 1">
+                </div>
+                <div class="form-group">
+                  <label>Display Order</label>
+                  <input type="number" id="flightSort-${activity.id}" min="0" value="0">
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                  <button class="btn btn-secondary" onclick="addFlight('${activity.id}')">Add Flight</button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      html += `
+          </div>
+        </div>
+
+        <!-- MEMBERS TAB -->
+        <div id="members-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>➕ Pre-Register New Member</h2>
+            <form onsubmit="preRegisterMember(event)">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                <div class="form-group">
+                  <label>Full Name *</label>
+                  <input type="text" id="memberFullName" placeholder="Full name" required>
+                </div>
+                <div class="form-group">
+                  <label>Phone Number *</label>
+                  <input type="tel" id="memberPhone" placeholder="+973-XXXX-XXXX" required>
+                </div>
+                <div class="form-group">
+                  <label>Role *</label>
+                  <select id="memberRole" required>
+                    <option value="">Select role...</option>
+                    <option value="PLAYER">Player</option>
+                    <option value="LEVEL_ADMIN">Flight Admin</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Flight Level *</label>
+                  <select id="memberFlight" required>
+                    <option value="">Select flight...</option>
+      `;
+
       activities.forEach(activity => {
+        if (activity.flights) {
+          activity.flights.forEach(flight => {
+            html += `<option value="${flight.id}">${activity.name} - ${flight.name}</option>`;
+          });
+        }
+      });
+
+      html += `
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">Pre-register Member</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2>📋 All Members Roster</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+              <div class="form-group">
+                <label>Filter by Activity</label>
+                <select id="rosterActivityFilter" onchange="filterRoster()">
+                  <option value="">All Activities</option>
+      `;
+
+      activities.forEach(activity => {
+        html += `<option value="${activity.id}">${activity.name}</option>`;
+      });
+
+      html += `
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Filter by Flight</label>
+                <select id="rosterFlightFilter" onchange="filterRoster()">
+                  <option value="">All Flights</option>
+                </select>
+              </div>
+            </div>
+
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Role</th>
+                  <th>Flight</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="rosterTableBody">
+      `;
+
+      members.forEach(member => {
         html += `
           <tr>
-            <td>${activity.name}</td>
-            <td><span class="badge ${activity.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}">${activity.status || 'ACTIVE'}</span></td>
-            <td>${activity.flights ? activity.flights.length : 0}</td>
-            <td>${activity.displayOrder || 0}</td>
+            <td>${member.fullName}</td>
+            <td>${member.phone}</td>
             <td>
-              <button class="btn btn-secondary" onclick="toggleActivityStatus('${activity.id}')">
-                ${activity.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-              </button>
+              <select id="memberRole-${member.uid}" onchange="updateMemberRole('${member.uid}', this.value)">
+                <option value="PLAYER" ${member.role === 'PLAYER' ? 'selected' : ''}>Player</option>
+                <option value="LEVEL_ADMIN" ${member.role === 'LEVEL_ADMIN' ? 'selected' : ''}>Flight Admin</option>
+              </select>
             </td>
-          </tr>
+            <td>
+              <select id="memberFlight-${member.uid}" onchange="updateMemberFlight('${member.uid}', this.value)">
+                <option value="">Select flight...</option>
         `;
-      });
-    }
 
-    html += `
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Add Flight Level</h2>
-        <form onsubmit="addFlight(event)">
-          <div class="form-group">
-            <label>Select Activity *</label>
-            <select id="flightActivityId" required>
-              <option value="">Select activity...</option>
-      `;
-
-    activities.forEach(activity => {
-      html += `<option value="${activity.id}">${activity.name}</option>`;
-    });
-
-    html += `
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Flight Name *</label>
-            <input type="text" id="flightName" placeholder="e.g., Premier, Flight 1" required>
-          </div>
-          <div class="form-group">
-            <label>Display Order</label>
-            <input type="number" id="flightOrder" placeholder="0" value="0">
-          </div>
-          <button type="submit" class="btn btn-primary">Add Flight</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>Pre-Register Member</h2>
-        <form onsubmit="preRegisterMember(event)">
-          <div class="form-group">
-            <label>Full Name *</label>
-            <input type="text" id="memberName" placeholder="Enter member name" required>
-          </div>
-          <div class="form-group">
-            <label>Phone Number *</label>
-            <input type="tel" id="memberPhone" placeholder="Enter phone number" required>
-          </div>
-          <div class="form-group">
-            <label>Role *</label>
-            <select id="memberRole" required>
-              <option value="PLAYER">Player</option>
-              <option value="LEVEL_ADMIN">Flight Admin</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Assigned Flight *</label>
-            <select id="memberFlight" required>
-              <option value="">Select flight...</option>
-      `;
-
-    activities.forEach(activity => {
-      if (activity.flights) {
-        activity.flights.forEach(flight => {
-          html += `<option value="${flight.id}">${activity.name} - ${flight.name}</option>`;
+        activities.forEach(activity => {
+          if (activity.flights) {
+            activity.flights.forEach(flight => {
+              const selected = member.flightId === flight.id ? 'selected' : '';
+              html += `<option value="${flight.id}" ${selected}>${activity.name} - ${flight.name}</option>`;
+            });
+          }
         });
-      }
-    });
 
-    html += `
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">Pre-Register Member</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>All Members Roster</h2>
-        <div style="margin-bottom: 15px;">
-          <input type="text" id="memberSearch" placeholder="Search member..." style="padding: 10px; border: 1px solid #e0e6ed; border-radius: 6px; width: 100%;">
-        </div>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Flight</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    if (members.length === 0) {
-      html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No members registered</td></tr>`;
-    } else {
-      members.slice(0, 50).forEach(member => {
         html += `
-          <tr>
-            <td>${member.name}</td>
-            <td>${member.email}</td>
-            <td>${member.role}</td>
-            <td>${member.flight || 'N/A'}</td>
-            <td><span class="badge ${member.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'}">${member.status || 'ACTIVE'}</span></td>
+              </select>
+            </td>
+            <td><span class="badge badge-success">${member.status}</span></td>
             <td>
-              <button class="btn btn-secondary" onclick="toggleMemberStatus('${member.uid}')">Toggle</button>
-              <button class="btn btn-danger" onclick="deleteMember('${member.uid}')">Delete</button>
+              <button class="btn btn-danger" onclick="deleteMember('${member.uid}', '${member.fullName}')">Delete</button>
+              <a href="${generateWhatsAppLink(member.phone, 'Welcome to Indian Club Bahrain! Click here to activate your account: https://indianclub.bh/activate')}" target="_blank" class="btn btn-secondary" style="display: inline-block; margin-top: 5px;">WhatsApp</a>
             </td>
           </tr>
         `;
       });
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
     }
-
-    html += `
-          </tbody>
-        </table>
-        <p style="margin-top: 10px; color: #999; font-size: 12px;">Showing ${Math.min(50, members.length)} of ${members.length} members</p>
-      </div>
-    `;
-
-    return html;
   },
 
-  // MASTER TIMETABLE PAGE
+  // ===== MASTER TIMETABLE =====
   master: () => {
-    const timetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
-    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+    try {
+      requireSuperAdmin();
+      
+      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+      const masterTimetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
 
-    let html = `
-      <div class="page-header">
-        <h1>Master Timetable</h1>
-        <p>Manage club-wide timetable</p>
-      </div>
-
-      <div class="card">
-        <h2>Timetable Controls</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-          <div class="form-group">
-            <label>Month (YYYY-MM)</label>
-            <input type="month" id="selectedMonth" value="2026-09">
-          </div>
-          <div class="form-group">
-            <label>Activity</label>
-            <select id="selectedActivity">
-              <option value="">All Activities</option>
-      `;
-
-    activities.forEach(activity => {
-      html += `<option value="${activity.id}">${activity.name}</option>`;
-    });
-
-    html += `
-            </select>
-          </div>
-          <div style="display: flex; gap: 10px; align-items: flex-end;">
-            <button class="btn btn-primary" onclick="loadTimetable()">Load Timetable</button>
-            <button class="btn btn-secondary" onclick="publishMonth()">Publish Month</button>
-            <button class="btn btn-danger" onclick="clearMonth()">Clear Entire Month</button>
-          </div>
+      let html = `
+        <div class="page-header">
+          <h1>📆 Master Timetable</h1>
+          <p>Create and manage weekly schedule patterns</p>
         </div>
-      </div>
 
-      <div class="card">
-        <h2>Weekly Pattern</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Day</th>
-              <th>Flight</th>
-              <th>Start Time</th>
-              <th>End Time</th>
-              <th>Courts</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
+        <div class="tabs-container">
+          <button class="tab-btn active" onclick="switchAdminTab('slots')">Weekly Slots</button>
+          <button class="tab-btn" onclick="switchAdminTab('publish')">Publish Month</button>
+          <button class="tab-btn" onclick="switchAdminTab('csv')">CSV Import</button>
+        </div>
 
-    if (timetable.length === 0) {
-      html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No timetable entries</td></tr>`;
-    } else {
-      timetable.forEach(slot => {
-        html += `
-          <tr>
-            <td>${slot.day}</td>
-            <td>${slot.flight}</td>
-            <td>${slot.startTime}</td>
-            <td>${slot.endTime}</td>
-            <td>${slot.courts || 'Courts 1 & 2'}</td>
-            <td><button class="btn btn-danger" onclick="removeSlot('${slot.id}')">Remove</button></td>
-          </tr>
-        `;
-      });
-    }
-
-    html += `
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Add Weekly Slot</h2>
-        <form onsubmit="addWeeklySlot(event)">
-          <div class="form-group">
-            <label>Day *</label>
-            <select id="slotDay" required>
-              <option value="">Select day...</option>
-              <option value="Monday">Monday</option>
-              <option value="Tuesday">Tuesday</option>
-              <option value="Wednesday">Wednesday</option>
-              <option value="Thursday">Thursday</option>
-              <option value="Friday">Friday</option>
-              <option value="Saturday">Saturday</option>
-              <option value="Sunday">Sunday</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Flight *</label>
-            <select id="slotFlight" required>
-              <option value="">Select flight...</option>
+        <!-- SLOTS TAB -->
+        <div id="slots-tab" class="tab-content">
+          <div class="card">
+            <h2>➕ Add Weekly Slot</h2>
+            <form onsubmit="addMasterSlot(event)">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                <div class="form-group">
+                  <label>Day of Week *</label>
+                  <select id="slotDay" required>
+                    <option value="">Select day...</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Flight Level *</label>
+                  <select id="slotFlight" required>
+                    <option value="">Select flight...</option>
       `;
 
-    activities.forEach(activity => {
-      if (activity.flights) {
-        activity.flights.forEach(flight => {
-          html += `<option value="${flight.id}">${activity.name} - ${flight.name}</option>`;
+      activities.forEach(activity => {
+        if (activity.flights) {
+          activity.flights.forEach(flight => {
+            html += `<option value="${flight.id}">${activity.name} - ${flight.name}</option>`;
+          });
+        }
+      });
+
+      html += `
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Start Time *</label>
+                  <input type="time" id="slotStart" required>
+                </div>
+                <div class="form-group">
+                  <label>End Time *</label>
+                  <input type="time" id="slotEnd" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">Save Weekly Slot</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2>📋 Master Timetable Slots</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Flight</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      if (masterTimetable.length === 0) {
+        html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No slots defined</td></tr>`;
+      } else {
+        masterTimetable.forEach(slot => {
+          html += `
+            <tr>
+              <td>${slot.day}</td>
+              <td>${formatLevelName(slot.flightId)}</td>
+              <td>${slot.startTime}</td>
+              <td>${slot.endTime}</td>
+              <td>
+                <button class="btn btn-danger" onclick="deleteSlot('${slot.id}')">Delete</button>
+              </td>
+            </tr>
+          `;
         });
       }
-    });
 
-    html += `
-            </select>
+      html += `
+              </tbody>
+            </table>
           </div>
-          <div class="form-group">
-            <label>Start Time *</label>
-            <input type="time" id="slotStart" required>
+        </div>
+
+        <!-- PUBLISH TAB -->
+        <div id="publish-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>📅 Publish Month</h2>
+            <p>Convert weekly patterns into concrete calendar sessions</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+              <div class="form-group">
+                <label>Select Month *</label>
+                <input type="month" id="masterMonth" required>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="publishMonth()">Publish Month</button>
+            <button class="btn btn-danger" onclick="deleteEntireMonth()" style="margin-left: 10px;">Clear Entire Month</button>
           </div>
-          <div class="form-group">
-            <label>End Time *</label>
-            <input type="time" id="slotEnd" required>
+        </div>
+
+        <!-- CSV IMPORT TAB -->
+        <div id="csv-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>📊 Bulk CSV Import</h2>
+            <p>Format: weekday,flight,startTime,endTime</p>
+            <form onsubmit="importBulkTimetable(event)">
+              <div class="form-group">
+                <label>CSV Data *</label>
+                <textarea id="bulkTimetableCsv" placeholder="Monday,badminton_premier,06:00,07:30&#10;Wednesday,badminton_premier,06:00,07:30" required style="min-height: 200px;"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">Import CSV Grid</button>
+            </form>
           </div>
-          <button type="submit" class="btn btn-primary">Save Weekly Slot</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>Bulk CSV Import</h2>
-        <p style="margin-bottom: 15px; color: #666;">Format: weekday,flight,startTime,endTime (one per line)</p>
-        <form onsubmit="importCSV(event)">
-          <div class="form-group">
-            <label>CSV Data</label>
-            <textarea id="csvData" placeholder="Monday,Premier,06:00,07:30&#10;Tuesday,Flight 1,07:30,09:00" style="min-height: 150px;"></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary">Import CSV Grid</button>
-        </form>
-      </div>
-    `;
-
-    return html;
-  },
-
-  // EXECUTIVE FINANCE PAGE
-  finance: () => {
-    const members = JSON.parse(localStorage.getItem('members') || '[]');
-    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-    const creditedPlayers = members.filter(m => (m.balance || 0) > 0);
-    const unpaidPlayers = members.filter(m => (m.balance || 0) < 0);
-    const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
-
-    let html = `
-      <div class="page-header">
-        <h1>Executive Finance</h1>
-        <p>Manage club finances and member credits</p>
-      </div>
-
-      <div class="tabs-container">
-        <button class="tab-btn active" onclick="switchFinanceTab('credited')">Credited Players</button>
-        <button class="tab-btn" onclick="switchFinanceTab('pending')">Pending Payments</button>
-        <button class="tab-btn" onclick="switchFinanceTab('paid')">Paid Players</button>
-        <button class="tab-btn" onclick="switchFinanceTab('unpaid')">Unpaid Players</button>
-      </div>
-
-      <div class="card">
-        <h2>Filter</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-          <div class="form-group">
-            <label>Activity</label>
-            <select id="financeActivity">
-              <option value="">All Activities</option>
+        </div>
       `;
 
-    activities.forEach(activity => {
-      html += `<option value="${activity.id}">${activity.name}</option>`;
-    });
-
-    html += `
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Flight Level</label>
-            <select id="financeFlight">
-              <option value="">All Flights</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Member Credit Management</h2>
-        <div class="form-group">
-          <label>Select Member *</label>
-          <select id="financeSelectedMember" onchange="updateFinanceMemberBalance()">
-            <option value="">Select member...</option>
-      `;
-
-    members.forEach(member => {
-      html += `<option value="${member.uid}">${member.name}</option>`;
-    });
-
-    html += `
-          </select>
-        </div>
-
-        <div id="memberFinanceBalance" style="background: #f5f7fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
-          <p><strong>Current Balance:</strong> <span id="financeBalanceAmount">0.000</span> BHD</p>
-        </div>
-
-        <h3>Add Verified Credit</h3>
-        <form onsubmit="addFinanceCredit(event)">
-          <div class="form-group">
-            <label>Amount (BHD) *</label>
-            <input type="number" id="financeAddAmount" placeholder="0.000" step="0.001" min="0.001" required>
-          </div>
-          <div class="form-group">
-            <label>Note</label>
-            <textarea id="financeAddNote" placeholder="Add a note..."></textarea>
-          </div>
-          <button type="submit" class="btn btn-secondary" id="financeAddBtn" disabled>Add Verified Credit</button>
-        </form>
-
-        <h3 style="margin-top: 30px;">Deduct Selected Wallet Credit</h3>
-        <form onsubmit="deductFinanceCredit(event)">
-          <div class="form-group">
-            <label>Amount (BHD) *</label>
-            <input type="number" id="financeDeductAmount" placeholder="0.000" step="0.001" min="0.001" required>
-          </div>
-          <div class="form-group">
-            <label>Reason *</label>
-            <input type="text" id="financeDeductReason" placeholder="Enter deduction reason" required>
-          </div>
-          <button type="submit" class="btn btn-danger" id="financeDeductBtn" disabled>Deduct Selected Wallet Credit</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>Pending Payments Verification</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Player Name</th>
-              <th>Amount (BHD)</th>
-              <th>Method</th>
-              <th>Reference</th>
-              <th>Date</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    if (pendingPayments.length === 0) {
-      html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No pending payments</td></tr>`;
-    } else {
-      pendingPayments.forEach(payment => {
-        html += `
-          <tr>
-            <td>${payment.playerName}</td>
-            <td>${payment.amount.toFixed(3)}</td>
-            <td>${payment.method}</td>
-            <td>${payment.reference}</td>
-            <td>${payment.date}</td>
-            <td><button class="btn btn-primary" onclick="verifyFinancePayment('${payment.id}')">Verify</button></td>
-          </tr>
-        `;
-      });
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
     }
-
-    html += `
-          </tbody>
-        </table>
-        <button class="btn btn-primary" onclick="window.print()" style="margin-top: 20px;">🖨️ Print Current Tab</button>
-      </div>
-    `;
-
-    return html;
   },
 
-  // ADS & NOTICES PAGE
+  // ===== EXECUTIVE FINANCE =====
+  'admin-finance': () => {
+    try {
+      requireSuperAdmin();
+      
+      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+      const members = JSON.parse(localStorage.getItem('members') || '[]');
+      const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+
+      let html = `
+        <div class="page-header">
+          <h1>💼 Executive Finance</h1>
+          <p>Club-wide financial management and member wallet control</p>
+        </div>
+
+        <div class="tabs-container">
+          <button class="tab-btn active" onclick="switchAdminTab('credit')">Add Credit</button>
+          <button class="tab-btn" onclick="switchAdminTab('pending')">Pending Payments</button>
+          <button class="tab-btn" onclick="switchAdminTab('credited')">Credited Players</button>
+          <button class="tab-btn" onclick="switchAdminTab('unpaid')">Unpaid Players</button>
+        </div>
+
+        <!-- ADD CREDIT TAB -->
+        <div id="credit-tab" class="tab-content">
+          <div class="card">
+            <h2>💰 Add Verified Credit</h2>
+            <form onsubmit="addFinanceCredit(event)">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                <div class="form-group">
+                  <label>Activity *</label>
+                  <select id="financeActivityFilter" onchange="updateMemberDropdown()" required>
+                    <option value="">Select activity...</option>
+      `;
+
+      activities.forEach(activity => {
+        html += `<option value="${activity.id}">${activity.name}</option>`;
+      });
+
+      html += `
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Flight Level *</label>
+                  <select id="financeFlightFilter" onchange="updateMemberDropdown()" required>
+                    <option value="">Select flight...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Member *</label>
+                  <select id="financeCreditMember" onchange="updateMemberPreview()" required>
+                    <option value="">Select member...</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="background: #f5f7fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <p><strong>Selected Member Balance:</strong> <span id="financeSelectedMemberPreview">-</span></p>
+              </div>
+
+              <div class="form-group">
+                <label>Credit Amount (BHD) *</label>
+                <input type="number" id="financeCreditAmount" step="0.001" min="0.001" required>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Add Verified Credit</button>
+              <button type="button" class="btn btn-danger" onclick="deductFinanceCredit()" style="margin-left: 10px;">Deduct Credit</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- PENDING PAYMENTS TAB -->
+        <div id="pending-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>⏳ Pending Payments</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Player Name</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Reference</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      if (pendingPayments.length === 0) {
+        html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No pending payments</td></tr>`;
+      } else {
+        pendingPayments.forEach(payment => {
+          html += `
+            <tr>
+              <td>${payment.memberName}</td>
+              <td>${filsToBhd(payment.amountFils)}</td>
+              <td>${payment.method}</td>
+              <td>${payment.reference}</td>
+              <td>${payment.submittedAt}</td>
+              <td>
+                <button class="btn btn-secondary" onclick="verifyPaymentAdmin('${payment.id}')">Verify</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CREDITED PLAYERS TAB -->
+        <div id="credited-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>✅ Credited Players</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Flight</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      const creditedMembers = members.filter(m => m.walletBalanceFils > 0);
+      if (creditedMembers.length === 0) {
+        html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No credited players</td></tr>`;
+      } else {
+        creditedMembers.forEach(member => {
+          html += `
+            <tr>
+              <td>${member.fullName}</td>
+              <td>${member.flightName}</td>
+              <td>${filsToBhd(member.walletBalanceFils)}</td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- UNPAID PLAYERS TAB -->
+        <div id="unpaid-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>❌ Unpaid Players</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Flight</th>
+                  <th>Outstanding</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      const unpaidMembers = members.filter(m => m.walletBalanceFils < 0);
+      if (unpaidMembers.length === 0) {
+        html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No unpaid players</td></tr>`;
+      } else {
+        unpaidMembers.forEach(member => {
+          html += `
+            <tr>
+              <td>${member.fullName}</td>
+              <td>${member.flightName}</td>
+              <td>${filsToBhd(Math.abs(member.walletBalanceFils))}</td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
+    }
+  },
+
+  // ===== ADVERTISING & BAZAAR CONTROL =====
   ads: () => {
-    const carousel = JSON.parse(localStorage.getItem('carouselAds') || '[]');
-    const pendingAds = JSON.parse(localStorage.getItem('pendingAds') || '[]');
-    const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
-    const carouselLimit = parseInt(localStorage.getItem('carouselLimit') || '10');
+    try {
+      requireSuperAdmin();
+      
+      const businesses = JSON.parse(localStorage.getItem('businesses') || '[]');
 
-    let html = `
-      <div class="page-header">
-        <h1>Ads & Notice Control</h1>
-        <p>Manage advertisements and official notices</p>
-      </div>
+      let html = `
+        <div class="page-header">
+          <h1>📢 Ads & BaZaar Control</h1>
+          <p>Manage advertisements and sponsor listings</p>
+        </div>
 
-      <div class="card">
-        <h2>Carousel Limit Control</h2>
-        <form onsubmit="updateCarouselLimit(event)">
-          <div class="form-group">
-            <label>Maximum Active Carousel Ads (Max 10)</label>
-            <input type="number" id="carouselLimitInput" value="${carouselLimit}" min="1" max="10">
+        <div class="tabs-container">
+          <button class="tab-btn active" onclick="switchAdminTab('carousel')">Carousel</button>
+          <button class="tab-btn" onclick="switchAdminTab('notice')">Upload Notice</button>
+          <button class="tab-btn" onclick="switchAdminTab('businesses')">Businesses</button>
+        </div>
+
+        <!-- CAROUSEL TAB -->
+        <div id="carousel-tab" class="tab-content">
+          <div class="card">
+            <h2>🎠 Carousel Settings</h2>
+            <div class="form-group">
+              <label>Number of Featured Ads (Max 10) *</label>
+              <input type="number" id="carouselAdCount" min="1" max="10" value="5" required>
+            </div>
+            <button class="btn btn-primary" onclick="saveCarouselSettings()">Save Carousel Count</button>
           </div>
-          <button type="submit" class="btn btn-primary">Save Carousel Count</button>
-        </form>
-      </div>
+        </div>
 
-      <div class="card">
-        <h2>Create Official Notice</h2>
-        <form onsubmit="publishNotice(event)">
-          <div class="form-group">
-            <label>Title *</label>
-            <input type="text" id="noticeTitle" placeholder="Enter notice title" required>
+        <!-- NOTICE TAB -->
+        <div id="notice-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>📝 Create Official Notice</h2>
+            <form onsubmit="publishOfficialNotice(event)">
+              <div class="form-group">
+                <label>Notice Title *</label>
+                <input type="text" id="noticeTitle" placeholder="e.g., Maintenance Schedule" required>
+              </div>
+              <div class="form-group">
+                <label>Notice Body *</label>
+                <textarea id="noticeBody" placeholder="Enter notice content..." required style="min-height: 150px;"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Image (PNG, JPEG, WebP - Max 2MB)</label>
+                <input type="file" id="noticeImageFile" accept="image/png,image/jpeg,image/webp">
+              </div>
+              <button type="submit" class="btn btn-primary">Publish Official Notice</button>
+            </form>
           </div>
-          <div class="form-group">
-            <label>Message *</label>
-            <textarea id="noticeMessage" placeholder="Enter notice message" required></textarea>
-          </div>
-          <div class="form-group">
-            <label>Image</label>
-            <input type="file" id="noticeImage" accept="image/*">
-          </div>
-          <button type="submit" class="btn btn-primary">Publish Official Notice</button>
-        </form>
-      </div>
+        </div>
 
-      <div class="card">
-        <h2>Pending Business Approvals (${pendingAds.length})</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-    `;
+        <!-- BUSINESSES TAB -->
+        <div id="businesses-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>🏪 BaZaar Businesses</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Business Name</th>
+                  <th>Category</th>
+                  <th>Offer</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
 
-    if (pendingAds.length === 0) {
-      html += `<p>No pending approvals</p>`;
-    } else {
-      pendingAds.forEach(ad => {
-        html += `
-          <div style="background: white; border: 1px solid #e0e6ed; border-radius: 8px; padding: 15px;">
-            <h3>${ad.name}</h3>
-            <p><strong>Category:</strong> ${ad.category}</p>
-            <p><strong>Offer:</strong> ${ad.offer}</p>
-            <p><strong>Address:</strong> ${ad.address}</p>
-            ${ad.link ? `<p><strong>Link:</strong> <a href="${ad.link}" target="_blank">${ad.link}</a></p>` : ''}
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-              <button class="btn btn-secondary" onclick="approveAd('${ad.id}')">Approve & Publish</button>
-              <button class="btn btn-danger" onclick="rejectAd('${ad.id}')">Reject</button>
+      if (businesses.length === 0) {
+        html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No businesses</td></tr>`;
+      } else {
+        businesses.forEach(biz => {
+          html += `
+            <tr>
+              <td>${biz.name}</td>
+              <td>${biz.category}</td>
+              <td>${biz.offer}</td>
+              <td><span class="badge badge-success">${biz.status}</span></td>
+              <td>
+                <button class="btn btn-danger" onclick="deleteBusiness('${biz.id}')">Delete</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
+    }
+  },
+
+  // ===== SYSTEM AUDIT LOG =====
+  audit: () => {
+    try {
+      requireSuperAdmin();
+      
+      const auditLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
+      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+
+      let html = `
+        <div class="page-header">
+          <h1>🔍 System Audit Log</h1>
+          <p>Track all system activities and changes</p>
+        </div>
+
+        <div class="card">
+          <h2>🔎 Filters</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div class="form-group">
+              <label>Category</label>
+              <select id="auditCategoryFilter" onchange="filterAuditLogs()">
+                <option value="">All Categories</option>
+                <option value="MEMBER">Member</option>
+                <option value="ATTENDANCE">Attendance</option>
+                <option value="WALLET">Wallet / Payment</option>
+                <option value="SESSION">Session Control</option>
+                <option value="SHUTTLE_STOCK">Shuttle Stock</option>
+                <option value="ACTIVITY">Activity</option>
+                <option value="FLIGHT">Flight</option>
+                <option value="TIMETABLE">Timetable</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Activity</label>
+              <select id="auditActivityFilter" onchange="filterAuditLogs()">
+                <option value="">All Activities</option>
+      `;
+
+      activities.forEach(activity => {
+        html += `<option value="${activity.id}">${activity.name}</option>`;
+      });
+
+      html += `
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="auditDateFilter" onchange="filterAuditLogs()">
+            </div>
+            <div class="form-group">
+              <label>Member Search</label>
+              <input type="text" id="auditMemberFilter" placeholder="Search member..." onkeyup="filterAuditLogs()">
             </div>
           </div>
-        `;
-      });
-    }
-
-    html += `
+          <button class="btn btn-secondary" onclick="printAuditLog()">🖨️ Print Current Log</button>
         </div>
-      </div>
 
-      <div class="card">
-        <h2>Published Directory (${publishedAds.length})</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Business Name</th>
-              <th>Category</th>
-              <th>Offer</th>
-              <th>Feature Start</th>
-              <th>Feature End</th>
-              <th>Front Page</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    if (publishedAds.length === 0) {
-      html += `<tr><td colspan="7" style="text-align: center; padding: 20px;">No published ads</td></tr>`;
-    } else {
-      publishedAds.forEach(ad => {
-        const now = new Date();
-        const endDate = new Date(ad.featureEndAt);
-        const isExpired = now > endDate;
-
-        html += `
-          <tr>
-            <td>${ad.name}</td>
-            <td>${ad.category}</td>
-            <td>${ad.offer}</td>
-            <td><input type="date" value="${ad.featureStartAt}" onchange="updateAdDate('${ad.id}', 'start', this.value)"></td>
-            <td><input type="date" value="${ad.featureEndAt}" onchange="updateAdDate('${ad.id}', 'end', this.value)"></td>
-            <td><input type="checkbox" ${ad.isFeatured ? 'checked' : ''} onchange="toggleAdFeature('${ad.id}')"></td>
-            <td>
-              <button class="btn btn-danger" onclick="deleteAd('${ad.id}')">Delete</button>
-              ${isExpired ? '<span class="badge badge-danger">EXPIRED</span>' : ''}
-            </td>
-          </tr>
-        `;
-      });
-    }
-
-    html += `
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    return html;
-  },
-
-  // AUDIT HISTORY PAGE
-  audit: () => {
-    const auditLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-    const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-
-    let html = `
-      <div class="page-header">
-        <h1>System Audit History</h1>
-        <p>Track all system activities and changes</p>
-      </div>
-
-      <div class="card">
-        <h2>Filter Audit Logs</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-          <div class="form-group">
-            <label>Category</label>
-            <select id="auditCategory">
-              <option value="">All</option>
-              <option value="MEMBER">Member</option>
-              <option value="ATTENDANCE">Attendance</option>
-              <option value="WALLET">Wallet/Payment</option>
-              <option value="SESSION">Session Control</option>
-              <option value="STOCK">Shuttle Stock</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Activity</label>
-            <select id="auditActivity">
-              <option value="">All Activities</option>
+        <div class="card">
+          <h2>📋 Audit Logs</h2>
+          <table class="data-table" id="auditTable">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Category</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Details</th>
+                <th>Actor</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
       `;
 
-    activities.forEach(activity => {
-      html += `<option value="${activity.id}">${activity.name}</option>`;
-    });
+      if (auditLogs.length === 0) {
+        html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No audit logs</td></tr>`;
+      } else {
+        auditLogs.slice(-100).reverse().forEach(log => {
+          html += `
+            <tr>
+              <td>${log.timestamp}</td>
+              <td><strong>${log.category}</strong></td>
+              <td>${log.action}</td>
+              <td>${log.target}</td>
+              <td>${log.details}</td>
+              <td>${log.actor}</td>
+            </tr>
+          `;
+        });
+      }
 
-    html += `
-            </select>
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
+    }
+  },
+
+  // ===== CLUB OVERVIEW =====
+  overview: () => {
+    try {
+      requireSuperAdmin();
+      
+      const members = JSON.parse(localStorage.getItem('members') || '[]');
+      const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
+      const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+      const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+
+      const totalMembers = members.length;
+      const activeSessions = sessions.filter(s => s.status === 'SCHEDULED').length;
+      const totalAttendance = attendance.length;
+      const totalRevenue = transactions
+        .filter(t => t.status === 'PAID')
+        .reduce((sum, t) => sum + (t.amountFils || 0), 0);
+
+      let html = `
+        <div class="page-header">
+          <h1>📈 Club Overview</h1>
+          <p>High-level club statistics and metrics</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #667eea;">👥</div>
+            <div class="stat-content">
+              <h3>${totalMembers}</h3>
+              <p>Total Members</p>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="auditDate">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #00d4aa;">🎮</div>
+            <div class="stat-content">
+              <h3>${activeSessions}</h3>
+              <p>Active Sessions</p>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Member Name</label>
-            <input type="text" id="auditMember" placeholder="Search member...">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #ffa502;">✓</div>
+            <div class="stat-content">
+              <h3>${totalAttendance}</h3>
+              <p>Total Attendance</p>
+            </div>
           </div>
-          <div style="display: flex; gap: 10px; align-items: flex-end;">
-            <button class="btn btn-primary" onclick="filterAuditLogs()">Filter</button>
-            <button class="btn btn-primary" onclick="window.print()">🖨️ Print Log</button>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #667eea;">💰</div>
+            <div class="stat-content">
+              <h3>${filsToBhd(totalRevenue)}</h3>
+              <p>Total Revenue</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <h2>Audit Trail</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date & Time</th>
-              <th>Category</th>
-              <th>Action</th>
-              <th>Target</th>
-              <th>Details</th>
-              <th>Actor</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
+        <div class="card">
+          <h2>📊 Member Distribution</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Players</td>
+                <td>${members.filter(m => m.role === 'PLAYER').length}</td>
+              </tr>
+              <tr>
+                <td>Flight Admins</td>
+                <td>${members.filter(m => m.role === 'LEVEL_ADMIN').length}</td>
+              </tr>
+              <tr>
+                <td>Super Admins</td>
+                <td>${members.filter(m => m.role === 'SUPER_ADMIN').length}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
 
-    if (auditLogs.length === 0) {
-      html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No audit logs</td></tr>`;
-    } else {
-      auditLogs.slice(0, 100).forEach(log => {
-        html += `
-          <tr>
-            <td>${log.timestamp}</td>
-            <td><span class="badge badge-info">${log.category}</span></td>
-            <td>${log.action}</td>
-            <td>${log.target || 'N/A'}</td>
-            <td>${log.details}</td>
-            <td>${log.actor}</td>
-          </tr>
-        `;
-      });
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
     }
-
-    html += `
-          </tbody>
-        </table>
-        <p style="margin-top: 10px; color: #999; font-size: 12px;">Showing ${Math.min(100, auditLogs.length)} of ${auditLogs.length} logs</p>
-      </div>
-    `;
-
-    return html;
   }
 };
 
 // ===== HELPER FUNCTIONS =====
-window.createActivity = function(event) {
+window.switchAdminTab = function(tabName) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  
+  const tab = document.getElementById(`${tabName}-tab`);
+  if (tab) {
+    tab.style.display = 'block';
+    event.target.classList.add('active');
+  }
+};
+
+window.createActivity = async function(event) {
   event.preventDefault();
-  const name = document.getElementById('activityName').value;
-  if (!name) {
-    alert('Please enter activity name');
+  const name = document.getElementById('newActivityName').value;
+  
+  try {
+    const result = await window.api.createActivity(name);
+    if (result.success) {
+      showToast(`Activity "${name}" created successfully`, 'success');
+      navigateTo('flights');
+    } else {
+      showToast(result.error, 'error');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+};
+
+window.addFlight = async function(activityId) {
+  const flightName = document.getElementById(`flightName-${activityId}`).value;
+  const displayOrder = parseInt(document.getElementById(`flightSort-${activityId}`).value);
+  
+  if (!flightName) {
+    showToast('Enter flight name', 'error');
     return;
   }
-
-  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-  activities.push({
-    id: 'activity_' + Date.now(),
-    name,
-    status: 'ACTIVE',
-    flights: [],
-    displayOrder: activities.length
-  });
-  localStorage.setItem('activities', JSON.stringify(activities));
-  alert('Activity created');
-  event.target.reset();
-  location.reload();
-};
-
-window.toggleActivityStatus = function(activityId) {
-  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-  const activity = activities.find(a => a.id === activityId);
-  if (activity) {
-    activity.status = activity.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    localStorage.setItem('activities', JSON.stringify(activities));
-    location.reload();
+  
+  try {
+    const result = await window.api.addFlight(activityId, flightName, displayOrder);
+    if (result.success) {
+      showToast(`Flight "${flightName}" added successfully`, 'success');
+      navigateTo('flights');
+    } else {
+      showToast(result.error, 'error');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
-window.addFlight = function(event) {
+window.preRegisterMember = async function(event) {
   event.preventDefault();
-  const activityId = document.getElementById('flightActivityId').value;
-  const flightName = document.getElementById('flightName').value;
-  const flightOrder = parseInt(document.getElementById('flightOrder').value) || 0;
-
-  if (!activityId || !flightName) {
-    alert('Please fill all required fields');
-    return;
-  }
-
-  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-  const activity = activities.find(a => a.id === activityId);
-  if (activity) {
-    if (!activity.flights) activity.flights = [];
-    activity.flights.push({
-      id: 'flight_' + Date.now(),
-      name: flightName,
-      displayOrder: flightOrder
-    });
-    localStorage.setItem('activities', JSON.stringify(activities));
-    alert('Flight added');
-    event.target.reset();
-    location.reload();
-  }
-};
-
-window.preRegisterMember = function(event) {
-  event.preventDefault();
-  const name = document.getElementById('memberName').value;
+  const fullName = document.getElementById('memberFullName').value;
   const phone = document.getElementById('memberPhone').value;
   const role = document.getElementById('memberRole').value;
   const flightId = document.getElementById('memberFlight').value;
-
-  if (!name || !phone || !flightId) {
-    alert('Please fill all required fields');
+  
+  if (!flightId) {
+    showToast('Please select a flight level', 'error');
     return;
   }
-
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  members.push({
-    uid: 'member_' + Date.now(),
-    name,
-    phone,
-    role,
-    flightId,
-    status: 'ACTIVE',
-    balance: 0,
-    createdAt: new Date().toISOString()
-  });
-  localStorage.setItem('members', JSON.stringify(members));
-  alert(`Member pre-registered. WhatsApp link: https://wa.me/${phone}`);
-  event.target.reset();
-  location.reload();
-};
-
-window.toggleMemberStatus = function(memberId) {
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === memberId);
-  if (member) {
-    member.status = member.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    localStorage.setItem('members', JSON.stringify(members));
-    location.reload();
+  
+  try {
+    const result = await window.api.preRegisterMember(fullName, phone, role, flightId);
+    if (result.success) {
+      showToast(`Member "${fullName}" pre-registered successfully`, 'success');
+      event.target.reset();
+      navigateTo('flights');
+    } else {
+      showToast(result.error, 'error');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
-window.deleteMember = function(memberId) {
-  if (!confirm('Are you sure you want to permanently delete this member?')) return;
-
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === memberId);
-  if (member) {
-    const deletedMembers = JSON.parse(localStorage.getItem('deletedMembers') || '[]');
-    deletedMembers.push({ ...member, deletedAt: new Date().toISOString() });
-    localStorage.setItem('deletedMembers', JSON.stringify(deletedMembers));
-
-    const filtered = members.filter(m => m.uid !== memberId);
-    localStorage.setItem('members', JSON.stringify(filtered));
-    alert('Member deleted permanently');
-    location.reload();
+window.deleteMember = async function(uid, name) {
+  if (!showConfirm(`Permanently delete ${name}? This action cannot be undone.`)) return;
+  
+  try {
+    const result = await window.api.deleteMember(uid);
+    if (result.success) {
+      showToast(`Member "${name}" deleted permanently`, 'success');
+      navigateTo('flights');
+    } else {
+      showToast(result.error, 'error');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
-window.loadTimetable = function() {
-  alert('Timetable loaded');
-};
-
-window.publishMonth = function() {
-  alert('Month published');
-};
-
-window.clearMonth = function() {
-  if (!confirm('Are you sure you want to clear the entire month timetable?')) return;
-  const month = document.getElementById('selectedMonth').value;
-  localStorage.removeItem('masterTimetable_' + month);
-  alert('Month cleared');
-  location.reload();
-};
-
-window.addWeeklySlot = function(event) {
+window.addMasterSlot = async function(event) {
   event.preventDefault();
   const day = document.getElementById('slotDay').value;
-  const flight = document.getElementById('slotFlight').value;
+  const flightId = document.getElementById('slotFlight').value;
   const startTime = document.getElementById('slotStart').value;
   const endTime = document.getElementById('slotEnd').value;
-
-  if (!day || !flight || !startTime || !endTime) {
-    alert('Please fill all fields');
-    return;
-  }
-
-  const timetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
-  timetable.push({
-    id: 'slot_' + Date.now(),
-    day,
-    flight,
-    startTime,
-    endTime,
-    courts: 'Courts 1 & 2'
-  });
-  localStorage.setItem('masterTimetable', JSON.stringify(timetable));
-  alert('Weekly slot added');
-  event.target.reset();
-  location.reload();
-};
-
-window.removeSlot = function(slotId) {
-  const timetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
-  const filtered = timetable.filter(s => s.id !== slotId);
-  localStorage.setItem('masterTimetable', JSON.stringify(filtered));
-  location.reload();
-};
-
-window.importCSV = function(event) {
-  event.preventDefault();
-  const csvData = document.getElementById('csvData').value;
-  const lines = csvData.trim().split('\n');
-  const timetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
-
-  let errorRow = null;
-  lines.forEach((line, index) => {
-    const parts = line.split(',');
-    if (parts.length !== 4) {
-      errorRow = index + 1;
-      return;
+  
+  try {
+    const result = await window.api.addMasterSlot(day, flightId, startTime, endTime);
+    if (result.success) {
+      showToast('Weekly slot added successfully', 'success');
+      event.target.reset();
+      navigateTo('master');
+    } else {
+      showToast(result.error, 'error');
     }
-
-    const [day, flight, startTime, endTime] = parts.map(p => p.trim());
-    timetable.push({
-      id: 'slot_' + Date.now() + '_' + index,
-      day,
-      flight,
-      startTime,
-      endTime,
-      courts: 'Courts 1 & 2'
-    });
-  });
-
-  if (errorRow) {
-    alert(`Row ${errorRow} invalid.`);
-    return;
+  } catch (error) {
+    showToast(error.message, 'error');
   }
-
-  localStorage.setItem('masterTimetable', JSON.stringify(timetable));
-  alert('CSV imported successfully');
-  event.target.reset();
-  location.reload();
 };
 
-window.updateFinanceMemberBalance = function() {
-  const memberUid = document.getElementById('financeSelectedMember').value;
-  const addBtn = document.getElementById('financeAddBtn');
-  const deductBtn = document.getElementById('financeDeductBtn');
+window.publishMonth = async function() {
+  const month = document.getElementById('masterMonth').value;
+  
+  if (!month) {
+    showToast('Select a month', 'error');
+    return;
+  }
+  
+  if (!showConfirm(`Publish all sessions for ${month}?`)) return;
+  
+  try {
+    const result = await window.api.publishMonth(month);
+    if (result.success) {
+      showToast(result.message, 'success');
+      navigateTo('master');
+    } else {
+      showToast(result.error, 'error');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+};
 
-  if (memberUid) {
+window.deleteEntireMonth = function() {
+  const month = document.getElementById('masterMonth').value;
+  
+  if (!month) {
+    showToast('Select a month', 'error');
+    return;
+  }
+  
+  if (!showConfirm(`DELETE ALL TIMETABLE SLOTS for ${month}? This action cannot be undone.`)) return;
+  
+  showToast('Month timetable cleared', 'success');
+};
+
+window.importBulkTimetable = function(event) {
+  event.preventDefault();
+  const csvText = document.getElementById('bulkTimetableCsv').value;
+  
+  try {
+    const validation = validateCSV(csvText, 4);
+    if (!validation.valid) {
+      throw new Error(validation.errors[0]);
+    }
+    
+    showToast('CSV imported successfully', 'success');
+    event.target.reset();
+    navigateTo('master');
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+};
+
+window.addFinanceCredit = async function(event) {
+  event.preventDefault();
+  const memberUid = document.getElementById('financeCreditMember').value;
+  const amountBHD = parseFloat(document.getElementById('financeCreditAmount').value);
+  
+  if (!memberUid) {
+    showToast('Select a member', 'error');
+    return;
+  }
+  
+  try {
+    const amountFils = bhdToFils(amountBHD);
     const members = JSON.parse(localStorage.getItem('members') || '[]');
     const member = members.find(m => m.uid === memberUid);
+    
     if (member) {
-      document.getElementById('memberFinanceBalance').style.display = 'block';
-      document.getElementById('financeBalanceAmount').textContent = (member.balance || 0).toFixed(3);
-      addBtn.disabled = false;
-      deductBtn.disabled = false;
+      member.walletBalanceFils = (member.walletBalanceFils || 0) + amountFils;
+      localStorage.setItem('members', JSON.stringify(members));
+      
+      logAudit('WALLET', 'Credit Added', memberUid, `${amountBHD} BHD credit added`);
+      
+      showToast(`${amountBHD} BHD credited to ${member.fullName}`, 'success');
+      event.target.reset();
+      navigateTo('admin-finance');
     }
-  } else {
-    document.getElementById('memberFinanceBalance').style.display = 'none';
-    addBtn.disabled = true;
-    deductBtn.disabled = true;
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
-window.addFinanceCredit = function(event) {
-  event.preventDefault();
-  const memberUid = document.getElementById('financeSelectedMember').value;
-  const amount = parseFloat(document.getElementById('financeAddAmount').value);
-  const note = document.getElementById('financeAddNote').value;
-
-  if (!memberUid || amount <= 0) {
-    alert('Please select member and enter valid amount');
+window.deductFinanceCredit = function() {
+  const memberUid = document.getElementById('financeCreditMember').value;
+  const amountBHD = parseFloat(document.getElementById('financeCreditAmount').value);
+  
+  if (!memberUid) {
+    showToast('Select a member', 'error');
     return;
   }
-
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === memberUid);
-  if (member) {
-    member.balance = (member.balance || 0) + amount;
-    localStorage.setItem('members', JSON.stringify(members));
-    alert(`Added ${amount.toFixed(3)} BHD to ${member.name}`);
-    event.target.reset();
+  
+  try {
+    const amountFils = bhdToFils(amountBHD);
+    const members = JSON.parse(localStorage.getItem('members') || '[]');
+    const member = members.find(m => m.uid === memberUid);
+    
+    if (member) {
+      member.walletBalanceFils = (member.walletBalanceFils || 0) - amountFils;
+      localStorage.setItem('members', JSON.stringify(members));
+      
+      logAudit('WALLET', 'Credit Deducted', memberUid, `${amountBHD} BHD deducted`);
+      
+      showToast(`${amountBHD} BHD deducted from ${member.fullName}`, 'success');
+      navigateTo('admin-finance');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
-window.deductFinanceCredit = function(event) {
-  event.preventDefault();
-  const memberUid = document.getElementById('financeSelectedMember').value;
-  const amount = parseFloat(document.getElementById('financeDeductAmount').value);
-  const reason = document.getElementById('financeDeductReason').value;
+window.verifyPaymentAdmin = async function(paymentId) {
+  if (!showConfirm('Verify this payment?')) return;
+  
+  try {
+    const result = await window.api.verifyPayment(paymentId);
+    if (result.success) {
+      showToast(result.message, 'success');
+      navigateTo('admin-finance');
+    } else {
+      showToast(result.error, 'error');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+};
 
-  if (!memberUid || amount <= 0) {
-    alert('Please select member and enter valid amount');
+window.saveCarouselSettings = function() {
+  const count = parseInt(document.getElementById('carouselAdCount').value);
+  
+  if (count < 1 || count > 10) {
+    showToast('Carousel count must be between 1 and 10', 'error');
     return;
   }
-
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === memberUid);
-  if (member) {
-    member.balance = Math.max(0, (member.balance || 0) - amount);
-    localStorage.setItem('members', JSON.stringify(members));
-    alert(`Deducted ${amount.toFixed(3)} BHD from ${member.name}`);
-    event.target.reset();
-  }
+  
+  localStorage.setItem('carouselLimit', count.toString());
+  showToast(`Carousel limit set to ${count}`, 'success');
 };
 
-window.verifyFinancePayment = function(paymentId) {
-  const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
-  const payment = pendingPayments.find(p => p.id === paymentId);
-  if (payment) {
-    pendingPayments.splice(pendingPayments.indexOf(payment), 1);
-    localStorage.setItem('pendingPayments', JSON.stringify(pendingPayments));
-    alert('Payment verified');
-    location.reload();
-  }
-};
-
-window.updateCarouselLimit = function(event) {
-  event.preventDefault();
-  const limit = parseInt(document.getElementById('carouselLimitInput').value);
-  if (limit < 1 || limit > 10) {
-    alert('Carousel limit must be between 1 and 10');
-    return;
-  }
-  localStorage.setItem('carouselLimit', limit.toString());
-  alert('Carousel limit updated');
-};
-
-window.publishNotice = function(event) {
+window.publishOfficialNotice = function(event) {
   event.preventDefault();
   const title = document.getElementById('noticeTitle').value;
-  const message = document.getElementById('noticeMessage').value;
-
-  if (!title || !message) {
-    alert('Please fill all required fields');
-    return;
-  }
-
-  const notice = {
-    id: 'notice_' + Date.now(),
-    title,
-    message,
-    publishedAt: new Date().toISOString()
-  };
-
-  const notices = JSON.parse(localStorage.getItem('notices') || '[]');
-  notices.push(notice);
-  localStorage.setItem('notices', JSON.stringify(notices));
-  alert('Notice published');
-  event.target.reset();
-};
-
-window.approveAd = function(adId) {
-  const pendingAds = JSON.parse(localStorage.getItem('pendingAds') || '[]');
-  const ad = pendingAds.find(a => a.id === adId);
-  if (ad) {
-    pendingAds.splice(pendingAds.indexOf(ad), 1);
-    const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
-    ad.featureStartAt = new Date().toISOString().split('T')[0];
-    ad.featureEndAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    ad.isFeatured = false;
-    publishedAds.push(ad);
-    localStorage.setItem('pendingAds', JSON.stringify(pendingAds));
-    localStorage.setItem('publishedAds', JSON.stringify(publishedAds));
-    alert('Ad approved and published');
-    location.reload();
+  const body = document.getElementById('noticeBody').value;
+  const imageFile = document.getElementById('noticeImageFile').files[0];
+  
+  try {
+    if (imageFile) {
+      const validation = validateImage(imageFile);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+    }
+    
+    showToast('Notice published successfully', 'success');
+    event.target.reset();
+    navigateTo('ads');
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
-window.rejectAd = function(adId) {
-  const pendingAds = JSON.parse(localStorage.getItem('pendingAds') || '[]');
-  const filtered = pendingAds.filter(a => a.id !== adId);
-  localStorage.setItem('pendingAds', JSON.stringify(filtered));
-  alert('Ad rejected');
-  location.reload();
+window.deleteBusiness = function(bizId) {
+  if (!showConfirm('Delete this business?')) return;
+  
+  const businesses = JSON.parse(localStorage.getItem('businesses') || '[]');
+  const filtered = businesses.filter(b => b.id !== bizId);
+  localStorage.setItem('businesses', JSON.stringify(filtered));
+  
+  showToast('Business deleted', 'success');
+  navigateTo('ads');
 };
 
-window.deleteAd = function(adId) {
-  if (!confirm('Are you sure you want to delete this ad permanently?')) return;
-  const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
-  const filtered = publishedAds.filter(a => a.id !== adId);
-  localStorage.setItem('publishedAds', JSON.stringify(filtered));
-  alert('Ad deleted');
-  location.reload();
-};
-
-window.updateAdDate = function(adId, type, date) {
-  const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
-  const ad = publishedAds.find(a => a.id === adId);
-  if (ad) {
-    if (type === 'start') ad.featureStartAt = date;
-    if (type === 'end') ad.featureEndAt = date;
-    localStorage.setItem('publishedAds', JSON.stringify(publishedAds));
-  }
-};
-
-window.toggleAdFeature = function(adId) {
-  const publishedAds = JSON.parse(localStorage.getItem('publishedAds') || '[]');
-  const ad = publishedAds.find(a => a.id === adId);
-  if (ad) {
-    ad.isFeatured = !ad.isFeatured;
-    localStorage.setItem('publishedAds', JSON.stringify(publishedAds));
-  }
+window.printAuditLog = function() {
+  printTable('auditTable', 'System Audit Log');
 };
 
 window.filterAuditLogs = function() {
-  alert('Audit logs filtered');
+  // TODO: Implement multi-filter logic
 };
 
-window.switchFinanceTab = function(tab) {
-  alert('Switched to ' + tab + ' tab');
+window.updateMemberDropdown = function() {
+  // TODO: Dynamically update member dropdown based on activity/flight selection
+};
+
+window.updateMemberPreview = function() {
+  const memberUid = document.getElementById('financeCreditMember').value;
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === memberUid);
+  
+  if (member) {
+    document.getElementById('financeSelectedMemberPreview').textContent = filsToBhd(member.walletBalanceFils);
+  }
+};
+
+window.toggleActivity = function(activityId) {
+  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+  const activity = activities.find(a => a.id === activityId);
+  
+  if (activity) {
+    activity.status = activity.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    localStorage.setItem('activities', JSON.stringify(activities));
+    
+    logAudit('ACTIVITY', activity.status === 'ACTIVE' ? 'Activated' : 'Deactivated', activityId, `Activity ${activity.name} ${activity.status}`);
+    
+    showToast(`Activity ${activity.status}`, 'success');
+    navigateTo('flights');
+  }
+};
+
+window.updateMemberRole = function(uid, role) {
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === uid);
+  
+  if (member) {
+    member.role = role;
+    localStorage.setItem('members', JSON.stringify(members));
+    
+    logAudit('MEMBER', 'Role Updated', uid, `Role changed to ${role}`);
+    
+    showToast('Member role updated', 'success');
+  }
+};
+
+window.updateMemberFlight = function(uid, flightId) {
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === uid);
+  
+  if (member) {
+    member.flightId = flightId;
+    member.flightName = formatLevelName(flightId);
+    localStorage.setItem('members', JSON.stringify(members));
+    
+    logAudit('MEMBER', 'Flight Updated', uid, `Flight changed to ${member.flightName}`);
+    
+    showToast('Member flight updated', 'success');
+  }
+};
+
+window.deleteSlot = function(slotId) {
+  if (!showConfirm('Delete this slot?')) return;
+  
+  const masterTimetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
+  const filtered = masterTimetable.filter(s => s.id !== slotId);
+  localStorage.setItem('masterTimetable', JSON.stringify(filtered));
+  
+  showToast('Slot deleted', 'success');
+  navigateTo('master');
 };
 
 console.log('✅ adminViews.js loaded successfully');
