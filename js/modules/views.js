@@ -1,308 +1,575 @@
 
-const views = {
-  
-  home: () => `
-    <div class="page-container">
+// ============================================
+// views.js - PLAYER MODULE
+// ============================================
+
+export const views = {
+  // HOME PAGE
+  home: () => {
+    const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+    const upcomingSession = sessions.find(s => s.status === 'SCHEDULED');
+    
+    let html = `
       <div class="page-header">
-        <h1>Welcome, John Player!</h1>
-        <p>Your next session is today at 6:00 PM</p>
+        <h1>Welcome Back!</h1>
+        <p>Your dashboard overview</p>
       </div>
-      <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.12); margin-bottom: 20px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; color: white;">
-          <h2 style="margin: 0 0 8px 0; color: white;">Badminton Level 1</h2>
-          <span style="color: rgba(255,255,255,0.9);">Today • 6:00 PM - 7:30 PM</span>
-        </div>
-        <div style="padding: 20px;">
-          <div style="margin-bottom: 12px;"><i class="fas fa-map-marker"></i> <span>Court A, Indian Club</span></div>
-          <div style="margin-bottom: 12px;"><i class="fas fa-user-tie"></i> <span>Coach: Ali Ahmed</span></div>
-          <div style="margin-bottom: 20px;"><i class="fas fa-users"></i> <span>24 Members Registered</span></div>
-          <div style="display: flex; gap: 10px;">
-            <button class="btn btn-primary" onclick="appController.showNotification('You are coming to the session!', 'success')" style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-check"></i> I'm Coming</button>
-            <button class="btn btn-secondary" onclick="appController.showNotification('Session cancelled', 'warning')" style="flex: 1; padding: 12px; background: #ffa502; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-times"></i> Can't Make It</button>
-          </div>
-        </div>
-      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><i class="fas fa-calendar-check"></i></div>
-          <div class="stat-content"><h3>18</h3><p>Sessions Attended</p><span class="stat-change">This month</span></div>
+          <div class="stat-icon" style="background: #667eea;">📊</div>
+          <div class="stat-content">
+            <h3>${sessions.filter(s => s.status === 'COMPLETED').length}</h3>
+            <p>Sessions Attended</p>
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><i class="fas fa-wallet"></i></div>
-          <div class="stat-content"><h3>BHD 250</h3><p>Wallet Balance</p><span class="stat-change">Ready to spend</span></div>
+          <div class="stat-icon" style="background: #00d4aa;">💰</div>
+          <div class="stat-content">
+            <h3>${(localStorage.getItem('walletBalance') || '0.000')} BHD</h3>
+            <p>Wallet Balance</p>
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"><i class="fas fa-trophy"></i></div>
-          <div class="stat-content"><h3>Advanced</h3><p>Current Level</p><span class="stat-change">Keep improving!</span></div>
+          <div class="stat-icon" style="background: #ffa502;">⚠️</div>
+          <div class="stat-content">
+            <h3>${(localStorage.getItem('pendingAmount') || '0.000')} BHD</h3>
+            <p>Pending Amount</p>
+          </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"><i class="fas fa-star"></i></div>
-          <div class="stat-content"><h3>4.8/5</h3><p>Your Rating</p><span class="stat-change">Excellent player!</span></div>
+          <div class="stat-icon" style="background: #ff4757;">🔴</div>
+          <div class="stat-content">
+            <h3>${(localStorage.getItem('arrears') || '0.000')} BHD</h3>
+            <p>Arrears (24h+)</p>
+          </div>
         </div>
       </div>
-    </div>
-  `,
+    `;
 
-  timetable: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Activity Timetable</h1>
-        <p>All available sessions for this week</p>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <h3 style="margin-top: 0; color: #667eea;">Monday</h3>
-          <div style="background: #f5f7fa; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-            <h4 style="margin: 0 0 8px 0;">Badminton Level 1</h4>
-            <p style="margin: 4px 0;"><i class="fas fa-clock"></i> 6:00 PM - 7:30 PM</p>
-            <p style="margin: 4px 0;"><i class="fas fa-users"></i> 24/30 Members</p>
-            <button class="btn-small" onclick="appController.showNotification('Registered for session!', 'success')" style="margin-top: 8px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">Register</button>
+    if (upcomingSession) {
+      html += `
+        <div class="card">
+          <h2>Upcoming Session</h2>
+          <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+            <p><strong>Flight:</strong> ${upcomingSession.flight}</p>
+            <p><strong>Date:</strong> ${upcomingSession.date}</p>
+            <p><strong>Time:</strong> ${upcomingSession.startTime} - ${upcomingSession.endTime}</p>
+            <p><strong>Courts:</strong> Courts 1 & 2</p>
+            <p><strong>Status:</strong> <span class="badge badge-info">SCHEDULED</span></p>
           </div>
-          <div style="background: #f5f7fa; padding: 12px; border-radius: 8px;">
-            <h4 style="margin: 0 0 8px 0;">Badminton Level 3</h4>
-            <p style="margin: 4px 0;"><i class="fas fa-clock"></i> 7:45 PM - 9:00 PM</p>
-            <p style="margin: 4px 0;"><i class="fas fa-users"></i> 12/15 Members</p>
-            <button class="btn-small" onclick="appController.showNotification('Registered for session!', 'success')" style="margin-top: 8px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">Register</button>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="markAttendance('${upcomingSession.id}', 'PRESENT')">✓ I am coming</button>
+            <button class="btn btn-danger" onclick="markAttendance('${upcomingSession.id}', 'ABSENT')">✗ Not coming</button>
           </div>
         </div>
-        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <h3 style="margin-top: 0; color: #f5576c;">Tuesday</h3>
-          <div style="background: #f5f7fa; padding: 12px; border-radius: 8px;">
-            <h4 style="margin: 0 0 8px 0;">Cricket Training</h4>
-            <p style="margin: 4px 0;"><i class="fas fa-clock"></i> 7:00 PM - 8:30 PM</p>
-            <p style="margin: 4px 0;"><i class="fas fa-users"></i> 18/20 Members</p>
-            <button class="btn-small" onclick="appController.showNotification('Registered for session!', 'success')" style="margin-top: 8px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">Register</button>
-          </div>
+      `;
+    } else {
+      html += `
+        <div class="card">
+          <h2>No Upcoming Sessions</h2>
+          <p>Check back later for scheduled sessions.</p>
         </div>
-        <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          <h3 style="margin-top: 0; color: #00d4aa;">Wednesday</h3>
-          <div style="background: #f5f7fa; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-            <h4 style="margin: 0 0 8px 0;">Badminton Level 1</h4>
-            <p style="margin: 4px 0;"><i class="fas fa-clock"></i> 6:00 PM - 7:30 PM</p>
-            <p style="margin: 4px 0;"><i class="fas fa-users"></i> 24/30 Members</p>
-            <button class="btn-small" onclick="appController.showNotification('Registered for session!', 'success')" style="margin-top: 8px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">Register</button>
-          </div>
-          <div style="background: #f5f7fa; padding: 12px; border-radius: 8px;">
-            <h4 style="margin: 0 0 8px 0;">Tennis Coaching</h4>
-            <p style="margin: 4px 0;"><i class="fas fa-clock"></i> 5:00 PM - 6:30 PM</p>
-            <p style="margin: 4px 0;"><i class="fas fa-users"></i> 10/12 Members</p>
-            <button class="btn-small" onclick="appController.showNotification('Registered for session!', 'success')" style="margin-top: 8px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">Register</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `,
+      `;
+    }
 
-  attendance: () => `
-    <div class="page-container">
+    return html;
+  },
+
+  // TIMETABLE PAGE
+  timetable: () => {
+    const timetable = JSON.parse(localStorage.getItem('timetable') || '[]');
+    
+    let html = `
       <div class="page-header">
-        <h1>My Attendance</h1>
+        <h1>My Timetable</h1>
+        <p>Your weekly flight schedule</p>
+      </div>
+
+      <div class="card">
+        <h2>Weekly Schedule</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Flight</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Courts</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (timetable.length === 0) {
+      html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No timetable assigned yet</td></tr>`;
+    } else {
+      timetable.forEach(slot => {
+        html += `
+          <tr>
+            <td>${slot.day}</td>
+            <td>${slot.flight}</td>
+            <td>${slot.startTime}</td>
+            <td>${slot.endTime}</td>
+            <td>${slot.courts || 'Courts 1 & 2'}</td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    return html;
+  },
+
+  // ATTENDANCE PAGE
+  attendance: () => {
+    const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+    const presentPlayers = attendance.filter(a => a.status === 'PRESENT');
+    
+    let html = `
+      <div class="page-header">
+        <h1>Attendance</h1>
         <p>Track your session attendance</p>
       </div>
+
       <div class="card">
-        <h2>Attendance Summary</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+        <h2>Live Session Headcount</h2>
+        <div style="background: #667eea; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+          <h3 style="font-size: 32px; margin: 0;">${presentPlayers.length}</h3>
+          <p style="margin: 0;">Players Present</p>
+        </div>
+
+        <h3>Attendance Roster</h3>
+        <table class="data-table">
           <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Activity</th>
-              <th style="padding: 12px; text-align: left;">Date</th>
-              <th style="padding: 12px; text-align: left;">Status</th>
+            <tr>
+              <th>Player Name</th>
+              <th>Member ID</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">Sep 11, 2024</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Present</span></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">Sep 09, 2024</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Present</span></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Cricket Training</td>
-              <td style="padding: 12px;">Sep 07, 2024</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Present</span></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Tennis Coaching</td>
-              <td style="padding: 12px;">Sep 05, 2024</td>
-              <td style="padding: 12px;"><span style="background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Absent</span></td>
-            </tr>
+    `;
+
+    if (presentPlayers.length === 0) {
+      html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No players marked present yet</td></tr>`;
+    } else {
+      presentPlayers.forEach(player => {
+        html += `
+          <tr>
+            <td>${player.name}</td>
+            <td>${player.memberId}</td>
+            <td><span class="badge badge-success">PRESENT</span></td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
           </tbody>
         </table>
       </div>
-    </div>
-  `,
 
-  wallet: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>My Wallet</h1>
-        <p>Manage your club wallet</p>
-      </div>
       <div class="card">
-        <h2>Wallet Balance</h2>
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 10px 0;">Current Balance</h3>
-          <h1 style="margin: 0; font-size: 48px;">BHD 250</h1>
-        </div>
-        <h3>Top Up Wallet</h3>
-        <div style="margin-bottom: 15px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: 600;">Amount (BHD)</label>
-          <input type="number" placeholder="Enter amount" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px;">
-        </div>
-        <button class="btn btn-primary" onclick="appController.showNotification('Wallet topped up successfully!', 'success')" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-plus"></i> Top Up</button>
-        <h3 style="margin-top: 30px;">Transaction History</h3>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+        <h2>Attendance History</h2>
+        <table class="data-table">
           <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Date</th>
-              <th style="padding: 12px; text-align: left;">Description</th>
-              <th style="padding: 12px; text-align: left;">Amount</th>
-              <th style="padding: 12px; text-align: left;">Balance</th>
+            <tr>
+              <th>Date</th>
+              <th>Activity</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 11, 2024</td>
-              <td style="padding: 12px;">Session Fee - Badminton</td>
-              <td style="padding: 12px;">-BHD 10</td>
-              <td style="padding: 12px;">BHD 250</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 10, 2024</td>
-              <td style="padding: 12px;">Wallet Top-up</td>
-              <td style="padding: 12px;">+BHD 50</td>
-              <td style="padding: 12px;">BHD 260</td>
-            </tr>
+    `;
+
+    const history = JSON.parse(localStorage.getItem('attendanceHistory') || '[]');
+    if (history.length === 0) {
+      html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No attendance history</td></tr>`;
+    } else {
+      history.forEach(record => {
+        const statusBadge = record.status === 'PRESENT' ? 'badge-success' : 'badge-danger';
+        html += `
+          <tr>
+            <td>${record.date}</td>
+            <td>${record.activity}</td>
+            <td><span class="badge ${statusBadge}">${record.status}</span></td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
           </tbody>
         </table>
       </div>
-    </div>
-  `,
+    `;
 
-  bazaar: () => `
-    <div class="page-container">
+    return html;
+  },
+
+  // WALLET PAGE
+  wallet: () => {
+    const walletBalance = parseFloat(localStorage.getItem('walletBalance') || '0');
+    const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+    const arrears = JSON.parse(localStorage.getItem('arrears') || '[]');
+
+    // Calculate arrears (charges older than 24 hours)
+    const now = Date.now();
+    const arrearsAmount = arrears
+      .filter(a => (now - new Date(a.createdAt).getTime()) > 24 * 60 * 60 * 1000)
+      .reduce((sum, a) => sum + a.amount, 0);
+
+    let html = `
       <div class="page-header">
-        <h1>BaZaar</h1>
-        <p>Buy and sell items in the club marketplace</p>
+        <h1>Wallet & Payments</h1>
       </div>
+
       <div class="card">
-        <h2>Available Items</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-          <div style="background: white; border: 1px solid #e0e6ed; border-radius: 8px; padding: 15px;">
-            <h4>Badminton Racket</h4>
-            <p>Professional grade racket</p>
-            <p style="font-size: 18px; font-weight: bold; color: #667eea;">BHD 45</p>
-            <button class="btn btn-primary" onclick="appController.showNotification('Item added to cart!', 'success')" style="width: 100%; padding: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">Add to Cart</button>
-          </div>
-          <div style="background: white; border: 1px solid #e0e6ed; border-radius: 8px; padding: 15px;">
-            <h4>Shuttles (Pack of 12)</h4>
-            <p>High quality shuttles</p>
-            <p style="font-size: 18px; font-weight: bold; color: #667eea;">BHD 15</p>
-            <button class="btn btn-primary" onclick="appController.showNotification('Item added to cart!', 'success')" style="width: 100%; padding: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">Add to Cart</button>
-          </div>
-          <div style="background: white; border: 1px solid #e0e6ed; border-radius: 8px; padding: 15px;">
-            <h4>Sports Shoes</h4>
-            <p>Comfortable sports shoes</p>
-            <p style="font-size: 18px; font-weight: bold; color: #667eea;">BHD 60</p>
-            <button class="btn btn-primary" onclick="appController.showNotification('Item added to cart!', 'success')" style="width: 100%; padding: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">Add to Cart</button>
-          </div>
+        <h2>Current Balance</h2>
+        <h3 style="color: #667eea; font-size: 32px;">${walletBalance.toFixed(3)} BHD</h3>
+      </div>
+
+      ${arrearsAmount > 0 ? `
+        <div class="card" style="border-left: 4px solid #ff4757;">
+          <h2>⚠️ Arrears Due</h2>
+          <h3 style="color: #ff4757; font-size: 24px;">${arrearsAmount.toFixed(3)} BHD</h3>
+          <p>Charges older than 24 hours require immediate payment</p>
         </div>
-      </div>
-    </div>
-  `,
+      ` : ''}
 
-  logs: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>My Logs</h1>
-        <p>View your activity history</p>
-      </div>
       <div class="card">
-        <h2>Activity Logs</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+        <h2>Make Payment</h2>
+        <form onsubmit="submitPayment(event)">
+          <div class="form-group">
+            <label>Payment Method *</label>
+            <select id="paymentMethod" required>
+              <option value="">Select method...</option>
+              <option value="BENEFIT_PAY">Benefit Pay</option>
+              <option value="CASH">Cash</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Reference Number *</label>
+            <input type="text" id="reference" placeholder="Enter reference or receipt number" required>
+          </div>
+          <div class="form-group">
+            <label>Amount (BHD) *</label>
+            <input type="number" id="amount" placeholder="0.000" step="0.001" min="0.001" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Submit Payment</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Transaction History</h2>
+        <table class="data-table">
           <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Date</th>
-              <th style="padding: 12px; text-align: left;">Activity</th>
-              <th style="padding: 12px; text-align: left;">Details</th>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Amount (BHD)</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 11, 2024</td>
-              <td style="padding: 12px;">Session Attended</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 10, 2024</td>
-              <td style="padding: 12px;">Wallet Top-up</td>
-              <td style="padding: 12px;">BHD 50 added</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 09, 2024</td>
-              <td style="padding: 12px;">Session Attended</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-            </tr>
+    `;
+
+    if (transactions.length === 0) {
+      html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No transactions yet</td></tr>`;
+    } else {
+      transactions.forEach(tx => {
+        const statusBadge = tx.status === 'PAID' ? 'badge-success' : tx.status === 'PENDING' ? 'badge-warning' : 'badge-danger';
+        html += `
+          <tr>
+            <td>${tx.date}</td>
+            <td>${tx.description}</td>
+            <td>${tx.amount.toFixed(3)}</td>
+            <td><span class="badge ${statusBadge}">${tx.status}</span></td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
           </tbody>
         </table>
       </div>
-    </div>
-  `,
+    `;
 
-  profile: () => `
-    <div class="page-container">
+    return html;
+  },
+
+  // BAZAAR PAGE
+  bazaar: () => {
+    const businesses = JSON.parse(localStorage.getItem('businesses') || '[]');
+    
+    let html = `
+      <div class="page-header">
+        <h1>BaZaar Directory</h1>
+        <p>Explore local businesses and special offers</p>
+      </div>
+
+      <div class="card">
+        <h2>Submit Your Business</h2>
+        <form onsubmit="submitBusiness(event)">
+          <div class="form-group">
+            <label>Business Name *</label>
+            <input type="text" id="businessName" placeholder="Enter business name" required>
+          </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="businessCategory" required>
+              <option value="">Select category...</option>
+              <option value="FOOD">Food & Beverage</option>
+              <option value="RETAIL">Retail</option>
+              <option value="SERVICES">Services</option>
+              <option value="SPORTS">Sports</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Discount Offer</label>
+            <input type="text" id="businessOffer" placeholder="e.g., 10% Club Discount">
+          </div>
+          <div class="form-group">
+            <label>Website/Social Link</label>
+            <input type="url" id="businessLink" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Physical Address</label>
+            <input type="text" id="businessAddress" placeholder="Enter address">
+          </div>
+          <div class="form-group">
+            <label>Image</label>
+            <input type="file" id="businessImage" accept="image/*">
+          </div>
+          <button type="submit" class="btn btn-primary">Submit for Approval</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Featured Businesses</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
+    `;
+
+    if (businesses.length === 0) {
+      html += `<p>No businesses listed yet</p>`;
+    } else {
+      businesses.forEach(biz => {
+        html += `
+          <div style="background: white; border: 1px solid #e0e6ed; border-radius: 8px; padding: 15px;">
+            <h3>${biz.name}</h3>
+            <p><strong>Category:</strong> ${biz.category}</p>
+            <p><strong>Offer:</strong> ${biz.offer || 'N/A'}</p>
+            <p><strong>Address:</strong> ${biz.address}</p>
+            ${biz.link ? `<a href="${biz.link}" target="_blank" class="btn btn-secondary" style="display: inline-block;">Visit</a>` : ''}
+          </div>
+        `;
+      });
+    }
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    return html;
+  },
+
+  // PROFILE PAGE
+  profile: () => {
+    const userEmail = localStorage.getItem('userEmail') || '';
+    
+    let html = `
       <div class="page-header">
         <h1>My Profile</h1>
-        <p>Manage your personal information</p>
       </div>
-      <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <div style="font-size: 60px; margin-bottom: 15px;"><i class="fas fa-user-circle"></i></div>
-          <h2 style="margin: 0 0 8px 0;">John Player</h2>
-          <p style="margin: 0 0 8px 0; color: #666;">player@club.com</p>
-          <p style="margin: 0;">Level: <strong>Intermediate</strong></p>
-        </div>
-        <div>
-          <h3>Personal Information</h3>
-          <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e0e6ed;">
-            <span style="font-weight: 600;">Full Name:</span>
-            <span>John Player</span>
+
+      <div class="card">
+        <h2>Personal Information</h2>
+        <form onsubmit="updateProfile(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="fullName" placeholder="Enter your full name">
           </div>
-          <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e0e6ed;">
-            <span style="font-weight: 600;">Email:</span>
-            <span>player@club.com</span>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" value="${userEmail}" disabled>
           </div>
-          <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e0e6ed;">
-            <span style="font-weight: 600;">Phone:</span>
-            <span>+973 1234 5680</span>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="phone" placeholder="Enter your phone number">
           </div>
-          <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e0e6ed;">
-            <span style="font-weight: 600;">Join Date:</span>
-            <span>March 1, 2024</span>
+          <div class="form-group">
+            <label>Member ID</label>
+            <input type="text" id="memberId" placeholder="Your member ID" disabled>
           </div>
-          <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e0e6ed;">
-            <span style="font-weight: 600;">Current Level:</span>
-            <span>Intermediate</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; padding: 12px 0;">
-            <span style="font-weight: 600;">Membership Status:</span>
-            <span><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Active</span></span>
-          </div>
-        </div>
-        <div style="display: flex; gap: 12px; margin-top: 20px;">
-          <button class="btn btn-primary" onclick="appController.showNotification('Edit profile feature coming soon!', 'info')" style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-edit"></i> Edit Profile</button>
-          <button class="btn btn-secondary" onclick="appController.showNotification('Password changed successfully!', 'success')" style="flex: 1; padding: 12px; background: #00d4aa; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-lock"></i> Change Password</button>
-        </div>
+          <button type="submit" class="btn btn-primary">Update Profile</button>
+        </form>
       </div>
-    </div>
-  `
+
+      <div class="card">
+        <h2>Change Password</h2>
+        <form onsubmit="changePassword(event)">
+          <div class="form-group">
+            <label>Current Password</label>
+            <input type="password" id="currentPassword" placeholder="Enter current password" required>
+          </div>
+          <div class="form-group">
+            <label>New Password</label>
+            <input type="password" id="newPassword" placeholder="Enter new password" required>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" id="confirmPassword" placeholder="Confirm new password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Change Password</button>
+        </form>
+      </div>
+    `;
+
+    return html;
+  },
+
+  // LOGS PAGE
+  logs: () => {
+    const activityLogs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
+    
+    let html = `
+      <div class="page-header">
+        <h1>Activity Logs</h1>
+        <p>Your account activity history</p>
+      </div>
+
+      <div class="card">
+        <h2>Recent Activity</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Action</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (activityLogs.length === 0) {
+      html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No activity logs yet</td></tr>`;
+    } else {
+      activityLogs.forEach(log => {
+        html += `
+          <tr>
+            <td>${log.timestamp}</td>
+            <td>${log.action}</td>
+            <td>${log.details}</td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    return html;
+  }
 };
 
-window.views = views;
-export { views };
+// ===== HELPER FUNCTIONS =====
+window.markAttendance = function(sessionId, status) {
+  const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+  attendance.push({
+    sessionId,
+    status,
+    timestamp: new Date().toISOString()
+  });
+  localStorage.setItem('attendance', JSON.stringify(attendance));
+  alert(`Marked as ${status}`);
+  location.reload();
+};
+
+window.submitPayment = function(event) {
+  event.preventDefault();
+  const method = document.getElementById('paymentMethod').value;
+  const reference = document.getElementById('reference').value;
+  const amount = parseFloat(document.getElementById('amount').value);
+
+  if (!method || !reference || amount <= 0) {
+    alert('Please fill all fields correctly');
+    return;
+  }
+
+  const transaction = {
+    date: new Date().toLocaleDateString(),
+    description: `Payment via ${method}`,
+    amount,
+    status: 'PENDING_VERIFICATION',
+    reference,
+    method
+  };
+
+  const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+  transactions.push(transaction);
+  localStorage.setItem('transactions', JSON.stringify(transactions));
+
+  alert('Payment submitted for verification');
+  event.target.reset();
+};
+
+window.submitBusiness = function(event) {
+  event.preventDefault();
+  const business = {
+    name: document.getElementById('businessName').value,
+    category: document.getElementById('businessCategory').value,
+    offer: document.getElementById('businessOffer').value,
+    link: document.getElementById('businessLink').value,
+    address: document.getElementById('businessAddress').value,
+    status: 'PENDING',
+    submittedAt: new Date().toISOString()
+  };
+
+  const businesses = JSON.parse(localStorage.getItem('businesses') || '[]');
+  businesses.push(business);
+  localStorage.setItem('businesses', JSON.stringify(businesses));
+
+  alert('Business submitted for approval');
+  event.target.reset();
+};
+
+window.updateProfile = function(event) {
+  event.preventDefault();
+  const profile = {
+    fullName: document.getElementById('fullName').value,
+    phone: document.getElementById('phone').value,
+    memberId: document.getElementById('memberId').value
+  };
+
+  localStorage.setItem('userProfile', JSON.stringify(profile));
+  alert('Profile updated successfully');
+};
+
+window.changePassword = function(event) {
+  event.preventDefault();
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+
+  if (newPassword !== confirmPassword) {
+    alert('Passwords do not match');
+    return;
+  }
+
+  alert('Password changed successfully');
+  event.target.reset();
+};
+
 console.log('✅ views.js loaded successfully');
 
