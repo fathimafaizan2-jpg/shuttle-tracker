@@ -1,1235 +1,759 @@
 
 // ============================================
-// adminViews.js - SUPER ADMIN MODULES
+// adminViews.js - SUPER ADMIN DASHBOARD
 // ============================================
 
 export const adminViews = {
-  // ===== ACTIVITIES, FLIGHTS & MEMBERS =====
-  flights: () => {
-    try {
-      requireSuperAdmin();
-      
-      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-      const members = JSON.parse(localStorage.getItem('members') || '[]');
+  // ===== HOME PAGE =====
+  home: function() {
+    return `
+      <div class="page-header">
+        <h1>🏆 Super Admin Dashboard</h1>
+        <p>Complete club management and oversight</p>
+      </div>
 
-      let html = `
-        <div class="page-header">
-          <h1>✈️ Activities, Flights & Members</h1>
-          <p>Manage sports activities, flight levels, and member registrations</p>
-        </div>
-
-        <div class="tabs-container">
-          <button class="tab-btn active" onclick="switchAdminTab('activities')">Activities & Flights</button>
-          <button class="tab-btn" onclick="switchAdminTab('members')">Member Roster</button>
-        </div>
-
-        <!-- ACTIVITIES & FLIGHTS TAB -->
-        <div id="activities-tab" class="tab-content">
-          <div class="card">
-            <h2>➕ Create New Sport / Activity</h2>
-            <form onsubmit="createActivity(event)">
-              <div class="form-group">
-                <label>Activity Name *</label>
-                <input type="text" id="newActivityName" placeholder="e.g., Badminton, Cricket, Tennis" required>
-              </div>
-              <button type="submit" class="btn btn-primary">Create Activity</button>
-            </form>
-          </div>
-
-          <div class="card">
-            <h2>📋 Manage Activities & Flights</h2>
-      `;
-
-      if (activities.length === 0) {
-        html += `<p style="color: #999;">No activities created yet</p>`;
-      } else {
-        activities.forEach(activity => {
-          html += `
-            <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3>${activity.name}</h3>
-                <button class="btn btn-danger" onclick="toggleActivity('${activity.id}')">
-                  ${activity.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                </button>
-              </div>
-
-              <div style="margin-bottom: 15px;">
-                <h4>Flights:</h4>
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Flight Name</th>
-                      <th>Display Order</th>
-                      <th>Members</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-          `;
-
-          if (!activity.flights || activity.flights.length === 0) {
-            html += `<tr><td colspan="3" style="text-align: center; padding: 10px;">No flights</td></tr>`;
-          } else {
-            activity.flights.forEach(flight => {
-              const flightMemberCount = members.filter(m => m.flightId === flight.id).length;
-              html += `
-                <tr>
-                  <td>${flight.name}</td>
-                  <td>${flight.displayOrder}</td>
-                  <td>${flightMemberCount}</td>
-                </tr>
-              `;
-            });
-          }
-
-          html += `
-                  </tbody>
-                </table>
-              </div>
-
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                <div class="form-group">
-                  <label>Flight Name</label>
-                  <input type="text" id="flightName-${activity.id}" placeholder="e.g., Premier, Flight 1">
-                </div>
-                <div class="form-group">
-                  <label>Display Order</label>
-                  <input type="number" id="flightSort-${activity.id}" min="0" value="0">
-                </div>
-                <div style="display: flex; align-items: flex-end;">
-                  <button class="btn btn-secondary" onclick="addFlight('${activity.id}')">Add Flight</button>
-                </div>
-              </div>
-            </div>
-          `;
-        });
-      }
-
-      html += `
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #667eea;">👥</div>
+          <div class="stat-content">
+            <h3>156</h3>
+            <p>Total Members</p>
           </div>
         </div>
-
-        <!-- MEMBERS TAB -->
-        <div id="members-tab" class="tab-content" style="display: none;">
-          <div class="card">
-            <h2>➕ Pre-Register New Member</h2>
-            <form onsubmit="preRegisterMember(event)">
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
-                <div class="form-group">
-                  <label>Full Name *</label>
-                  <input type="text" id="memberFullName" placeholder="Full name" required>
-                </div>
-                <div class="form-group">
-                  <label>Phone Number *</label>
-                  <input type="tel" id="memberPhone" placeholder="+973-XXXX-XXXX" required>
-                </div>
-                <div class="form-group">
-                  <label>Role *</label>
-                  <select id="memberRole" required>
-                    <option value="">Select role...</option>
-                    <option value="PLAYER">Player</option>
-                    <option value="LEVEL_ADMIN">Flight Admin</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Flight Level *</label>
-                  <select id="memberFlight" required>
-                    <option value="">Select flight...</option>
-      `;
-
-      activities.forEach(activity => {
-        if (activity.flights) {
-          activity.flights.forEach(flight => {
-            html += `<option value="${flight.id}">${activity.name} - ${flight.name}</option>`;
-          });
-        }
-      });
-
-      html += `
-                  </select>
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary">Pre-register Member</button>
-            </form>
-          </div>
-
-          <div class="card">
-            <h2>📋 All Members Roster</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-              <div class="form-group">
-                <label>Filter by Activity</label>
-                <select id="rosterActivityFilter" onchange="filterRoster()">
-                  <option value="">All Activities</option>
-      `;
-
-      activities.forEach(activity => {
-        html += `<option value="${activity.id}">${activity.name}</option>`;
-      });
-
-      html += `
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Filter by Flight</label>
-                <select id="rosterFlightFilter" onchange="filterRoster()">
-                  <option value="">All Flights</option>
-                </select>
-              </div>
-            </div>
-
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Phone</th>
-                  <th>Role</th>
-                  <th>Flight</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="rosterTableBody">
-      `;
-
-      members.forEach(member => {
-        html += `
-          <tr>
-            <td>${member.fullName}</td>
-            <td>${member.phone}</td>
-            <td>
-              <select id="memberRole-${member.uid}" onchange="updateMemberRole('${member.uid}', this.value)">
-                <option value="PLAYER" ${member.role === 'PLAYER' ? 'selected' : ''}>Player</option>
-                <option value="LEVEL_ADMIN" ${member.role === 'LEVEL_ADMIN' ? 'selected' : ''}>Flight Admin</option>
-              </select>
-            </td>
-            <td>
-              <select id="memberFlight-${member.uid}" onchange="updateMemberFlight('${member.uid}', this.value)">
-                <option value="">Select flight...</option>
-        `;
-
-        activities.forEach(activity => {
-          if (activity.flights) {
-            activity.flights.forEach(flight => {
-              const selected = member.flightId === flight.id ? 'selected' : '';
-              html += `<option value="${flight.id}" ${selected}>${activity.name} - ${flight.name}</option>`;
-            });
-          }
-        });
-
-        html += `
-              </select>
-            </td>
-            <td><span class="badge badge-success">${member.status}</span></td>
-            <td>
-              <button class="btn btn-danger" onclick="deleteMember('${member.uid}', '${member.fullName}')">Delete</button>
-              <a href="${generateWhatsAppLink(member.phone, 'Welcome to Indian Club Bahrain! Click here to activate your account: https://indianclub.bh/activate')}" target="_blank" class="btn btn-secondary" style="display: inline-block; margin-top: 5px;">WhatsApp</a>
-            </td>
-          </tr>
-        `;
-      });
-
-      html += `
-              </tbody>
-            </table>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #2ed573;">📅</div>
+          <div class="stat-content">
+            <h3>32</h3>
+            <p>Active Sessions</p>
           </div>
         </div>
-      `;
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #ffa502;">💰</div>
+          <div class="stat-content">
+            <h3>15,600 BHD</h3>
+            <p>Total Revenue</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #ff6b6b;">⚠️</div>
+          <div class="stat-content">
+            <h3>12</h3>
+            <p>Pending Issues</p>
+          </div>
+        </div>
+      </div>
 
-      return html;
-    } catch (error) {
-      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
-    }
+      <div class="card">
+        <h2>📋 Quick Actions</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+          <button class="btn btn-primary" onclick="window.navigateTo('overview')">Club Overview</button>
+          <button class="btn btn-primary" onclick="window.navigateTo('flights')">Manage Activities</button>
+          <button class="btn btn-primary" onclick="window.navigateTo('master')">Master Timetable</button>
+          <button class="btn btn-primary" onclick="window.navigateTo('admin-finance')">Finance</button>
+          <button class="btn btn-primary" onclick="window.navigateTo('ads')">Ads & BaZaar</button>
+          <button class="btn btn-primary" onclick="window.navigateTo('audit')">Audit Log</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📊 Club Performance</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>This Month</th>
+              <th>Last Month</th>
+              <th>Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>New Members</td>
+              <td>12</td>
+              <td>8</td>
+              <td><span class="badge badge-success">+50%</span></td>
+            </tr>
+            <tr>
+              <td>Revenue</td>
+              <td>15,600 BHD</td>
+              <td>14,200 BHD</td>
+              <td><span class="badge badge-success">+9.9%</span></td>
+            </tr>
+            <tr>
+              <td>Attendance Rate</td>
+              <td>82%</td>
+              <td>78%</td>
+              <td><span class="badge badge-success">+5.1%</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   },
 
-  // ===== MASTER TIMETABLE =====
-  master: () => {
-    try {
-      requireSuperAdmin();
-      
-      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-      const masterTimetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
+  // ===== OVERVIEW PAGE =====
+  overview: function() {
+    return `
+      <div class="page-header">
+        <h1>📊 Club Overview</h1>
+        <p>Complete club statistics and analytics</p>
+      </div>
 
-      let html = `
-        <div class="page-header">
-          <h1>📆 Master Timetable</h1>
-          <p>Create and manage weekly schedule patterns</p>
-        </div>
-
-        <div class="tabs-container">
-          <button class="tab-btn active" onclick="switchAdminTab('slots')">Weekly Slots</button>
-          <button class="tab-btn" onclick="switchAdminTab('publish')">Publish Month</button>
-          <button class="tab-btn" onclick="switchAdminTab('csv')">CSV Import</button>
-        </div>
-
-        <!-- SLOTS TAB -->
-        <div id="slots-tab" class="tab-content">
-          <div class="card">
-            <h2>➕ Add Weekly Slot</h2>
-            <form onsubmit="addMasterSlot(event)">
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
-                <div class="form-group">
-                  <label>Day of Week *</label>
-                  <select id="slotDay" required>
-                    <option value="">Select day...</option>
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                    <option value="Saturday">Saturday</option>
-                    <option value="Sunday">Sunday</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Flight Level *</label>
-                  <select id="slotFlight" required>
-                    <option value="">Select flight...</option>
-      `;
-
-      activities.forEach(activity => {
-        if (activity.flights) {
-          activity.flights.forEach(flight => {
-            html += `<option value="${flight.id}">${activity.name} - ${flight.name}</option>`;
-          });
-        }
-      });
-
-      html += `
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Start Time *</label>
-                  <input type="time" id="slotStart" required>
-                </div>
-                <div class="form-group">
-                  <label>End Time *</label>
-                  <input type="time" id="slotEnd" required>
-                </div>
-              </div>
-              <button type="submit" class="btn btn-primary">Save Weekly Slot</button>
-            </form>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #667eea;">👥</div>
+          <div class="stat-content">
+            <h3>156</h3>
+            <p>Total Members</p>
           </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #2ed573;">✓</div>
+          <div class="stat-content">
+            <h3>142</h3>
+            <p>Active Members</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #ffa502;">⏸</div>
+          <div class="stat-content">
+            <h3>14</h3>
+            <p>Inactive Members</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #ff6b6b;">🚫</div>
+          <div class="stat-content">
+            <h3>0</h3>
+            <p>Suspended</p>
+          </div>
+        </div>
+      </div>
 
-          <div class="card">
-            <h2>📋 Master Timetable Slots</h2>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>Flight</th>
-                  <th>Start Time</th>
-                  <th>End Time</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-      `;
-
-      if (masterTimetable.length === 0) {
-        html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No slots defined</td></tr>`;
-      } else {
-        masterTimetable.forEach(slot => {
-          html += `
+      <div class="card">
+        <h2>📈 Member Distribution by Activity</h2>
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>${slot.day}</td>
-              <td>${formatLevelName(slot.flightId)}</td>
-              <td>${slot.startTime}</td>
-              <td>${slot.endTime}</td>
-              <td>
-                <button class="btn btn-danger" onclick="deleteSlot('${slot.id}')">Delete</button>
-              </td>
+              <th>Activity</th>
+              <th>Total Members</th>
+              <th>Active</th>
+              <th>Inactive</th>
+              <th>Percentage</th>
             </tr>
-          `;
-        });
-      }
+          </thead>
+          <tbody>
+            <tr>
+              <td>Badminton</td>
+              <td>68</td>
+              <td>62</td>
+              <td>6</td>
+              <td>43.6%</td>
+            </tr>
+            <tr>
+              <td>Cricket</td>
+              <td>52</td>
+              <td>48</td>
+              <td>4</td>
+              <td>33.3%</td>
+            </tr>
+            <tr>
+              <td>Tennis</td>
+              <td>36</td>
+              <td>32</td>
+              <td>4</td>
+              <td>23.1%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      html += `
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- PUBLISH TAB -->
-        <div id="publish-tab" class="tab-content" style="display: none;">
-          <div class="card">
-            <h2>📅 Publish Month</h2>
-            <p>Convert weekly patterns into concrete calendar sessions</p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
-              <div class="form-group">
-                <label>Select Month *</label>
-                <input type="month" id="masterMonth" required>
-              </div>
-            </div>
-            <button class="btn btn-primary" onclick="publishMonth()">Publish Month</button>
-            <button class="btn btn-danger" onclick="deleteEntireMonth()" style="margin-left: 10px;">Clear Entire Month</button>
-          </div>
-        </div>
-
-        <!-- CSV IMPORT TAB -->
-        <div id="csv-tab" class="tab-content" style="display: none;">
-          <div class="card">
-            <h2>📊 Bulk CSV Import</h2>
-            <p>Format: weekday,flight,startTime,endTime</p>
-            <form onsubmit="importBulkTimetable(event)">
-              <div class="form-group">
-                <label>CSV Data *</label>
-                <textarea id="bulkTimetableCsv" placeholder="Monday,badminton_premier,06:00,07:30&#10;Wednesday,badminton_premier,06:00,07:30" required style="min-height: 200px;"></textarea>
-              </div>
-              <button type="submit" class="btn btn-primary">Import CSV Grid</button>
-            </form>
-          </div>
-        </div>
-      `;
-
-      return html;
-    } catch (error) {
-      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
-    }
+      <div class="card">
+        <h2>💰 Financial Summary</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Total Revenue</td>
+              <td>15,600 BHD</td>
+              <td>100%</td>
+            </tr>
+            <tr>
+              <td>Total Expenses</td>
+              <td>4,200 BHD</td>
+              <td>26.9%</td>
+            </tr>
+            <tr>
+              <td>Net Profit</td>
+              <td>11,400 BHD</td>
+              <td>73.1%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   },
 
-  // ===== EXECUTIVE FINANCE =====
-  'admin-finance': () => {
-    try {
-      requireSuperAdmin();
-      
-      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-      const members = JSON.parse(localStorage.getItem('members') || '[]');
-      const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+  // ===== FLIGHTS/ACTIVITIES PAGE =====
+  flights: function() {
+    return `
+      <div class="page-header">
+        <h1>✈️ Activities & Flights Management</h1>
+        <p>Create and manage club activities and flights</p>
+      </div>
 
-      let html = `
-        <div class="page-header">
-          <h1>💼 Executive Finance</h1>
-          <p>Club-wide financial management and member wallet control</p>
-        </div>
-
-        <div class="tabs-container">
-          <button class="tab-btn active" onclick="switchAdminTab('credit')">Add Credit</button>
-          <button class="tab-btn" onclick="switchAdminTab('pending')">Pending Payments</button>
-          <button class="tab-btn" onclick="switchAdminTab('credited')">Credited Players</button>
-          <button class="tab-btn" onclick="switchAdminTab('unpaid')">Unpaid Players</button>
-        </div>
-
-        <!-- ADD CREDIT TAB -->
-        <div id="credit-tab" class="tab-content">
-          <div class="card">
-            <h2>💰 Add Verified Credit</h2>
-            <form onsubmit="addFinanceCredit(event)">
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
-                <div class="form-group">
-                  <label>Activity *</label>
-                  <select id="financeActivityFilter" onchange="updateMemberDropdown()" required>
-                    <option value="">Select activity...</option>
-      `;
-
-      activities.forEach(activity => {
-        html += `<option value="${activity.id}">${activity.name}</option>`;
-      });
-
-      html += `
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Flight Level *</label>
-                  <select id="financeFlightFilter" onchange="updateMemberDropdown()" required>
-                    <option value="">Select flight...</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Member *</label>
-                  <select id="financeCreditMember" onchange="updateMemberPreview()" required>
-                    <option value="">Select member...</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style="background: #f5f7fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <p><strong>Selected Member Balance:</strong> <span id="financeSelectedMemberPreview">-</span></p>
-              </div>
-
-              <div class="form-group">
-                <label>Credit Amount (BHD) *</label>
-                <input type="number" id="financeCreditAmount" step="0.001" min="0.001" required>
-              </div>
-
-              <button type="submit" class="btn btn-primary">Add Verified Credit</button>
-              <button type="button" class="btn btn-danger" onclick="deductFinanceCredit()" style="margin-left: 10px;">Deduct Credit</button>
-            </form>
+      <div class="card">
+        <h2>➕ Create New Activity</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Activity Name *</label>
+            <input type="text" placeholder="e.g., Badminton, Cricket">
+          </div>
+          <div class="form-group">
+            <label>Status *</label>
+            <select>
+              <option>Active</option>
+              <option>Inactive</option>
+            </select>
           </div>
         </div>
+        <button class="btn btn-primary">Create Activity</button>
+      </div>
 
-        <!-- PENDING PAYMENTS TAB -->
-        <div id="pending-tab" class="tab-content" style="display: none;">
-          <div class="card">
-            <h2>⏳ Pending Payments</h2>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Player Name</th>
-                  <th>Amount</th>
-                  <th>Method</th>
-                  <th>Reference</th>
-                  <th>Date</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-      `;
-
-      if (pendingPayments.length === 0) {
-        html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No pending payments</td></tr>`;
-      } else {
-        pendingPayments.forEach(payment => {
-          html += `
+      <div class="card">
+        <h2>📋 Activities List</h2>
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>${payment.memberName}</td>
-              <td>${filsToBhd(payment.amountFils)}</td>
-              <td>${payment.method}</td>
-              <td>${payment.reference}</td>
-              <td>${payment.submittedAt}</td>
-              <td>
-                <button class="btn btn-secondary" onclick="verifyPaymentAdmin('${payment.id}')">Verify</button>
-              </td>
+              <th>Activity</th>
+              <th>Flights</th>
+              <th>Members</th>
+              <th>Status</th>
+              <th>Action</th>
             </tr>
-          `;
-        });
-      }
-
-      html += `
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- CREDITED PLAYERS TAB -->
-        <div id="credited-tab" class="tab-content" style="display: none;">
-          <div class="card">
-            <h2>✅ Credited Players</h2>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Flight</th>
-                  <th>Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-      `;
-
-      const creditedMembers = members.filter(m => m.walletBalanceFils > 0);
-      if (creditedMembers.length === 0) {
-        html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No credited players</td></tr>`;
-      } else {
-        creditedMembers.forEach(member => {
-          html += `
+          </thead>
+          <tbody>
             <tr>
-              <td>${member.fullName}</td>
-              <td>${member.flightName}</td>
-              <td>${filsToBhd(member.walletBalanceFils)}</td>
+              <td>Badminton</td>
+              <td>3</td>
+              <td>68</td>
+              <td><span class="badge badge-success">Active</span></td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
             </tr>
-          `;
-        });
-      }
-
-      html += `
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- UNPAID PLAYERS TAB -->
-        <div id="unpaid-tab" class="tab-content" style="display: none;">
-          <div class="card">
-            <h2>❌ Unpaid Players</h2>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Flight</th>
-                  <th>Outstanding</th>
-                </tr>
-              </thead>
-              <tbody>
-      `;
-
-      const unpaidMembers = members.filter(m => m.walletBalanceFils < 0);
-      if (unpaidMembers.length === 0) {
-        html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No unpaid players</td></tr>`;
-      } else {
-        unpaidMembers.forEach(member => {
-          html += `
             <tr>
-              <td>${member.fullName}</td>
-              <td>${member.flightName}</td>
-              <td>${filsToBhd(Math.abs(member.walletBalanceFils))}</td>
+              <td>Cricket</td>
+              <td>2</td>
+              <td>52</td>
+              <td><span class="badge badge-success">Active</span></td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
             </tr>
-          `;
-        });
-      }
+            <tr>
+              <td>Tennis</td>
+              <td>2</td>
+              <td>36</td>
+              <td><span class="badge badge-success">Active</span></td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      html += `
-              </tbody>
-            </table>
+      <div class="card">
+        <h2>➕ Create New Flight</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Activity *</label>
+            <select>
+              <option>Select activity</option>
+              <option>Badminton</option>
+              <option>Cricket</option>
+              <option>Tennis</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Flight Name *</label>
+            <input type="text" placeholder="e.g., Premier, Flight 1">
           </div>
         </div>
-      `;
+        <button class="btn btn-primary">Create Flight</button>
+      </div>
 
-      return html;
-    } catch (error) {
-      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
-    }
+      <div class="card">
+        <h2>✈️ Flights List</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Activity</th>
+              <th>Flight</th>
+              <th>Members</th>
+              <th>Admin</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Badminton</td>
+              <td>Premier</td>
+              <td>24</td>
+              <td>Ahmed Al-Mansouri</td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Badminton</td>
+              <td>Flight 1</td>
+              <td>22</td>
+              <td>Mohammed Al-Khalifa</td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Cricket</td>
+              <td>Premier</td>
+              <td>26</td>
+              <td>Fatima Hassan</td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   },
 
-  // ===== ADVERTISING & BAZAAR CONTROL =====
-  ads: () => {
-    try {
-      requireSuperAdmin();
-      
-      const businesses = JSON.parse(localStorage.getItem('businesses') || '[]');
+  // ===== MASTER TIMETABLE PAGE =====
+  master: function() {
+    return `
+      <div class="page-header">
+        <h1>📅 Master Timetable</h1>
+        <p>Club-wide weekly schedule</p>
+      </div>
 
-      let html = `
-        <div class="page-header">
-          <h1>📢 Ads & BaZaar Control</h1>
-          <p>Manage advertisements and sponsor listings</p>
-        </div>
-
-        <div class="tabs-container">
-          <button class="tab-btn active" onclick="switchAdminTab('carousel')">Carousel</button>
-          <button class="tab-btn" onclick="switchAdminTab('notice')">Upload Notice</button>
-          <button class="tab-btn" onclick="switchAdminTab('businesses')">Businesses</button>
-        </div>
-
-        <!-- CAROUSEL TAB -->
-        <div id="carousel-tab" class="tab-content">
-          <div class="card">
-            <h2>🎠 Carousel Settings</h2>
-            <div class="form-group">
-              <label>Number of Featured Ads (Max 10) *</label>
-              <input type="number" id="carouselAdCount" min="1" max="10" value="5" required>
-            </div>
-            <button class="btn btn-primary" onclick="saveCarouselSettings()">Save Carousel Count</button>
+      <div class="card">
+        <h2>➕ Add Session to Master Timetable</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Day *</label>
+            <select>
+              <option>Monday</option>
+              <option>Tuesday</option>
+              <option>Wednesday</option>
+              <option>Thursday</option>
+              <option>Friday</option>
+              <option>Saturday</option>
+              <option>Sunday</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Time *</label>
+            <input type="time">
           </div>
         </div>
-
-        <!-- NOTICE TAB -->
-        <div id="notice-tab" class="tab-content" style="display: none;">
-          <div class="card">
-            <h2>📝 Create Official Notice</h2>
-            <form onsubmit="publishOfficialNotice(event)">
-              <div class="form-group">
-                <label>Notice Title *</label>
-                <input type="text" id="noticeTitle" placeholder="e.g., Maintenance Schedule" required>
-              </div>
-              <div class="form-group">
-                <label>Notice Body *</label>
-                <textarea id="noticeBody" placeholder="Enter notice content..." required style="min-height: 150px;"></textarea>
-              </div>
-              <div class="form-group">
-                <label>Image (PNG, JPEG, WebP - Max 2MB)</label>
-                <input type="file" id="noticeImageFile" accept="image/png,image/jpeg,image/webp">
-              </div>
-              <button type="submit" class="btn btn-primary">Publish Official Notice</button>
-            </form>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Activity *</label>
+            <select>
+              <option>Badminton</option>
+              <option>Cricket</option>
+              <option>Tennis</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Flight *</label>
+            <select>
+              <option>Premier</option>
+              <option>Flight 1</option>
+              <option>Flight 2</option>
+            </select>
           </div>
         </div>
+        <button class="btn btn-primary">Add to Timetable</button>
+      </div>
 
-        <!-- BUSINESSES TAB -->
-        <div id="businesses-tab" class="tab-content" style="display: none;">
-          <div class="card">
-            <h2>🏪 BaZaar Businesses</h2>
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Business Name</th>
-                  <th>Category</th>
-                  <th>Offer</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-      `;
-
-      if (businesses.length === 0) {
-        html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No businesses</td></tr>`;
-      } else {
-        businesses.forEach(biz => {
-          html += `
+      <div class="card">
+        <h2>📋 Weekly Schedule</h2>
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>${biz.name}</td>
-              <td>${biz.category}</td>
-              <td>${biz.offer}</td>
-              <td><span class="badge badge-success">${biz.status}</span></td>
-              <td>
-                <button class="btn btn-danger" onclick="deleteBusiness('${biz.id}')">Delete</button>
-              </td>
+              <th>Day</th>
+              <th>Time</th>
+              <th>Activity</th>
+              <th>Flight</th>
+              <th>Venue</th>
+              <th>Action</th>
             </tr>
-          `;
-        });
-      }
-
-      html += `
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-
-      return html;
-    } catch (error) {
-      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
-    }
+          </thead>
+          <tbody>
+            <tr>
+              <td>Monday</td>
+              <td>6:00 AM</td>
+              <td>Badminton</td>
+              <td>Premier</td>
+              <td>Court 1</td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Wednesday</td>
+              <td>6:00 AM</td>
+              <td>Badminton</td>
+              <td>Premier</td>
+              <td>Court 1</td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Friday</td>
+              <td>6:00 AM</td>
+              <td>Badminton</td>
+              <td>Premier</td>
+              <td>Court 1</td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Saturday</td>
+              <td>7:00 AM</td>
+              <td>Cricket</td>
+              <td>Premier</td>
+              <td>Ground A</td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   },
 
-  // ===== SYSTEM AUDIT LOG =====
-  audit: () => {
-    try {
-      requireSuperAdmin();
-      
-      const auditLogs = JSON.parse(localStorage.getItem('auditLogs') || '[]');
-      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
+  // ===== EXECUTIVE FINANCE PAGE =====
+  'admin-finance': function() {
+    return `
+      <div class="page-header">
+        <h1>💰 Executive Finance</h1>
+        <p>Club-wide financial management</p>
+      </div>
 
-      let html = `
-        <div class="page-header">
-          <h1>🔍 System Audit Log</h1>
-          <p>Track all system activities and changes</p>
-        </div>
-
-        <div class="card">
-          <h2>🔎 Filters</h2>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-            <div class="form-group">
-              <label>Category</label>
-              <select id="auditCategoryFilter" onchange="filterAuditLogs()">
-                <option value="">All Categories</option>
-                <option value="MEMBER">Member</option>
-                <option value="ATTENDANCE">Attendance</option>
-                <option value="WALLET">Wallet / Payment</option>
-                <option value="SESSION">Session Control</option>
-                <option value="SHUTTLE_STOCK">Shuttle Stock</option>
-                <option value="ACTIVITY">Activity</option>
-                <option value="FLIGHT">Flight</option>
-                <option value="TIMETABLE">Timetable</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Activity</label>
-              <select id="auditActivityFilter" onchange="filterAuditLogs()">
-                <option value="">All Activities</option>
-      `;
-
-      activities.forEach(activity => {
-        html += `<option value="${activity.id}">${activity.name}</option>`;
-      });
-
-      html += `
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Date</label>
-              <input type="date" id="auditDateFilter" onchange="filterAuditLogs()">
-            </div>
-            <div class="form-group">
-              <label>Member Search</label>
-              <input type="text" id="auditMemberFilter" placeholder="Search member..." onkeyup="filterAuditLogs()">
-            </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #2ed573;">💵</div>
+          <div class="stat-content">
+            <h3>15,600 BHD</h3>
+            <p>Total Revenue</p>
           </div>
-          <button class="btn btn-secondary" onclick="printAuditLog()">🖨️ Print Current Log</button>
         </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #ff6b6b;">💸</div>
+          <div class="stat-content">
+            <h3>4,200 BHD</h3>
+            <p>Total Expenses</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #667eea;">📊</div>
+          <div class="stat-content">
+            <h3>11,400 BHD</h3>
+            <p>Net Profit</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: #ffa502;">⏳</div>
+          <div class="stat-content">
+            <h3>1,200 BHD</h3>
+            <p>Pending</p>
+          </div>
+        </div>
+      </div>
 
-        <div class="card">
-          <h2>📋 Audit Logs</h2>
-          <table class="data-table" id="auditTable">
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Category</th>
-                <th>Action</th>
-                <th>Target</th>
-                <th>Details</th>
-                <th>Actor</th>
-              </tr>
-            </thead>
-            <tbody id="auditTableBody">
-      `;
-
-      if (auditLogs.length === 0) {
-        html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No audit logs</td></tr>`;
-      } else {
-        auditLogs.slice(-100).reverse().forEach(log => {
-          html += `
+      <div class="card">
+        <h2>📈 Revenue by Activity</h2>
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>${log.timestamp}</td>
-              <td><strong>${log.category}</strong></td>
-              <td>${log.action}</td>
-              <td>${log.target}</td>
-              <td>${log.details}</td>
-              <td>${log.actor}</td>
+              <th>Activity</th>
+              <th>Revenue</th>
+              <th>Members</th>
+              <th>Per Member</th>
+              <th>Percentage</th>
             </tr>
-          `;
-        });
-      }
+          </thead>
+          <tbody>
+            <tr>
+              <td>Badminton</td>
+              <td>6,800 BHD</td>
+              <td>68</td>
+              <td>100 BHD</td>
+              <td>43.6%</td>
+            </tr>
+            <tr>
+              <td>Cricket</td>
+              <td>5,200 BHD</td>
+              <td>52</td>
+              <td>100 BHD</td>
+              <td>33.3%</td>
+            </tr>
+            <tr>
+              <td>Tennis</td>
+              <td>3,600 BHD</td>
+              <td>36</td>
+              <td>100 BHD</td>
+              <td>23.1%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      html += `
-            </tbody>
-          </table>
-        </div>
-      `;
-
-      return html;
-    } catch (error) {
-      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
-    }
+      <div class="card">
+        <h2>💸 Expense Breakdown</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Percentage</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Equipment & Maintenance</td>
+              <td>1,800 BHD</td>
+              <td>42.9%</td>
+              <td>Sep 10, 2026</td>
+            </tr>
+            <tr>
+              <td>Venue Rental</td>
+              <td>1,500 BHD</td>
+              <td>35.7%</td>
+              <td>Sep 01, 2026</td>
+            </tr>
+            <tr>
+              <td>Staff Salaries</td>
+              <td>700 BHD</td>
+              <td>16.7%</td>
+              <td>Sep 05, 2026</td>
+            </tr>
+            <tr>
+              <td>Miscellaneous</td>
+              <td>200 BHD</td>
+              <td>4.8%</td>
+              <td>Sep 08, 2026</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   },
 
-  // ===== CLUB OVERVIEW =====
-  overview: () => {
-    try {
-      requireSuperAdmin();
-      
-      const members = JSON.parse(localStorage.getItem('members') || '[]');
-      const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
-      const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
-      const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+  // ===== ADS & BAZAAR PAGE =====
+  ads: function() {
+    return `
+      <div class="page-header">
+        <h1>📢 Ads & BaZaar Management</h1>
+        <p>Manage club advertisements and marketplace</p>
+      </div>
 
-      const totalMembers = members.length;
-      const activeSessions = sessions.filter(s => s.status === 'SCHEDULED').length;
-      const totalAttendance = attendance.length;
-      const totalRevenue = transactions
-        .filter(t => t.status === 'PAID')
-        .reduce((sum, t) => sum + (t.amountFils || 0), 0);
-
-      let html = `
-        <div class="page-header">
-          <h1>📈 Club Overview</h1>
-          <p>High-level club statistics and metrics</p>
+      <div class="card">
+        <h2>➕ Post New Advertisement</h2>
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" placeholder="Advertisement title">
         </div>
-
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #667eea;">👥</div>
-            <div class="stat-content">
-              <h3>${totalMembers}</h3>
-              <p>Total Members</p>
-            </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category *</label>
+            <select>
+              <option>Select category</option>
+              <option>Promotion</option>
+              <option>Event</option>
+              <option>Announcement</option>
+              <option>Other</option>
+            </select>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #00d4aa;">🎮</div>
-            <div class="stat-content">
-              <h3>${activeSessions}</h3>
-              <p>Active Sessions</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #ffa502;">✓</div>
-            <div class="stat-content">
-              <h3>${totalAttendance}</h3>
-              <p>Total Attendance</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #667eea;">💰</div>
-            <div class="stat-content">
-              <h3>${filsToBhd(totalRevenue)}</h3>
-              <p>Total Revenue</p>
-            </div>
+          <div class="form-group">
+            <label>Status *</label>
+            <select>
+              <option>Active</option>
+              <option>Inactive</option>
+            </select>
           </div>
         </div>
-
-        <div class="card">
-          <h2>📊 Member Distribution</h2>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Role</th>
-                <th>Count</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Players</td>
-                <td>${members.filter(m => m.role === 'PLAYER').length}</td>
-              </tr>
-              <tr>
-                <td>Flight Admins</td>
-                <td>${members.filter(m => m.role === 'LEVEL_ADMIN').length}</td>
-              </tr>
-              <tr>
-                <td>Super Admins</td>
-                <td>${members.filter(m => m.role === 'SUPER_ADMIN').length}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="form-group">
+          <label>Description *</label>
+          <textarea placeholder="Advertisement details..." rows="4"></textarea>
         </div>
-      `;
+        <button class="btn btn-primary">Post Advertisement</button>
+      </div>
 
-      return html;
-    } catch (error) {
-      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
-    }
-  }
-};
+      <div class="card">
+        <h2>📋 Active Advertisements</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Posted By</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>New Badminton Tournament</td>
+              <td>Event</td>
+              <td>Admin</td>
+              <td>Sep 12, 2026</td>
+              <td><span class="badge badge-success">Active</span></td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Equipment Sale</td>
+              <td>Promotion</td>
+              <td>Admin</td>
+              <td>Sep 10, 2026</td>
+              <td><span class="badge badge-success">Active</span></td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+            <tr>
+              <td>Membership Drive</td>
+              <td>Announcement</td>
+              <td>Admin</td>
+              <td>Sep 08, 2026</td>
+              <td><span class="badge badge-success">Active</span></td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-// ===== HELPER FUNCTIONS =====
-window.switchAdminTab = function(tabName) {
-  document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  
-  const tab = document.getElementById(`${tabName}-tab`);
-  if (tab) {
-    tab.style.display = 'block';
-    event.target.classList.add('active');
-  }
-};
+      <div class="card">
+        <h2>🛍️ BaZaar Items</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Seller</th>
+              <th>Price</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Badminton Racket</td>
+              <td>Ali Ahmed</td>
+              <td>25 BHD</td>
+              <td>Sports Equipment</td>
+              <td><span class="badge badge-success">Active</span></td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
+            </tr>
+            <tr>
+              <td>Tennis Shoes</td>
+              <td>Fatima Hassan</td>
+              <td>35 BHD</td>
+              <td>Clothing</td>
+              <td><span class="badge badge-success">Active</span></td>
+              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  },
 
-window.createActivity = async function(event) {
-  event.preventDefault();
-  const name = document.getElementById('newActivityName').value;
-  
-  try {
-    const result = await window.api.createActivity(name);
-    if (result.success) {
-      showToast(`Activity "${name}" created successfully`, 'success');
-      navigateTo('flights');
-    } else {
-      showToast(result.error, 'error');
-    }
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
+  // ===== AUDIT LOG PAGE =====
+  audit: function() {
+    return `
+      <div class="page-header">
+        <h1>🔍 Audit Log</h1>
+        <p>Track all system activities and changes</p>
+      </div>
 
-window.addFlight = async function(activityId) {
-  const flightName = document.getElementById(`flightName-${activityId}`).value;
-  const displayOrder = parseInt(document.getElementById(`flightSort-${activityId}`).value);
-  
-  if (!flightName) {
-    showToast('Enter flight name', 'error');
-    return;
-  }
-  
-  try {
-    const result = await window.api.addFlight(activityId, flightName, displayOrder);
-    if (result.success) {
-      showToast(`Flight "${flightName}" added successfully`, 'success');
-      navigateTo('flights');
-    } else {
-      showToast(result.error, 'error');
-    }
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
+      <div class="card">
+        <h2>🔎 Filter Logs</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select>
+              <option>All</option>
+              <option>Login</option>
+              <option>Member Management</option>
+              <option>Finance</option>
+              <option>Settings</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date Range</label>
+            <input type="date">
+          </div>
+          <div class="form-group">
+            <label>User</label>
+            <input type="text" placeholder="Search user...">
+          </div>
+        </div>
+        <button class="btn btn-primary">Filter</button>
+      </div>
 
-window.preRegisterMember = async function(event) {
-  event.preventDefault();
-  const fullName = document.getElementById('memberFullName').value;
-  const phone = document.getElementById('memberPhone').value;
-  const role = document.getElementById('memberRole').value;
-  const flightId = document.getElementById('memberFlight').value;
-  
-  if (!flightId) {
-    showToast('Please select a flight level', 'error');
-    return;
+      <div class="card">
+        <h2>📋 Audit Trail</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>User</th>
+              <th>Category</th>
+              <th>Action</th>
+              <th>Details</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Sep 13, 2026 - 5:20 PM</td>
+              <td>Fathima Al-Dosari</td>
+              <td>Login</td>
+              <td>User Login</td>
+              <td>Logged in to admin panel</td>
+              <td><span class="badge badge-success">Success</span></td>
+            </tr>
+            <tr>
+              <td>Sep 13, 2026 - 3:45 PM</td>
+              <td>Mohammed Al-Khalifa</td>
+              <td>Member Management</td>
+              <td>Member Added</td>
+              <td>New member registered</td>
+              <td><span class="badge badge-success">Success</span></td>
+            </tr>
+            <tr>
+              <td>Sep 12, 2026 - 10:30 AM</td>
+              <td>Fathima Al-Dosari</td>
+              <td>Finance</td>
+              <td>Payment Processed</td>
+              <td>Monthly fees collected</td>
+              <td><span class="badge badge-success">Success</span></td>
+            </tr>
+            <tr>
+              <td>Sep 11, 2026 - 2:15 PM</td>
+              <td>Ahmed Al-Mansouri</td>
+              <td>Settings</td>
+              <td>Settings Updated</td>
+              <td>Club settings modified</td>
+              <td><span class="badge badge-success">Success</span></td>
+            </tr>
+            <tr>
+              <td>Sep 10, 2026 - 9:00 AM</td>
+              <td>Fathima Al-Dosari</td>
+              <td>Member Management</td>
+              <td>Member Suspended</td>
+              <td>Member account suspended</td>
+              <td><span class="badge badge-warning">Warning</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
   }
-  
-  try {
-    const result = await window.api.preRegisterMember(fullName, phone, role, flightId);
-    if (result.success) {
-      showToast(`Member "${fullName}" pre-registered successfully`, 'success');
-      event.target.reset();
-      navigateTo('flights');
-    } else {
-      showToast(result.error, 'error');
-    }
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
-
-window.deleteMember = async function(uid, name) {
-  if (!showConfirm(`Permanently delete ${name}? This action cannot be undone.`)) return;
-  
-  try {
-    const result = await window.api.deleteMember(uid);
-    if (result.success) {
-      showToast(`Member "${name}" deleted permanently`, 'success');
-      navigateTo('flights');
-    } else {
-      showToast(result.error, 'error');
-    }
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
-
-window.addMasterSlot = async function(event) {
-  event.preventDefault();
-  const day = document.getElementById('slotDay').value;
-  const flightId = document.getElementById('slotFlight').value;
-  const startTime = document.getElementById('slotStart').value;
-  const endTime = document.getElementById('slotEnd').value;
-  
-  try {
-    const result = await window.api.addMasterSlot(day, flightId, startTime, endTime);
-    if (result.success) {
-      showToast('Weekly slot added successfully', 'success');
-      event.target.reset();
-      navigateTo('master');
-    } else {
-      showToast(result.error, 'error');
-    }
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
-
-window.publishMonth = async function() {
-  const month = document.getElementById('masterMonth').value;
-  
-  if (!month) {
-    showToast('Select a month', 'error');
-    return;
-  }
-  
-  if (!showConfirm(`Publish all sessions for ${month}?`)) return;
-  
-  try {
-    const result = await window.api.publishMonth(month);
-    if (result.success) {
-      showToast(result.message, 'success');
-      navigateTo('master');
-    } else {
-      showToast(result.error, 'error');
-    }
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
-
-window.deleteEntireMonth = function() {
-  const month = document.getElementById('masterMonth').value;
-  
-  if (!month) {
-    showToast('Select a month', 'error');
-    return;
-  }
-  
-  if (!showConfirm(`DELETE ALL TIMETABLE SLOTS for ${month}? This action cannot be undone.`)) return;
-  
-  showToast('Month timetable cleared', 'success');
-};
-
-window.importBulkTimetable = function(event) {
-  event.preventDefault();
-  const csvText = document.getElementById('bulkTimetableCsv').value;
-  
-  try {
-    const validation = validateCSV(csvText, 4);
-    if (!validation.valid) {
-      throw new Error(validation.errors[0]);
-    }
-    
-    showToast('CSV imported successfully', 'success');
-    event.target.reset();
-    navigateTo('master');
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
-
-window.addFinanceCredit = async function(event) {
-  event.preventDefault();
-  const memberUid = document.getElementById('financeCreditMember').value;
-  const amountBHD = parseFloat(document.getElementById('financeCreditAmount').value);
-  
-  if (!memberUid) {
-    showToast('Select a member', 'error');
-    return;
-  }
-  
-  try {
-    const amountFils = bhdToFils(amountBHD);
-    const members = JSON.parse(localStorage.getItem('members') || '[]');
-    const member = members.find(m => m.uid === memberUid);
-    
-    if (member) {
-      member.walletBalanceFils = (member.walletBalanceFils || 0) + amountFils;
-      localStorage.setItem('members', JSON.stringify(members));
-      
-      logAudit('WALLET', 'Credit Added', memberUid, `${amountBHD} BHD credit added`);
-      
-      showToast(`${amountBHD} BHD credited to ${member.fullName}`, 'success');
-      event.target.reset();
-      navigateTo('admin-finance');
-    }
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
-
-window.deductFinanceCredit = function() {
-  const memberUid = document.getElementById('financeCreditMember').value;
-  const amountBHD = parseFloat(document.getElementById('financeCreditAmount').value);
-  
-  if (!memberUid) {
-    showToast('Select a member', 'error');
-    return;
-  }
-  
-  try {
-    const amountFils = bhdToFils(amountBHD);
-    const members = JSON.parse(localStorage.getItem('members') || '[]');
-    const member = members.find(m => m.uid === memberUid);
-    
-    if (member) {
-      member.walletBalanceFils = (member.walletBalanceFils || 0) - amountFils;
-      localStorage.setItem('members', JSON.stringify(members));
-      
-      logAudit('WALLET', 'Credit Deducted', memberUid, `${amountBHD} BHD deducted`);
-      
-      showToast(`${amountBHD} BHD deducted from ${member.fullName}`, 'success');
-      navigateTo('admin-finance');
-    }
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
-
-window.verifyPaymentAdmin = async function(paymentId) {
-  if (!showConfirm('Verify this payment?')) return;
-  
-  try {
-    const result = await window.api.verifyPayment(paymentId);
-    if (result.success) {
-      showToast(result.message, 'success');
-      navigateTo('admin-finance');
-    } else {
-      showToast(result.error, 'error');
-    }
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
-
-window.saveCarouselSettings = function() {
-  const count = parseInt(document.getElementById('carouselAdCount').value);
-  
-  if (count < 1 || count > 10) {
-    showToast('Carousel count must be between 1 and 10', 'error');
-    return;
-  }
-  
-  localStorage.setItem('carouselLimit', count.toString());
-  showToast(`Carousel limit set to ${count}`, 'success');
-};
-
-window.publishOfficialNotice = function(event) {
-  event.preventDefault();
-  const title = document.getElementById('noticeTitle').value;
-  const body = document.getElementById('noticeBody').value;
-  const imageFile = document.getElementById('noticeImageFile').files[0];
-  
-  try {
-    if (imageFile) {
-      const validation = validateImage(imageFile);
-      if (!validation.valid) {
-        throw new Error(validation.error);
-      }
-    }
-    
-    showToast('Notice published successfully', 'success');
-    event.target.reset();
-    navigateTo('ads');
-  } catch (error) {
-    showToast(error.message, 'error');
-  }
-};
-
-window.deleteBusiness = function(bizId) {
-  if (!showConfirm('Delete this business?')) return;
-  
-  const businesses = JSON.parse(localStorage.getItem('businesses') || '[]');
-  const filtered = businesses.filter(b => b.id !== bizId);
-  localStorage.setItem('businesses', JSON.stringify(filtered));
-  
-  showToast('Business deleted', 'success');
-  navigateTo('ads');
-};
-
-window.printAuditLog = function() {
-  printTable('auditTable', 'System Audit Log');
-};
-
-window.filterAuditLogs = function() {
-  // TODO: Implement multi-filter logic
-};
-
-window.updateMemberDropdown = function() {
-  // TODO: Dynamically update member dropdown based on activity/flight selection
-};
-
-window.updateMemberPreview = function() {
-  const memberUid = document.getElementById('financeCreditMember').value;
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === memberUid);
-  
-  if (member) {
-    document.getElementById('financeSelectedMemberPreview').textContent = filsToBhd(member.walletBalanceFils);
-  }
-};
-
-window.toggleActivity = function(activityId) {
-  const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-  const activity = activities.find(a => a.id === activityId);
-  
-  if (activity) {
-    activity.status = activity.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    localStorage.setItem('activities', JSON.stringify(activities));
-    
-    logAudit('ACTIVITY', activity.status === 'ACTIVE' ? 'Activated' : 'Deactivated', activityId, `Activity ${activity.name} ${activity.status}`);
-    
-    showToast(`Activity ${activity.status}`, 'success');
-    navigateTo('flights');
-  }
-};
-
-window.updateMemberRole = function(uid, role) {
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === uid);
-  
-  if (member) {
-    member.role = role;
-    localStorage.setItem('members', JSON.stringify(members));
-    
-    logAudit('MEMBER', 'Role Updated', uid, `Role changed to ${role}`);
-    
-    showToast('Member role updated', 'success');
-  }
-};
-
-window.updateMemberFlight = function(uid, flightId) {
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === uid);
-  
-  if (member) {
-    member.flightId = flightId;
-    member.flightName = formatLevelName(flightId);
-    localStorage.setItem('members', JSON.stringify(members));
-    
-    logAudit('MEMBER', 'Flight Updated', uid, `Flight changed to ${member.flightName}`);
-    
-    showToast('Member flight updated', 'success');
-  }
-};
-
-window.deleteSlot = function(slotId) {
-  if (!showConfirm('Delete this slot?')) return;
-  
-  const masterTimetable = JSON.parse(localStorage.getItem('masterTimetable') || '[]');
-  const filtered = masterTimetable.filter(s => s.id !== slotId);
-  localStorage.setItem('masterTimetable', JSON.stringify(filtered));
-  
-  showToast('Slot deleted', 'success');
-  navigateTo('master');
 };
 
 console.log('✅ adminViews.js loaded successfully');
