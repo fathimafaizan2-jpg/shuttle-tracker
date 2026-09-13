@@ -1,58 +1,81 @@
 
 // ============================================
-// flightAdminViews.js - FLIGHT ADMIN MODULE
+// flightAdminViews.js - FLIGHT ADMIN MODULES
 // ============================================
 
 export const flightAdminViews = {
-  // SESSION CONTROL PAGE
+  // ===== SESSION CONTROL =====
   sessions: () => {
-    const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
-    const activeSessions = sessions.filter(s => s.status === 'SCHEDULED');
-    
-    let html = `
-      <div class="page-header">
-        <h1>Session Control</h1>
-        <p>Manage active sessions and attendance</p>
-      </div>
-    `;
+    try {
+      requireLevelAdmin();
+      
+      const member = window.appState.member;
+      const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
+      const attendance = JSON.parse(localStorage.getItem('attendance') || '[]');
+      const members = JSON.parse(localStorage.getItem('members') || '[]');
+      const stock = JSON.parse(localStorage.getItem('flightStock') || '{"tubePriceFils": 500}');
+      
+      // Get upcoming session for this flight
+      const upcomingSession = sessions.find(s => s.status === 'SCHEDULED' && s.flightId === member.flightId);
+      
+      if (!upcomingSession) {
+        return `
+          <div class="page-header">
+            <h1>🎮 Session Control</h1>
+            <p>Manage attendance and game costs</p>
+          </div>
+          <div class="card">
+            <p style="color: #999;">No upcoming sessions for your flight</p>
+          </div>
+        `;
+      }
+      
+      // STRICT FILTER: Only PRESENT players
+      const presentPlayers = attendance.filter(a => a.sessionId === upcomingSession.id && a.status === 'PRESENT');
+      const presentCount = presentPlayers.length;
+      
+      // Get all members for this flight
+      const flightMembers = members.filter(m => m.flightId === member.flightId && m.uid !== member.uid);
+      
+      // Get members NOT present
+      const notPresentMembers = flightMembers.filter(m => 
+        !presentPlayers.find(p => p.memberUid === m.uid)
+      );
 
-    if (activeSessions.length === 0) {
-      html += `<div class="card"><h2>No Active Sessions</h2><p>No scheduled sessions at the moment</p></div>`;
-      return html;
-    }
+      let html = `
+        <div class="page-header">
+          <h1>🎮 Session Control</h1>
+          <p>Manage attendance and game costs for ${upcomingSession.date}</p>
+        </div>
 
-    activeSessions.forEach(session => {
-      const presentPlayers = JSON.parse(session.presentPlayers || '[]');
-      const allMembers = JSON.parse(localStorage.getItem('members') || '[]');
-      const nonPresentMembers = allMembers.filter(m => !presentPlayers.find(p => p.uid === m.uid));
-
-      html += `
         <div class="card">
-          <h2>${session.flight} - ${session.date}</h2>
-          <p><strong>Time:</strong> ${session.startTime} - ${session.endTime}</p>
-          <p><strong>Status:</strong> <span class="badge badge-info">SCHEDULED</span></p>
-
-          <h3>Active Players (${presentPlayers.length})</h3>
+          <h2>📋 Attending Roster (${presentCount} Players)</h2>
           <table class="data-table">
             <thead>
               <tr>
+                <th>#</th>
                 <th>Player Name</th>
-                <th>Member ID</th>
+                <th>Status</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
       `;
 
-      if (presentPlayers.length === 0) {
-        html += `<tr><td colspan="3" style="text-align: center;">No players marked present</td></tr>`;
+      if (presentCount === 0) {
+        html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No players marked present</td></tr>`;
       } else {
-        presentPlayers.forEach(player => {
+        presentPlayers.forEach((player, index) => {
           html += `
             <tr>
-              <td>${player.name}</td>
-              <td>${player.uid}</td>
-              <td><button class="btn btn-danger" onclick="removePlayer('${session.id}', '${player.uid}')">Remove (Mark Absent)</button></td>
+              <td>${index + 1}</td>
+              <td>${player.memberName}</td>
+              <td><span class="badge badge-success">PRESENT</span></td>
+              <td>
+                <button class="btn btn-danger" onclick="removePlayerFromSession('${upcomingSession.id}', '${player.memberUid}')">
+                  Remove (Mark Absent)
+                </button>
+              </td>
             </tr>
           `;
         });
@@ -61,460 +84,529 @@ export const flightAdminViews = {
       html += `
             </tbody>
           </table>
+        </div>
 
-          <h3 style="margin-top: 20px;">Add Late Arrival</h3>
+        <div class="card">
+          <h2>➕ Add Player to Roster</h2>
           <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <select id="latePlayer_${session.id}" style="flex: 1; padding: 10px; border: 1px solid #e0e6ed; border-radius: 6px;">
-              <option value="">Select player...</option>
+            <select id="addMemberSelect-${upcomingSession.id}" style="flex: 1; padding: 10px; border: 1px solid #e0e6ed; border-radius: 6px;">
+              <option value="">Select a player to add...</option>
       `;
 
-      nonPresentMembers.forEach(member => {
-        html += `<option value="${member.uid}">${member.name}</option>`;
+      notPresentMembers.forEach(member => {
+        html += `<option value="${member.uid}">${member.fullName}</option>`;
       });
 
       html += `
             </select>
-            <button class="btn btn-secondary" onclick="addLateArrival('${session.id}')">Add to Present</button>
+            <button class="btn btn-secondary" onclick="addPlayerToSession('${upcomingSession.id}')">
+              Add to Present List
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>🎯 Game Completion & Cost Calculation</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div class="form-group">
+              <label>Shuttlecocks Used *</label>
+              <input type="number" id="shuttlesUsed-${upcomingSession.id}" min="0" value="0" required>
+            </div>
+            <div class="form-group">
+              <label>Attendees Count (Read-only)</label>
+              <input type="number" value="${presentCount}" readonly style="background: #f5f7fa;">
+            </div>
+            <div class="form-group">
+              <label>Tube Price (BHD)</label>
+              <input type="text" value="${filsToBhd(stock.tubePriceFils)}" readonly style="background: #f5f7fa;">
+            </div>
           </div>
 
-          <h3>Shuttle Calculator</h3>
-          <div class="form-group">
-            <label>Shuttlecocks Used</label>
-            <input type="number" id="shuttles_${session.id}" placeholder="0" min="0">
+          <div style="background: #f5f7fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <h3>Cost Split Formula</h3>
+            <p><strong>Tube Price Fils:</strong> ${stock.tubePriceFils}</p>
+            <p><strong>Cost Per Shuttle Fils:</strong> ${stock.tubePriceFils} ÷ 12 = ${Math.round(stock.tubePriceFils / 12)}</p>
+            <p><strong>Total Game Cost Fils:</strong> ⌈Shuttles × ${Math.round(stock.tubePriceFils / 12)}⌉</p>
+            <p><strong>Per Player Share Fils:</strong> ⌈Total Cost ÷ ${presentCount}⌉</p>
           </div>
-          <div class="form-group">
-            <label>Attendees Count</label>
-            <input type="number" id="attendees_${session.id}" value="${presentPlayers.length}" disabled>
-          </div>
-          <div class="form-group">
-            <label>Tube Price (BHD)</label>
-            <input type="number" id="tubePrice_${session.id}" placeholder="0.000" step="0.001" value="${session.tubePrice || '0.500'}">
-          </div>
-          <button class="btn btn-primary" onclick="finalizeSession('${session.id}')">Update Final Attendance & Calculate Charges</button>
+
+          <button class="btn btn-primary" onclick="completeFlightSession('${upcomingSession.id}')">
+            Update Final Attendance & Calculate Charges
+          </button>
         </div>
       `;
-    });
 
-    return html;
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
+    }
   },
 
-  // SHUTTLE STOCK PAGE
+  // ===== SHUTTLE STOCK =====
   stock: () => {
-    const stock = JSON.parse(localStorage.getItem('flightStock') || '{"availableTubes": 0, "tubePrice": 0.5}');
-    
-    let html = `
-      <div class="page-header">
-        <h1>Shuttle Stock</h1>
-        <p>Manage inventory</p>
-      </div>
+    try {
+      requireLevelAdmin();
+      
+      const stock = JSON.parse(localStorage.getItem('flightStock') || '{"tubePriceFils": 500, "availableTubes": 150}');
 
-      <div class="card">
-        <h2>Inventory Overview</h2>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #667eea;">📦</div>
-            <div class="stat-content">
-              <h3>${stock.availableTubes}</h3>
-              <p>Available Tubes</p>
+      let html = `
+        <div class="page-header">
+          <h1>📦 Shuttle Stock Management</h1>
+          <p>Manage tube inventory and pricing</p>
+        </div>
+
+        <div class="card">
+          <h2>Current Stock</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 10px 0; color: #666;">Available Tubes</p>
+              <h2 style="margin: 0; color: #667eea;">${stock.availableTubes}</h2>
             </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #00d4aa;">💰</div>
-            <div class="stat-content">
-              <h3>${stock.tubePrice.toFixed(3)} BHD</h3>
-              <p>Current Tube Price</p>
+            <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 10px 0; color: #666;">Tube Price</p>
+              <h2 style="margin: 0; color: #667eea;">${filsToBhd(stock.tubePriceFils)} BHD</h2>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <h2>Update Stock Settings</h2>
-        <form onsubmit="updateStock(event)">
-          <div class="form-group">
-            <label>Tube Price (BHD) *</label>
-            <input type="number" id="tubePrice" placeholder="0.000" step="0.001" value="${stock.tubePrice}" required>
-          </div>
-          <div class="form-group">
-            <label>Available Tubes *</label>
-            <input type="number" id="availableTubes" placeholder="0" value="${stock.availableTubes}" min="0" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Save Stock Settings</button>
-        </form>
-      </div>
-    `;
-
-    return html;
-  },
-
-  // REPORTS PAGE
-  reports: () => {
-    const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
-    const completedSessions = sessions.filter(s => s.status === 'COMPLETED');
-    const paidPlayers = JSON.parse(localStorage.getItem('paidPlayers') || '[]');
-    const unpaidPlayers = JSON.parse(localStorage.getItem('unpaidPlayers') || '[]');
-    
-    let html = `
-      <div class="page-header">
-        <h1>Reports & Sheets</h1>
-        <p>Flight metrics and player status</p>
-      </div>
-
-      <div class="card">
-        <h2>Flight Metrics Summary</h2>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #667eea;">📊</div>
-            <div class="stat-content">
-              <h3>${JSON.parse(localStorage.getItem('flightStock') || '{}').availableTubes || 0}</h3>
-              <p>Total Available Shuttles</p>
+        <div class="card">
+          <h2>Update Stock</h2>
+          <form onsubmit="updateFlightStock(event)">
+            <div class="form-group">
+              <label>Tube Price (BHD) *</label>
+              <input type="number" id="stockTubePrice" step="0.001" value="${filsToBhd(stock.tubePriceFils)}" required>
             </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #00d4aa;">✓</div>
-            <div class="stat-content">
-              <h3>${paidPlayers.length}</h3>
-              <p>Paid Players</p>
+            <div class="form-group">
+              <label>Available Tubes (Count) *</label>
+              <input type="number" id="stockTubes" min="0" value="${stock.availableTubes}" required>
             </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #ff4757;">✗</div>
-            <div class="stat-content">
-              <h3>${unpaidPlayers.length}</h3>
-              <p>Unpaid Players</p>
-            </div>
-          </div>
+            <button type="submit" class="btn btn-primary">Save Stock</button>
+          </form>
         </div>
-      </div>
 
-      <div class="card">
-        <h2>Paid Players Log</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Player Name</th>
-              <th>Member ID</th>
-              <th>Amount Paid (BHD)</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    if (paidPlayers.length === 0) {
-      html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No paid players</td></tr>`;
-    } else {
-      paidPlayers.forEach(player => {
-        html += `
-          <tr>
-            <td>${player.name}</td>
-            <td>${player.memberId}</td>
-            <td>${player.amount.toFixed(3)}</td>
-            <td>${player.date}</td>
-          </tr>
-        `;
-      });
-    }
-
-    html += `
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Unpaid Players Log</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Player Name</th>
-              <th>Member ID</th>
-              <th>Amount Due (BHD)</th>
-              <th>Days Overdue</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    if (unpaidPlayers.length === 0) {
-      html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No unpaid players</td></tr>`;
-    } else {
-      unpaidPlayers.forEach(player => {
-        html += `
-          <tr>
-            <td>${player.name}</td>
-            <td>${player.memberId}</td>
-            <td>${player.amount.toFixed(3)}</td>
-            <td>${player.daysOverdue}</td>
-          </tr>
-        `;
-      });
-    }
-
-    html += `
-          </tbody>
-        </table>
-        <button class="btn btn-primary" onclick="window.print()" style="margin-top: 20px;">🖨️ Print Report</button>
-      </div>
-    `;
-
-    return html;
-  },
-
-  // FLIGHT FINANCE PAGE
-  finance: () => {
-    const members = JSON.parse(localStorage.getItem('members') || '[]');
-    
-    let html = `
-      <div class="page-header">
-        <h1>Flight Finance</h1>
-        <p>Manage member credits and payments</p>
-      </div>
-
-      <div class="card">
-        <h2>Member Credit Management</h2>
-        <div class="form-group">
-          <label>Select Member *</label>
-          <select id="selectedMember" onchange="updateMemberBalance()">
-            <option value="">Select member...</option>
+        <div class="card">
+          <h2>📊 Stock History</h2>
+          <p style="color: #999;">Stock updates are logged automatically</p>
+        </div>
       `;
 
-      members.forEach(member => {
-        html += `<option value="${member.uid}">${member.name}</option>`;
-      });
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
+    }
+  },
+
+  // ===== REPORTS & SHEETS =====
+  reports: () => {
+    try {
+      requireLevelAdmin();
+      
+      const member = window.appState.member;
+      const members = JSON.parse(localStorage.getItem('members') || '[]');
+      const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+      
+      // Filter members for this flight
+      const flightMembers = members.filter(m => m.flightId === member.flightId);
+      
+      // Separate paid and unpaid
+      const paidMembers = flightMembers.filter(m => m.walletBalanceFils >= 0);
+      const unpaidMembers = flightMembers.filter(m => m.walletBalanceFils < 0);
+
+      let html = `
+        <div class="page-header">
+          <h1>📊 Reports & Sheets</h1>
+          <p>Financial reports for your flight</p>
+        </div>
+
+        <div class="card">
+          <h2>📈 Metrics</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 10px 0; color: #666;">Available Stock</p>
+              <h2 style="margin: 0; color: #667eea;">150</h2>
+            </div>
+            <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 10px 0; color: #666;">Paid Players</p>
+              <h2 style="margin: 0; color: #00d4aa;">${paidMembers.length}</h2>
+            </div>
+            <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0 0 10px 0; color: #666;">Unpaid Players</p>
+              <h2 style="margin: 0; color: #ff4757;">${unpaidMembers.length}</h2>
+            </div>
+          </div>
+          <button class="btn btn-secondary" onclick="printReport()">🖨️ Print Report</button>
+        </div>
+
+        <div class="card">
+          <h2>✅ Paid Players Log</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Player Name</th>
+                <th>Balance</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      if (paidMembers.length === 0) {
+        html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No paid players</td></tr>`;
+      } else {
+        paidMembers.forEach((player, index) => {
+          html += `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${player.fullName}</td>
+              <td>${filsToBhd(player.walletBalanceFils)}</td>
+              <td><span class="badge badge-success">PAID</span></td>
+            </tr>
+          `;
+        });
+      }
 
       html += `
-          </select>
+            </tbody>
+          </table>
         </div>
 
-        <div id="memberBalance" style="background: #f5f7fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
-          <p><strong>Current Balance:</strong> <span id="balanceAmount">0.000</span> BHD</p>
-        </div>
+        <div class="card">
+          <h2>❌ Unpaid Players Log</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Player Name</th>
+                <th>Outstanding</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
 
-        <h3>Add Verified Credit</h3>
-        <form onsubmit="addCredit(event)">
-          <div class="form-group">
-            <label>Amount (BHD) *</label>
-            <input type="number" id="creditAmount" placeholder="0.000" step="0.001" min="0.001" required>
-          </div>
-          <div class="form-group">
-            <label>Note</label>
-            <textarea id="creditNote" placeholder="Add a note..."></textarea>
-          </div>
-          <button type="submit" class="btn btn-secondary" id="addCreditBtn" disabled>Add Verified Credit</button>
-        </form>
-
-        <h3 style="margin-top: 30px;">Deduct Wallet Credit</h3>
-        <form onsubmit="deductCredit(event)">
-          <div class="form-group">
-            <label>Amount (BHD) *</label>
-            <input type="number" id="deductAmount" placeholder="0.000" step="0.001" min="0.001" required>
-          </div>
-          <div class="form-group">
-            <label>Reason *</label>
-            <input type="text" id="deductReason" placeholder="Enter deduction reason" required>
-          </div>
-          <button type="submit" class="btn btn-danger" id="deductBtn" disabled>Deduct Selected Wallet Credit</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>Pending Payments Verification</h2>
-        <table class="data-table">
-          <thead>
+      if (unpaidMembers.length === 0) {
+        html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No unpaid players</td></tr>`;
+      } else {
+        unpaidMembers.forEach((player, index) => {
+          html += `
             <tr>
-              <th>Player Name</th>
-              <th>Amount (BHD)</th>
-              <th>Method</th>
-              <th>Reference</th>
-              <th>Action</th>
+              <td>${index + 1}</td>
+              <td>${player.fullName}</td>
+              <td>${filsToBhd(Math.abs(player.walletBalanceFils))}</td>
+              <td><span class="badge badge-danger">UNPAID</span></td>
             </tr>
-          </thead>
-          <tbody>
-    `;
+          `;
+        });
+      }
 
-    const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
-    if (pendingPayments.length === 0) {
-      html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No pending payments</td></tr>`;
-    } else {
-      pendingPayments.forEach(payment => {
-        html += `
-          <tr>
-            <td>${payment.playerName}</td>
-            <td>${payment.amount.toFixed(3)}</td>
-            <td>${payment.method}</td>
-            <td>${payment.reference}</td>
-            <td><button class="btn btn-primary" onclick="verifyPayment('${payment.id}')">Verify</button></td>
-          </tr>
-        `;
-      });
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
     }
+  },
 
-    html += `
-          </tbody>
-        </table>
-        <button class="btn btn-primary" onclick="window.print()" style="margin-top: 20px;">🖨️ Print Current Tab</button>
-      </div>
-    `;
+  // ===== FLIGHT FINANCE =====
+  'flight-finance': () => {
+    try {
+      requireLevelAdmin();
+      
+      const member = window.appState.member;
+      const members = JSON.parse(localStorage.getItem('members') || '[]');
+      const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+      
+      // Filter for this flight
+      const flightMembers = members.filter(m => m.flightId === member.flightId);
+      const flightPendingPayments = pendingPayments.filter(p => 
+        flightMembers.find(m => m.uid === p.memberUid)
+      );
 
-    return html;
+      let html = `
+        <div class="page-header">
+          <h1>💳 Flight Finance</h1>
+          <p>Manage payments and member wallets</p>
+        </div>
+
+        <div class="tabs-container">
+          <button class="tab-btn active" onclick="switchTab('credited')">Credited Players</button>
+          <button class="tab-btn" onclick="switchTab('pending')">Pending Payments</button>
+          <button class="tab-btn" onclick="switchTab('paid')">Paid Players</button>
+          <button class="tab-btn" onclick="switchTab('unpaid')">Unpaid Players</button>
+        </div>
+
+        <div id="credited-tab" class="tab-content">
+          <div class="card">
+            <h2>💰 Credited Players</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Player Name</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      const creditedMembers = flightMembers.filter(m => m.walletBalanceFils > 0);
+      if (creditedMembers.length === 0) {
+        html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No credited players</td></tr>`;
+      } else {
+        creditedMembers.forEach(player => {
+          html += `
+            <tr>
+              <td>${player.fullName}</td>
+              <td>${filsToBhd(player.walletBalanceFils)}</td>
+              <td><span class="badge badge-success">CREDITED</span></td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="pending-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>⏳ Pending Payments</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Player Name</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Reference</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      if (flightPendingPayments.length === 0) {
+        html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No pending payments</td></tr>`;
+      } else {
+        flightPendingPayments.forEach(payment => {
+          html += `
+            <tr>
+              <td>${payment.memberName}</td>
+              <td>${filsToBhd(payment.amountFils)}</td>
+              <td>${payment.method}</td>
+              <td>${payment.reference}</td>
+              <td>
+                <button class="btn btn-secondary" onclick="verifyPayment('${payment.id}')">
+                  Verify
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="paid-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>✅ Paid Players</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Player Name</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      const paidMembers = flightMembers.filter(m => m.walletBalanceFils === 0);
+      if (paidMembers.length === 0) {
+        html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No paid players</td></tr>`;
+      } else {
+        paidMembers.forEach(player => {
+          html += `
+            <tr>
+              <td>${player.fullName}</td>
+              <td>${filsToBhd(player.walletBalanceFils)}</td>
+              <td><span class="badge badge-success">PAID</span></td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="unpaid-tab" class="tab-content" style="display: none;">
+          <div class="card">
+            <h2>❌ Unpaid Players</h2>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Player Name</th>
+                  <th>Outstanding</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      const unpaidMembers = flightMembers.filter(m => m.walletBalanceFils < 0);
+      if (unpaidMembers.length === 0) {
+        html += `<tr><td colspan="3" style="text-align: center; padding: 20px;">No unpaid players</td></tr>`;
+      } else {
+        unpaidMembers.forEach(player => {
+          html += `
+            <tr>
+              <td>${player.fullName}</td>
+              <td>${filsToBhd(Math.abs(player.walletBalanceFils))}</td>
+              <td><span class="badge badge-danger">UNPAID</span></td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      return html;
+    } catch (error) {
+      return `<div class="card"><h2>Error</h2><p>${error.message}</p></div>`;
+    }
   }
 };
 
 // ===== HELPER FUNCTIONS =====
-window.removePlayer = function(sessionId, playerUid) {
-  const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
-  const session = sessions.find(s => s.id === sessionId);
-  if (session) {
-    session.presentPlayers = JSON.stringify(
-      JSON.parse(session.presentPlayers || '[]').filter(p => p.uid !== playerUid)
-    );
-    localStorage.setItem('flightSessions', JSON.stringify(sessions));
-    alert('Player removed and marked absent');
-    location.reload();
-  }
-};
-
-window.addLateArrival = function(sessionId) {
-  const playerUid = document.getElementById(`latePlayer_${sessionId}`).value;
-  if (!playerUid) {
-    alert('Please select a player');
-    return;
-  }
-
-  const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
-  const session = sessions.find(s => s.id === sessionId);
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === playerUid);
-
-  if (session && member) {
-    const presentPlayers = JSON.parse(session.presentPlayers || '[]');
-    presentPlayers.push({ uid: member.uid, name: member.name });
-    session.presentPlayers = JSON.stringify(presentPlayers);
-    localStorage.setItem('flightSessions', JSON.stringify(sessions));
-    alert('Player added to present list');
-    location.reload();
-  }
-};
-
-window.finalizeSession = function(sessionId) {
-  const shuttles = parseInt(document.getElementById(`shuttles_${sessionId}`).value) || 0;
-  const attendees = parseInt(document.getElementById(`attendees_${sessionId}`).value) || 1;
-  const tubePrice = parseFloat(document.getElementById(`tubePrice_${sessionId}`).value) || 0.5;
-
-  if (shuttles < 0) {
-    alert('Shuttles used must be >= 0');
-    return;
-  }
-
-  // Calculate cost: ceil(shuttles / 2) * tubePrice (assuming 2 shuttles per tube)
-  const totalCost = Math.ceil(shuttles / 2) * tubePrice;
-  const costPerPlayer = totalCost / attendees;
-
-  alert(`Session finalized!\nTotal Cost: ${totalCost.toFixed(3)} BHD\nCost per Player: ${costPerPlayer.toFixed(3)} BHD`);
-
-  const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
-  const session = sessions.find(s => s.id === sessionId);
-  if (session) {
-    session.status = 'COMPLETED';
-    session.totalCost = totalCost;
-    session.costPerPlayer = costPerPlayer;
-    localStorage.setItem('flightSessions', JSON.stringify(sessions));
-    location.reload();
-  }
-};
-
-window.updateStock = function(event) {
-  event.preventDefault();
-  const tubePrice = parseFloat(document.getElementById('tubePrice').value);
-  const availableTubes = parseInt(document.getElementById('availableTubes').value);
-
-  if (tubePrice <= 0 || availableTubes < 0) {
-    alert('Please enter valid values');
-    return;
-  }
-
-  const stock = {
-    tubePrice: Math.round(tubePrice * 1000) / 1000,
-    availableTubes,
-    updatedAt: new Date().toISOString()
-  };
-
-  localStorage.setItem('flightStock', JSON.stringify(stock));
-  alert('Stock settings saved');
-  event.target.reset();
-};
-
-window.updateMemberBalance = function() {
-  const memberUid = document.getElementById('selectedMember').value;
-  const addCreditBtn = document.getElementById('addCreditBtn');
-  const deductBtn = document.getElementById('deductBtn');
-
-  if (memberUid) {
-    const members = JSON.parse(localStorage.getItem('members') || '[]');
-    const member = members.find(m => m.uid === memberUid);
-    if (member) {
-      document.getElementById('memberBalance').style.display = 'block';
-      document.getElementById('balanceAmount').textContent = (member.balance || 0).toFixed(3);
-      addCreditBtn.disabled = false;
-      deductBtn.disabled = false;
+window.removePlayerFromSession = async function(sessionId, memberUid) {
+  if (!showConfirm('Mark this player as absent?')) return;
+  
+  try {
+    const result = await window.api.correctSessionAttendance(sessionId, memberUid, 'ABSENT');
+    if (result.success) {
+      showToast('Player marked absent', 'success');
+      navigateTo('sessions');
+    } else {
+      showToast(result.error, 'error');
     }
-  } else {
-    document.getElementById('memberBalance').style.display = 'none';
-    addCreditBtn.disabled = true;
-    deductBtn.disabled = true;
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
-window.addCredit = function(event) {
-  event.preventDefault();
-  const memberUid = document.getElementById('selectedMember').value;
-  const amount = parseFloat(document.getElementById('creditAmount').value);
-  const note = document.getElementById('creditNote').value;
-
-  if (!memberUid || amount <= 0) {
-    alert('Please select member and enter valid amount');
+window.addPlayerToSession = async function(sessionId) {
+  const dropdown = document.getElementById(`addMemberSelect-${sessionId}`);
+  const memberUid = dropdown.value;
+  
+  if (!memberUid) {
+    showToast('Select a player from the dropdown to add', 'error');
     return;
   }
-
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === memberUid);
-  if (member) {
-    member.balance = (member.balance || 0) + amount;
-    localStorage.setItem('members', JSON.stringify(members));
-    alert(`Added ${amount.toFixed(3)} BHD to ${member.name}`);
-    event.target.reset();
+  
+  try {
+    const result = await window.api.correctSessionAttendance(sessionId, memberUid, 'PRESENT');
+    if (result.success) {
+      showToast('Player added to roster', 'success');
+      navigateTo('sessions');
+    } else {
+      showToast(result.error, 'error');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
-window.deductCredit = function(event) {
-  event.preventDefault();
-  const memberUid = document.getElementById('selectedMember').value;
-  const amount = parseFloat(document.getElementById('deductAmount').value);
-  const reason = document.getElementById('deductReason').value;
-
-  if (!memberUid || amount <= 0) {
-    alert('Please select member and enter valid amount');
+window.completeFlightSession = async function(sessionId) {
+  const shuttlesInput = document.getElementById(`shuttlesUsed-${sessionId}`);
+  const shuttlesUsed = parseInt(shuttlesInput.value);
+  
+  if (shuttlesUsed < 0) {
+    showToast('Shuttles used must be 0 or more', 'error');
     return;
   }
-
-  const members = JSON.parse(localStorage.getItem('members') || '[]');
-  const member = members.find(m => m.uid === memberUid);
-  if (member) {
-    member.balance = Math.max(0, (member.balance || 0) - amount);
-    localStorage.setItem('members', JSON.stringify(members));
-    alert(`Deducted ${amount.toFixed(3)} BHD from ${member.name}`);
-    event.target.reset();
+  
+  try {
+    const result = await window.api.completeFlightSession(sessionId, shuttlesUsed);
+    if (result.success) {
+      showToast(`Session completed! Total cost: ${result.totalCost} BHD, Per player: ${result.perPlayerCost} BHD`, 'success');
+      navigateTo('sessions');
+    } else {
+      showToast(result.error, 'error');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
-window.verifyPayment = function(paymentId) {
-  const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
-  const payment = pendingPayments.find(p => p.id === paymentId);
-  if (payment) {
-    pendingPayments.splice(pendingPayments.indexOf(payment), 1);
-    localStorage.setItem('pendingPayments', JSON.stringify(pendingPayments));
-    alert('Payment verified');
-    location.reload();
+window.updateFlightStock = async function(event) {
+  event.preventDefault();
+  
+  const tubePriceBHD = parseFloat(document.getElementById('stockTubePrice').value);
+  const availableTubes = parseInt(document.getElementById('stockTubes').value);
+  
+  try {
+    const tubePriceFils = bhdToFils(tubePriceBHD);
+    
+    const stock = {
+      tubePriceFils,
+      availableTubes,
+      updatedAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem('flightStock', JSON.stringify(stock));
+    
+    logAudit('SHUTTLE_STOCK', 'Updated', 'Flight Stock', `Tube price: ${tubePriceBHD} BHD, Available: ${availableTubes}`);
+    
+    showToast('Stock updated successfully', 'success');
+    navigateTo('stock');
+  } catch (error) {
+    showToast(error.message, 'error');
+  }
+};
+
+window.printReport = function() {
+  printTable('reportsTable', 'Flight Reports');
+};
+
+window.switchTab = function(tabName) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  
+  document.getElementById(`${tabName}-tab`).style.display = 'block';
+  event.target.classList.add('active');
+};
+
+window.verifyPayment = async function(paymentId) {
+  if (!showConfirm('Verify this payment?')) return;
+  
+  try {
+    const result = await window.api.verifyPayment(paymentId);
+    if (result.success) {
+      showToast(result.message, 'success');
+      navigateTo('flight-finance');
+    } else {
+      showToast(result.error, 'error');
+    }
+  } catch (error) {
+    showToast(error.message, 'error');
   }
 };
 
