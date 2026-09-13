@@ -2,246 +2,946 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indian Club Bahrain - Shuttle Tracker</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#667eea">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Indian Club Bahrain - Member Portal</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' fill='%23667eea'>IC</text></svg>">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ============================================
+       GLOBAL STYLES
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        /* ===== LOGIN PAGE ===== */
-        #login { display: block; }
-        #app { display: none; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
 
-        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; }
-        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
-        .login-box h1 { text-align: center; color: #667eea; margin-bottom: 30px; font-size: 28px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-        .login-btn { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: background 0.3s; }
-        .login-btn:hover { background: #5568d3; }
-        .error-message { color: #ff4757; font-size: 14px; margin-top: 10px; text-align: center; }
+    /* ============================================
+       AUTHENTICATION OVERLAY
+       ============================================ */
+    #login {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
 
-        /* ===== APP LAYOUT ===== */
-        .app-wrapper { display: flex; height: 100vh; }
-        
-        /* Header */
-        .header { background: white; padding: 15px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .header-left { display: flex; align-items: center; gap: 15px; }
-        .header-logo { font-size: 20px; font-weight: 700; color: #667eea; }
-        .header-title { font-size: 16px; color: #333; }
-        .header-right { display: flex; align-items: center; gap: 20px; }
-        .user-pill { display: flex; align-items: center; gap: 10px; background: #f5f7fa; padding: 8px 15px; border-radius: 20px; }
-        .user-pill .name { font-weight: 600; color: #333; }
-        .user-pill .role { font-size: 12px; background: #667eea; color: white; padding: 2px 8px; border-radius: 10px; }
-        .lang-switcher { background: #f5f7fa; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-        .logout-btn { background: #ff4757; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .login-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 480px;
+      width: 90%;
+      overflow: hidden;
+    }
 
-        /* Sidebar */
-        .sidebar { width: 250px; background: #667eea; color: white; padding: 20px; overflow-y: auto; }
-        .sidebar h3 { margin-bottom: 15px; font-size: 14px; text-transform: uppercase; opacity: 0.8; }
-        .sidebar-menu { list-style: none; }
-        .sidebar-menu li { margin-bottom: 10px; }
-        .sidebar-menu a { color: white; text-decoration: none; padding: 10px 15px; border-radius: 6px; display: block; transition: all 0.3s; cursor: pointer; }
-        .sidebar-menu a:hover { background: rgba(255,255,255,0.2); }
-        .sidebar-menu a.active { background: rgba(255,255,255,0.3); font-weight: 600; }
-        .sidebar-menu .hidden { display: none; }
+    .login-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px 30px;
+      text-align: center;
+    }
 
-        /* Main Content */
-        .main-content { flex: 1; overflow-y: auto; padding: 20px; }
-        .page-container { max-width: 1400px; margin: 0 auto; }
-        .page-header { margin-bottom: 30px; }
-        .page-header h1 { font-size: 32px; color: #333; margin-bottom: 8px; }
-        .page-header p { color: #666; font-size: 16px; }
+    .login-header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
 
-        /* Tabs */
-        .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e0e6ed; }
-        .tab-btn { padding: 12px 20px; background: none; border: none; cursor: pointer; font-weight: 600; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s; }
-        .tab-btn:hover { color: #667eea; }
-        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+    .login-header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
 
-        /* Cards */
-        .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .card h2 { font-size: 20px; margin-bottom: 20px; color: #333; }
-        .card h3 { font-size: 18px; margin-bottom: 15px; color: #333; }
+    .login-tabs {
+      display: flex;
+      border-bottom: 1px solid #e0e6ed;
+    }
 
-        /* Stats Grid */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; gap: 15px; align-items: flex-start; }
-        .stat-icon { width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; flex-shrink: 0; }
-        .stat-content h3 { margin: 0 0 5px 0; font-size: 24px; color: #333; }
-        .stat-content p { margin: 0 0 5px 0; color: #666; font-size: 14px; }
+    .login-tab {
+      flex: 1;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-weight: 600;
+      color: #999;
+      transition: all 0.3s ease;
+    }
 
-        /* Tables */
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table thead tr { background: #f5f7fa; border-bottom: 2px solid #e0e6ed; }
-        .data-table th { padding: 12px; text-align: left; font-weight: 600; color: #333; }
-        .data-table td { padding: 12px; border-bottom: 1px solid #e0e6ed; }
-        .data-table tbody tr:hover { background: #f9fafb; }
+    .login-tab.active {
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+    }
 
-        /* Buttons */
-        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
-        .btn-primary { background: #667eea; color: white; }
-        .btn-primary:hover { background: #5568d3; }
-        .btn-secondary { background: #00d4aa; color: white; }
-        .btn-secondary:hover { background: #00b896; }
-        .btn-danger { background: #ff4757; color: white; }
-        .btn-danger:hover { background: #ff3838; }
+    .login-content {
+      padding: 30px;
+    }
 
-        /* Badges */
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-        .badge-success { background: #00d4aa; color: white; }
-        .badge-danger { background: #ff4757; color: white; }
-        .badge-warning { background: #ffa502; color: white; }
-        .badge-info { background: #0099ff; color: white; }
-        .badge-cr { background: #ff4757; color: white; }
+    .login-form {
+      display: none;
+    }
 
-        /* Forms */
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #e0e6ed; border-radius: 6px; font-size: 14px; }
-        .form-group textarea { resize: vertical; min-height: 100px; }
+    .login-form.active {
+      display: block;
+    }
 
-        /* Animations */
-        @keyframes slideIn {
-            from { transform: translateX(400px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(400px); opacity: 0; }
-        }
+    .form-group {
+      margin-bottom: 20px;
+    }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .app-wrapper { flex-direction: column; }
-            .sidebar { width: 100%; max-height: 200px; }
-            .stats-grid { grid-template-columns: 1fr; }
-            .page-header h1 { font-size: 24px; }
-        }
-    </style>
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e0e6ed;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    #errorMessage {
+      color: #ff4757;
+      font-size: 14px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: #ffe0e0;
+      border-radius: 6px;
+      display: none;
+    }
+
+    #errorMessage:not(:empty) {
+      display: block;
+    }
+
+    /* ============================================
+       BUTTONS
+       ============================================ */
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+      display: inline-block;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      width: 100%;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary {
+      background: #f5f7fa;
+      color: #667eea;
+      border: 1px solid #e0e6ed;
+    }
+
+    .btn-secondary:hover {
+      background: #e8ecf1;
+    }
+
+    .btn-danger {
+      background: #ff4757;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #ff3838;
+    }
+
+    /* ============================================
+       MAIN APP LAYOUT
+       ============================================ */
+    #app {
+      display: none;
+      display: flex;
+      height: 100vh;
+      background: #f5f7fa;
+    }
+
+    /* ============================================
+       HEADER
+       ============================================ */
+    .header {
+      position: sticky;
+      top: 0;
+      background: white;
+      border-bottom: 1px solid #e0e6ed;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .header-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      color: #667eea;
+      transition: all 0.3s ease;
+    }
+
+    .header-btn:hover {
+      color: #764ba2;
+    }
+
+    /* ============================================
+       SIDEBAR
+       ============================================ */
+    .sidebar {
+      width: 260px;
+      background: white;
+      border-right: 1px solid #e0e6ed;
+      overflow-y: auto;
+      padding: 20px 0;
+    }
+
+    .sidebar-brand {
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-brand:hover {
+      background: #f5f7fa;
+    }
+
+    .sidebar-brand h2 {
+      font-size: 14px;
+      color: #667eea;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .sidebar-brand p {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .sidebar-profile {
+      padding: 20px;
+      border-bottom: 1px solid #e0e6ed;
+      text-align: center;
+    }
+
+    .profile-avatar {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 20px;
+      margin: 0 auto 10px;
+    }
+
+    .profile-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .profile-role {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    .role-badge {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .sidebar-nav {
+      padding: 20px 0;
+    }
+
+    .nav-section {
+      margin-bottom: 20px;
+    }
+
+    .nav-section-title {
+      padding: 0 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      color: #666;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-left: 3px solid transparent;
+      font-size: 14px;
+    }
+
+    .nav-link:hover {
+      background: #f5f7fa;
+      color: #667eea;
+    }
+
+    .nav-link.active {
+      background: #f0f3ff;
+      color: #667eea;
+      border-left-color: #667eea;
+      font-weight: 600;
+    }
+
+    .nav-link i {
+      width: 20px;
+      text-align: center;
+    }
+
+    .nav-link.hidden {
+      display: none;
+    }
+
+    /* ============================================
+       MAIN CONTENT
+       ============================================ */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 30px;
+    }
+
+    /* ============================================
+       PAGE HEADER
+       ============================================ */
+    .page-header {
+      margin-bottom: 30px;
+    }
+
+    .page-header h1 {
+      font-size: 28px;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .page-header p {
+      color: #999;
+      font-size: 14px;
+    }
+
+    /* ============================================
+       CARDS
+       ============================================ */
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e0e6ed;
+    }
+
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    /* ============================================
+       STATS GRID
+       ============================================ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e0e6ed;
+    }
+
+    .stat-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: white;
+    }
+
+    .stat-content h3 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin: 0;
+    }
+
+    .stat-content p {
+      font-size: 13px;
+      color: #999;
+      margin: 5px 0 0 0;
+    }
+
+    /* ============================================
+       TABLES
+       ============================================ */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .data-table thead {
+      background: #f5f7fa;
+      border-bottom: 2px solid #e0e6ed;
+    }
+
+    .data-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #666;
+    }
+
+    .data-table td {
+      padding: 12px;
+      border-bottom: 1px solid #e0e6ed;
+    }
+
+    .data-table tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    /* ============================================
+       BADGES
+       ============================================ */
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .badge-danger {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .badge-warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .badge-info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    /* ============================================
+       TABS
+       ============================================ */
+    .tabs-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #e0e6ed;
+    }
+
+    .tab-btn {
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: #999;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .tab-btn:hover {
+      color: #667eea;
+    }
+
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 768px) {
+      #app {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e0e6ed;
+        max-height: 200px;
+        overflow-x: auto;
+        display: flex;
+      }
+
+      .sidebar-brand,
+      .sidebar-profile,
+      .sidebar-nav {
+        flex-shrink: 0;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #content {
+        padding: 20px;
+      }
+
+      .header {
+        padding: 15px;
+      }
+    }
+
+    /* ============================================
+       LOADING STATE
+       ============================================ */
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    /* ============================================
+       ANIMATIONS
+       ============================================ */
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .card {
+      animation: fadeIn 0.3s ease;
+    }
+  </style>
 </head>
 <body>
-    <!-- LOGIN PAGE -->
-    <div id="login">
-        <div class="login-container">
-            <div class="login-box">
-                <h1>🏏 Indian Club Bahrain</h1>
-                <p style="text-align: center; color: #666; margin-bottom: 30px;">Shuttle Tracker</p>
-                <form onsubmit="handleLogin(event)">
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="email" placeholder="Enter your email" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="password" placeholder="Enter your password" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Role</label>
-                        <select id="role" required>
-                            <option value="PLAYER">Player</option>
-                            <option value="LEVEL_ADMIN">Flight Admin</option>
-                            <option value="SUPER_ADMIN">Super Admin</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="login-btn">Login</button>
-                    <div id="errorMessage" class="error-message"></div>
-                </form>
-            </div>
-        </div>
+  <!-- ============================================
+       LOGIN OVERLAY
+       ============================================ -->
+  <div id="login">
+    <div class="login-container">
+      <div class="login-header">
+        <h1>🏏 Indian Club Bahrain</h1>
+        <p>Member Portal</p>
+      </div>
+
+      <div class="login-tabs">
+        <button class="login-tab active" id="loginTab" onclick="switchLoginTab('login')">Sign In</button>
+        <button class="login-tab" id="activateTab" onclick="switchLoginTab('activate')">Activate Account</button>
+      </div>
+
+      <div class="login-content">
+        <div id="errorMessage"></div>
+
+        <!-- LOGIN FORM -->
+        <form id="loginForm" class="login-form active" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Email Address *</label>
+            <input type="email" id="loginEmail" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label>Password *</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Sign In</button>
+        </form>
+
+        <!-- ACTIVATE FORM -->
+        <form id="activateForm" class="login-form" onsubmit="handleActivate(event)">
+          <div class="form-group">
+            <label>Full Name (as registered) *</label>
+            <input type="text" id="actFullName" placeholder="Your full name" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number (as registered) *</label>
+            <input type="tel" id="actPhone" placeholder="+973-XXXX-XXXX" required>
+          </div>
+          <div class="form-group">
+            <label>New Password *</label>
+            <input type="password" id="actNewPass" placeholder="Minimum 6 characters" minlength="6" required>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password *</label>
+            <input type="password" id="actConfirmPass" placeholder="Confirm password" minlength="6" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Activate My Account</button>
+        </form>
+      </div>
     </div>
+  </div>
 
-    <!-- APP PAGE -->
-    <div id="app" style="display: none;">
-        <div class="app-wrapper">
-            <!-- SIDEBAR -->
-            <div class="sidebar">
-                <h3>Navigation</h3>
-                <ul class="sidebar-menu">
-                    <!-- PLAYER LINKS -->
-                    <li><a href="#" onclick="navigateTo('home'); return false;" class="nav-link">🏠 Home</a></li>
-                    <li><a href="#" onclick="navigateTo('timetable'); return false;" class="nav-link">📅 My Timetable</a></li>
-                    <li><a href="#" onclick="navigateTo('attendance'); return false;" class="nav-link">✓ Attendance</a></li>
-                    <li><a href="#" onclick="navigateTo('wallet'); return false;" class="nav-link">💰 Wallet & Payments</a></li>
-                    <li><a href="#" onclick="navigateTo('bazaar'); return false;" class="nav-link">🛍️ BaZaar</a></li>
-                    <li><a href="#" onclick="navigateTo('profile'); return false;" class="nav-link">👤 Profile</a></li>
-                    <li><a href="#" onclick="navigateTo('logs'); return false;" class="nav-link">📋 Activity Logs</a></li>
+  <!-- ============================================
+       MAIN APP
+       ============================================ -->
+  <div id="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand" id="brandLogo">
+        <h2>Indian Club</h2>
+        <p>Powered by A1 Groups</p>
+      </div>
 
-                    <!-- FLIGHT ADMIN LINKS -->
-                    <li class="flight-only-nav hidden"><a href="#" onclick="navigateTo('sessions'); return false;" class="nav-link">🎮 Session Control</a></li>
-                    <li class="flight-only-nav hidden"><a href="#" onclick="navigateTo('stock'); return false;" class="nav-link">📦 Shuttle Stock</a></li>
-                    <li class="flight-only-nav hidden"><a href="#" onclick="navigateTo('reports'); return false;" class="nav-link">📊 Reports</a></li>
-                    <li class="flight-only-nav hidden"><a href="#" onclick="navigateTo('flight-finance'); return false;" class="nav-link">💳 Flight Finance</a></li>
+      <div class="sidebar-profile">
+        <div class="profile-avatar" id="memberAvatar">IC</div>
+        <div class="profile-name" id="memberName">Member Name</div>
+        <div class="profile-role" id="sideRole">All activities</div>
+        <div class="role-badge" id="roleLabel">PLAYER</div>
+      </div>
 
-                    <!-- SUPER ADMIN LINKS -->
-                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('overview'); return false;" class="nav-link">📈 Club Overview</a></li>
-                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('flights'); return false;" class="nav-link">✈️ Activities & Flights</a></li>
-                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('master'); return false;" class="nav-link">📆 Master Timetable</a></li>
-                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('admin-finance'); return false;" class="nav-link">💼 Executive Finance</a></li>
-                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('ads'); return false;" class="nav-link">📢 Ads & Notices</a></li>
-                    <li class="super-nav hidden"><a href="#" onclick="navigateTo('audit'); return false;" class="nav-link">🔍 Audit History</a></li>
-                </ul>
-            </div>
-
-            <!-- MAIN CONTENT -->
-            <div style="flex: 1; display: flex; flex-direction: column;">
-                <!-- HEADER -->
-                <div class="header">
-                    <div class="header-left">
-                        <div class="header-logo">🏏 Indian Club Bahrain</div>
-                        <div class="header-title">Shuttle Tracker</div>
-                    </div>
-                    <div class="header-right">
-                        <div class="user-pill">
-                            <span class="name" id="memberName">User</span>
-                            <span class="role" id="roleLabel">PLAYER</span>
-                        </div>
-                        <select class="lang-switcher" onchange="switchLanguage(this.value)">
-                            <option value="en">English</option>
-                            <option value="hi">हिंदी</option>
-                            <option value="ar">العربية</option>
-                        </select>
-                        <button class="logout-btn" onclick="handleLogout()">Logout</button>
-                    </div>
-                </div>
-
-                <!-- CONTENT AREA -->
-                <div class="main-content">
-                    <div class="page-container">
-                        <div id="content"></div>
-                    </div>
-                </div>
-            </div>
+      <nav class="sidebar-nav">
+        <!-- MAIN NAVIGATION -->
+        <div class="nav-section">
+          <div class="nav-section-title">Main</div>
+          <a class="nav-link active" data-page="home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+          </a>
+          <a class="nav-link" data-page="timetable">
+            <i class="fas fa-calendar"></i>
+            <span>My Timetable</span>
+          </a>
+          <a class="nav-link" data-page="attendance">
+            <i class="fas fa-check-circle"></i>
+            <span>Attendance</span>
+          </a>
+          <a class="nav-link" data-page="wallet">
+            <i class="fas fa-wallet"></i>
+            <span>Wallet & Payments</span>
+          </a>
         </div>
+
+        <!-- COMMUNITY -->
+        <div class="nav-section">
+          <div class="nav-section-title">Community</div>
+          <a class="nav-link" data-page="bazaar">
+            <i class="fas fa-shopping-bag"></i>
+            <span>BaZaar</span>
+          </a>
+          <a class="nav-link" data-page="profile">
+            <i class="fas fa-user"></i>
+            <span>My Profile</span>
+          </a>
+        </div>
+
+        <!-- FLIGHT ADMIN ONLY -->
+        <div class="nav-section">
+          <div class="nav-section-title flight-only-nav">Flight Admin</div>
+          <a class="nav-link flight-only-nav" data-page="sessions">
+            <i class="fas fa-gamepad"></i>
+            <span>Session Control</span>
+          </a>
+          <a class="nav-link flight-only-nav" data-page="stock">
+            <i class="fas fa-box"></i>
+            <span>Shuttle Stock</span>
+          </a>
+          <a class="nav-link flight-only-nav" data-page="reports">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a class="nav-link flight-only-nav" data-page="flight-finance">
+            <i class="fas fa-credit-card"></i>
+            <span>Flight Finance</span>
+          </a>
+        </div>
+
+        <!-- SUPER ADMIN ONLY -->
+        <div class="nav-section">
+          <div class="nav-section-title super-nav">Administration</div>
+          <a class="nav-link super-nav" data-page="overview">
+            <i class="fas fa-chart-line"></i>
+            <span>Club Overview</span>
+          </a>
+          <a class="nav-link super-nav" data-page="flights">
+            <i class="fas fa-plane"></i>
+            <span>Activities & Flights</span>
+          </a>
+          <a class="nav-link super-nav" data-page="master">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Master Timetable</span>
+          </a>
+          <a class="nav-link super-nav" data-page="admin-finance">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Executive Finance</span>
+          </a>
+          <a class="nav-link super-nav" data-page="ads">
+            <i class="fas fa-bullhorn"></i>
+            <span>Ads & BaZaar</span>
+          </a>
+          <a class="nav-link super-nav" data-page="audit">
+            <i class="fas fa-search"></i>
+            <span>Audit Log</span>
+          </a>
+        </div>
+
+        <!-- LOGS -->
+        <div class="nav-section">
+          <div class="nav-section-title">Logs</div>
+          <a class="nav-link" data-page="logs">
+            <i class="fas fa-history"></i>
+            <span>Activity Logs</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <!-- HEADER -->
+      <header class="header">
+        <div class="header-left">
+          <h2 style="color: #667eea; font-size: 20px;">Indian Club Bahrain</h2>
+        </div>
+        <div class="header-right">
+          <button class="header-btn" id="langToggle" title="Switch Language">
+            <i class="fas fa-globe"></i>
+          </button>
+          <button class="header-btn" id="logoutBtn" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENT AREA -->
+      <div id="content">
+        <div class="card">
+          <h2>Welcome to Indian Club Bahrain</h2>
+          <p>Loading your dashboard...</p>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- IMPORT MODULES -->
-    <script type="module">
-        // Import all modules
-        import { views } from './js/modules/views.js';
-        import { flightAdminViews } from './js/modules/flightAdminViews.js';
-        import { adminViews } from './js/modules/adminViews.js';
+  <!-- ============================================
+       SCRIPTS - LOAD IN ORDER
+       ============================================ -->
+  
+  <!-- 1. STATE MANAGEMENT -->
+  <script src="js/modules/state.js"></script>
+  
+  <!-- 2. UTILITIES -->
+  <script src="js/modules/utils.js"></script>
+  
+  <!-- 3. API INTEGRATION -->
+  <script src="js/modules/api.js"></script>
+  
+  <!-- 4. AUTHENTICATION -->
+  <script src="js/modules/auth.js"></script>
+  
+  <!-- 5. VIEW MODULES -->
+  <script src="js/modules/views.js"></script>
+  <script src="js/modules/flightAdminViews.js"></script>
+  <script src="js/modules/adminViews.js"></script>
+  
+  <!-- 6. ROUTER & NAVIGATION -->
+  <script src="js/modules/router.js"></script>
+  
+  <!-- 7. MAIN APP INITIALIZATION -->
+  <script src="js/modules/main.js"></script>
 
-        // Make modules globally accessible
-        window.appModules = {
-            views,
-            flightAdminViews,
-            adminViews
-        };
+  <!-- INLINE INITIALIZATION SCRIPT -->
+  <script>
+    // ===== INITIALIZE APP MODULES =====
+    window.appModules = {
+      views: window.views || {},
+      flightAdminViews: window.flightAdminViews || {},
+      adminViews: window.adminViews || {}
+    };
 
-        console.log('✅ All modules imported successfully');
-    </script>
+    // ===== SETUP LOGIN TAB SWITCHING =====
+    window.switchLoginTab = function(tab) {
+      const loginForm = document.getElementById('loginForm');
+      const activateForm = document.getElementById('activateForm');
+      const loginTab = document.getElementById('loginTab');
+      const activateTab = document.getElementById('activateTab');
 
-    <!-- IMPORT SCRIPTS IN ORDER -->
-    <script src="./js/modules/main.js" type="module"></script>
-    <script src="./js/modules/auth.js"></script>
-    <script src="./js/modules/router.js"></script>
+      if (tab === 'login') {
+        loginForm.classList.add('active');
+        activateForm.classList.remove('active');
+        loginTab.classList.add('active');
+        activateTab.classList.remove('active');
+      } else {
+        loginForm.classList.remove('active');
+        activateForm.classList.add('active');
+        loginTab.classList.remove('active');
+        activateTab.classList.add('active');
+      }
+    };
+
+    // ===== INITIALIZE ON PAGE LOAD =====
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 Page loaded, initializing app...');
+      
+      // Initialize router
+      if (window.initializeRouter) {
+        window.initializeRouter();
+      }
+      
+      // Check authentication
+      const token = sessionStorage.getItem('authToken');
+      if (token && window.appState.member) {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        updateUserUI();
+        navigateTo('home');
+      } else {
+        document.getElementById('login').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+      }
+      
+      console.log('✅ App initialization complete');
+    });
+  </script>
 </body>
 </html>
 
