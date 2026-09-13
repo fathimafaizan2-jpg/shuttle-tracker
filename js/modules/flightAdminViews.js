@@ -49,7 +49,6 @@ export const flightAdminViews = {
           <button class="btn btn-primary" onclick="window.navigateTo('sessions')">Manage Sessions</button>
           <button class="btn btn-primary" onclick="window.navigateTo('stock')">Check Stock</button>
           <button class="btn btn-primary" onclick="window.navigateTo('reports')">View Reports</button>
-          <button class="btn btn-primary" onclick="window.navigateTo('flight-finance')">Finance</button>
         </div>
       </div>
 
@@ -89,122 +88,116 @@ export const flightAdminViews = {
     `;
   },
 
-  // ===== SESSIONS PAGE =====
+  // ===== SESSION CONTROL PAGE =====
   sessions: function() {
     return `
       <div class="page-header">
         <h1>📅 Session Control</h1>
-        <p>Manage flight sessions and attendance</p>
+        <p>Manage game day attendance and cost calculations</p>
       </div>
 
       <div class="card">
-        <h2>➕ Create New Session</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Date *</label>
-            <input type="date">
-          </div>
-          <div class="form-group">
-            <label>Start Time *</label>
-            <input type="time">
-          </div>
-          <div class="form-group">
-            <label>End Time *</label>
-            <input type="time">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Venue *</label>
-            <input type="text" placeholder="Court/Ground location">
-          </div>
-          <div class="form-group">
-            <label>Coach *</label>
-            <select>
-              <option>Select coach</option>
-              <option>Ahmed Al-Mansouri</option>
-              <option>Mohammed Al-Khalifa</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn btn-primary">Create Session</button>
-      </div>
-
-      <div class="card">
-        <h2>📋 Upcoming Sessions</h2>
+        <h2>✓ Present Attendees List</h2>
         <table class="data-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Venue</th>
-              <th>Coach</th>
-              <th>Registered</th>
+              <th>Member Name</th>
+              <th>Time In</th>
+              <th>Status</th>
               <th>Action</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Sep 14, 2026</td>
-              <td>6:00 - 7:30 AM</td>
-              <td>Court 1</td>
               <td>Ahmed Al-Mansouri</td>
-              <td>22/24</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
+              <td>5:55 AM</td>
+              <td><span class="badge badge-success">Present</span></td>
+              <td><button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" data-session-attendance="ABSENT" onclick="window.markAbsent('ahmed_001')">Remove</button></td>
             </tr>
             <tr>
-              <td>Sep 16, 2026</td>
-              <td>6:00 - 7:30 AM</td>
-              <td>Court 1</td>
-              <td>Ahmed Al-Mansouri</td>
-              <td>20/24</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
+              <td>Fatima Hassan</td>
+              <td>6:00 AM</td>
+              <td><span class="badge badge-success">Present</span></td>
+              <td><button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" data-session-attendance="ABSENT" onclick="window.markAbsent('fatima_001')">Remove</button></td>
             </tr>
             <tr>
-              <td>Sep 18, 2026</td>
-              <td>6:00 - 7:30 AM</td>
-              <td>Court 1</td>
-              <td>Ahmed Al-Mansouri</td>
-              <td>18/24</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
+              <td>Mohammed Ali</td>
+              <td>6:05 AM</td>
+              <td><span class="badge badge-success">Present</span></td>
+              <td><button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" data-session-attendance="ABSENT" onclick="window.markAbsent('mohammed_001')">Remove</button></td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="card">
-        <h2>✓ Mark Attendance</h2>
+        <h2>➕ Add Late Arrivals / Walk-ins</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Select Member *</label>
+            <select id="addMemberSelect">
+              <option value="">-- Select a member --</option>
+              <option value="sara_001">Sara Ahmed</option>
+              <option value="ali_001">Ali Hassan</option>
+              <option value="noor_001">Noor Mohammed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn btn-success" data-add-member-to-session onclick="window.addMemberToSession()">Add to Present List</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🚀 Finalize Session & Calculate Charges</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Shuttlecocks Used *</label>
+            <input type="number" id="shuttlesUsed-session_001" placeholder="0" min="0" value="2">
+          </div>
+          <div class="form-group">
+            <label>Tube Price (BHD) *</label>
+            <input type="number" id="tubePrice" placeholder="0.000" min="0" step="0.001" value="3.000" disabled>
+          </div>
+        </div>
+        <div style="background: #f0f3ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <p><strong>Calculation:</strong></p>
+          <p>Total Game Cost = ⌈Shuttles × (Tube Price / 12)⌉</p>
+          <p>Per Player Share = ⌈Total Cost / Present Count⌉</p>
+        </div>
+        <button class="btn btn-primary" data-complete-flight-game onclick="window.completeFlightGame('session_001')">Update Final Attendance & Calculate Charges</button>
+      </div>
+
+      <div class="card">
+        <h2>📊 Calculation Result</h2>
         <table class="data-table">
           <thead>
             <tr>
-              <th>Member</th>
-              <th>Status</th>
-              <th>Time In</th>
-              <th>Time Out</th>
-              <th>Action</th>
+              <th>Metric</th>
+              <th>Value</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Ahmed Al-Mansouri</td>
-              <td><span class="badge badge-success">Present</span></td>
-              <td>5:55 AM</td>
-              <td>7:35 AM</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+              <td>Shuttles Used</td>
+              <td id="result-shuttles">2</td>
             </tr>
             <tr>
-              <td>Fatima Hassan</td>
-              <td><span class="badge badge-success">Present</span></td>
-              <td>6:00 AM</td>
-              <td>7:30 AM</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+              <td>Tube Price (Fils)</td>
+              <td id="result-tubePrice">3000</td>
             </tr>
             <tr>
-              <td>Mohammed Ali</td>
-              <td><span class="badge badge-danger">Absent</span></td>
-              <td>-</td>
-              <td>-</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+              <td>Total Game Cost (Fils)</td>
+              <td id="result-totalCost">500</td>
+            </tr>
+            <tr>
+              <td>Present Attendees</td>
+              <td id="result-attendees">3</td>
+            </tr>
+            <tr>
+              <td>Per Player Share (Fils)</td>
+              <td id="result-perPlayer">167</td>
             </tr>
           </tbody>
         </table>
@@ -212,12 +205,12 @@ export const flightAdminViews = {
     `;
   },
 
-  // ===== STOCK PAGE =====
+  // ===== SHUTTLE STOCK PAGE =====
   stock: function() {
     return `
       <div class="page-header">
         <h1>📦 Shuttle Stock Management</h1>
-        <p>Manage equipment and inventory</p>
+        <p>Manage equipment and inventory for your flight</p>
       </div>
 
       <div class="stats-grid">
@@ -252,28 +245,18 @@ export const flightAdminViews = {
       </div>
 
       <div class="card">
-        <h2>➕ Add Stock</h2>
+        <h2>💾 Tube Price & Stock Configuration</h2>
         <div class="form-row">
           <div class="form-group">
-            <label>Item Type *</label>
-            <select>
-              <option>Select item</option>
-              <option>Shuttles</option>
-              <option>Rackets</option>
-              <option>Shoes</option>
-              <option>Other</option>
-            </select>
+            <label>Tube Price (BHD) *</label>
+            <input type="number" id="stockTubePrice" placeholder="0.000" min="0" step="0.001" value="3.000">
           </div>
           <div class="form-group">
-            <label>Quantity *</label>
-            <input type="number" placeholder="0" min="1">
-          </div>
-          <div class="form-group">
-            <label>Cost (BHD) *</label>
-            <input type="number" placeholder="0.00" min="0" step="0.1">
+            <label>Available Tubes *</label>
+            <input type="number" id="stockTubes" placeholder="0" min="0" value="150">
           </div>
         </div>
-        <button class="btn btn-primary">Add to Stock</button>
+        <button class="btn btn-primary" id="saveFlightStock" onclick="window.saveFlightStock()">Save Stock Configuration</button>
       </div>
 
       <div class="card">
@@ -317,6 +300,44 @@ export const flightAdminViews = {
           </tbody>
         </table>
       </div>
+
+      <div class="card">
+        <h2>📊 Stock History</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Action</th>
+              <th>Item</th>
+              <th>Quantity</th>
+              <th>Updated By</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Sep 12, 2026</td>
+              <td>Stock Added</td>
+              <td>Shuttles</td>
+              <td>+50</td>
+              <td>Ahmed Al-Mansouri</td>
+            </tr>
+            <tr>
+              <td>Sep 10, 2026</td>
+              <td>Stock Deducted</td>
+              <td>Shuttles</td>
+              <td>-30</td>
+              <td>Mohammed Al-Khalifa</td>
+            </tr>
+            <tr>
+              <td>Sep 08, 2026</td>
+              <td>Price Updated</td>
+              <td>Tube Price</td>
+              <td>3.000 BHD</td>
+              <td>Ahmed Al-Mansouri</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     `;
   },
 
@@ -324,8 +345,8 @@ export const flightAdminViews = {
   reports: function() {
     return `
       <div class="page-header">
-        <h1>📊 Flight Reports</h1>
-        <p>Attendance and payment reports</p>
+        <h1>📊 Flight Reports & Sheets</h1>
+        <p>Attendance and payment reports for your flight</p>
       </div>
 
       <div class="card">
@@ -403,117 +424,142 @@ export const flightAdminViews = {
           </tbody>
         </table>
       </div>
-    `;
-  },
-
-  // ===== FLIGHT FINANCE PAGE =====
-  'flight-finance': function() {
-    return `
-      <div class="page-header">
-        <h1>💰 Flight Finance</h1>
-        <p>Manage flight revenue and expenses</p>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #2ed573;">💵</div>
-          <div class="stat-content">
-            <h3>2,400 BHD</h3>
-            <p>Total Revenue</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ff6b6b;">💸</div>
-          <div class="stat-content">
-            <h3>800 BHD</h3>
-            <p>Total Expenses</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #667eea;">📊</div>
-          <div class="stat-content">
-            <h3>1,600 BHD</h3>
-            <p>Net Profit</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ffa502;">⏳</div>
-          <div class="stat-content">
-            <h3>300 BHD</h3>
-            <p>Pending</p>
-          </div>
-        </div>
-      </div>
 
       <div class="card">
-        <h2>📋 Revenue Breakdown</h2>
+        <h2>👥 Paid Members List</h2>
         <table class="data-table">
           <thead>
             <tr>
-              <th>Source</th>
-              <th>Amount</th>
-              <th>Percentage</th>
+              <th>Member</th>
+              <th>Amount Paid</th>
+              <th>Payment Date</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Membership Fees</td>
-              <td>2,000 BHD</td>
-              <td>83%</td>
-              <td><span class="badge badge-success">Collected</span></td>
-            </tr>
-            <tr>
-              <td>Session Fees</td>
-              <td>300 BHD</td>
-              <td>13%</td>
-              <td><span class="badge badge-success">Collected</span></td>
-            </tr>
-            <tr>
-              <td>Other Income</td>
+              <td>Ahmed Al-Mansouri</td>
               <td>100 BHD</td>
-              <td>4%</td>
-              <td><span class="badge badge-success">Collected</span></td>
+              <td>Sep 10, 2026</td>
+              <td><span class="badge badge-success">Cleared</span></td>
+            </tr>
+            <tr>
+              <td>Fatima Hassan</td>
+              <td>50 BHD</td>
+              <td>Sep 05, 2026</td>
+              <td><span class="badge badge-warning">Partial</span></td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="card">
-        <h2>💸 Expense Breakdown</h2>
+        <h2>👥 Unpaid Members List</h2>
         <table class="data-table">
           <thead>
             <tr>
-              <th>Category</th>
-              <th>Amount</th>
-              <th>Percentage</th>
-              <th>Date</th>
+              <th>Member</th>
+              <th>Amount Due</th>
+              <th>Days Overdue</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Equipment Maintenance</td>
-              <td>400 BHD</td>
-              <td>50%</td>
-              <td>Sep 10, 2026</td>
-            </tr>
-            <tr>
-              <td>Venue Rental</td>
-              <td>300 BHD</td>
-              <td>38%</td>
-              <td>Sep 01, 2026</td>
-            </tr>
-            <tr>
-              <td>Miscellaneous</td>
+              <td>Mohammed Ali</td>
               <td>100 BHD</td>
-              <td>12%</td>
-              <td>Sep 05, 2026</td>
+              <td>8 days</td>
+              <td><span class="badge badge-danger">Overdue</span></td>
+            </tr>
+            <tr>
+              <td>Sara Ahmed</td>
+              <td>75 BHD</td>
+              <td>3 days</td>
+              <td><span class="badge badge-warning">Due Soon</span></td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <div class="card">
+        <h2>🖨️ Print Report</h2>
+        <p>Generate a printable report for your records</p>
+        <button class="btn btn-primary" onclick="window.printFlightReport()">Print Current Report</button>
+      </div>
     `;
   }
+};
+
+// ===== HELPER FUNCTIONS =====
+window.markAbsent = function(memberId) {
+  console.log(`Marking ${memberId} as absent`);
+  if (window.showToast) {
+    window.showToast(`✅ Member marked as absent and removed from roster`);
+  }
+};
+
+window.addMemberToSession = function() {
+  const memberSelect = document.getElementById('addMemberSelect');
+  const memberId = memberSelect?.value;
+
+  if (!memberId) {
+    if (window.showToast) window.showToast('❌ Please select a member');
+    return;
+  }
+
+  console.log(`Adding member ${memberId} to session`);
+  if (window.showToast) {
+    window.showToast(`✅ Member added to present list!`);
+  }
+};
+
+window.completeFlightGame = function(sessionId) {
+  const shuttles = parseInt(document.getElementById('shuttlesUsed-session_001')?.value || 0);
+  const tubePrice = 3000; // Fils
+  
+  if (shuttles <= 0) {
+    if (window.showToast) window.showToast('❌ Please enter number of shuttles used');
+    return;
+  }
+
+  // Calculate costs
+  const totalCost = Math.ceil(shuttles * (tubePrice / 12));
+  const attendees = 3; // Example
+  const perPlayerShare = Math.ceil(totalCost / attendees);
+
+  // Update results
+  document.getElementById('result-shuttles').textContent = shuttles;
+  document.getElementById('result-tubePrice').textContent = tubePrice;
+  document.getElementById('result-totalCost').textContent = totalCost;
+  document.getElementById('result-attendees').textContent = attendees;
+  document.getElementById('result-perPlayer').textContent = perPlayerShare;
+
+  console.log(`Game completed: Total=${totalCost} Fils, Per Player=${perPlayerShare} Fils`);
+  if (window.showToast) {
+    window.showToast(`✅ Session finalized! Each player charged ${(perPlayerShare / 1000).toFixed(3)} BHD`);
+  }
+};
+
+window.saveFlightStock = function() {
+  const tubePrice = parseFloat(document.getElementById('stockTubePrice')?.value || 0);
+  const tubes = parseInt(document.getElementById('stockTubes')?.value || 0);
+
+  if (tubePrice <= 0 || tubes <= 0) {
+    if (window.showToast) window.showToast('❌ Please enter valid values');
+    return;
+  }
+
+  const tubePriceFils = Math.round(tubePrice * 1000);
+  console.log(`Stock saved: Tube Price=${tubePriceFils} Fils, Tubes=${tubes}`);
+  
+  if (window.showToast) {
+    window.showToast(`✅ Stock configuration saved successfully!`);
+  }
+};
+
+window.printFlightReport = function() {
+  console.log('Printing flight report...');
+  window.print();
 };
 
 console.log('✅ flightAdminViews.js loaded successfully');
