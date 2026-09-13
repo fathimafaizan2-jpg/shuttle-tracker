@@ -1,397 +1,522 @@
 
-const flightAdminViews = {
-  
-  dashboard: () => `
-    <div class="page-container">
+// ============================================
+// flightAdminViews.js - FLIGHT ADMIN MODULE
+// ============================================
+
+export const flightAdminViews = {
+  // SESSION CONTROL PAGE
+  sessions: () => {
+    const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
+    const activeSessions = sessions.filter(s => s.status === 'SCHEDULED');
+    
+    let html = `
       <div class="page-header">
-        <h1>Level Admin Dashboard</h1>
-        <p>Manage your flight sessions, attendance, and finances</p>
+        <h1>Session Control</h1>
+        <p>Manage active sessions and attendance</p>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><i class="fas fa-users"></i></div>
-          <div class="stat-content"><h3>245</h3><p>Active Members</p><span class="stat-change">In your flight</span></div>
+    `;
+
+    if (activeSessions.length === 0) {
+      html += `<div class="card"><h2>No Active Sessions</h2><p>No scheduled sessions at the moment</p></div>`;
+      return html;
+    }
+
+    activeSessions.forEach(session => {
+      const presentPlayers = JSON.parse(session.presentPlayers || '[]');
+      const allMembers = JSON.parse(localStorage.getItem('members') || '[]');
+      const nonPresentMembers = allMembers.filter(m => !presentPlayers.find(p => p.uid === m.uid));
+
+      html += `
+        <div class="card">
+          <h2>${session.flight} - ${session.date}</h2>
+          <p><strong>Time:</strong> ${session.startTime} - ${session.endTime}</p>
+          <p><strong>Status:</strong> <span class="badge badge-info">SCHEDULED</span></p>
+
+          <h3>Active Players (${presentPlayers.length})</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Player Name</th>
+                <th>Member ID</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      if (presentPlayers.length === 0) {
+        html += `<tr><td colspan="3" style="text-align: center;">No players marked present</td></tr>`;
+      } else {
+        presentPlayers.forEach(player => {
+          html += `
+            <tr>
+              <td>${player.name}</td>
+              <td>${player.uid}</td>
+              <td><button class="btn btn-danger" onclick="removePlayer('${session.id}', '${player.uid}')">Remove (Mark Absent)</button></td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+            </tbody>
+          </table>
+
+          <h3 style="margin-top: 20px;">Add Late Arrival</h3>
+          <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <select id="latePlayer_${session.id}" style="flex: 1; padding: 10px; border: 1px solid #e0e6ed; border-radius: 6px;">
+              <option value="">Select player...</option>
+      `;
+
+      nonPresentMembers.forEach(member => {
+        html += `<option value="${member.uid}">${member.name}</option>`;
+      });
+
+      html += `
+            </select>
+            <button class="btn btn-secondary" onclick="addLateArrival('${session.id}')">Add to Present</button>
+          </div>
+
+          <h3>Shuttle Calculator</h3>
+          <div class="form-group">
+            <label>Shuttlecocks Used</label>
+            <input type="number" id="shuttles_${session.id}" placeholder="0" min="0">
+          </div>
+          <div class="form-group">
+            <label>Attendees Count</label>
+            <input type="number" id="attendees_${session.id}" value="${presentPlayers.length}" disabled>
+          </div>
+          <div class="form-group">
+            <label>Tube Price (BHD)</label>
+            <input type="number" id="tubePrice_${session.id}" placeholder="0.000" step="0.001" value="${session.tubePrice || '0.500'}">
+          </div>
+          <button class="btn btn-primary" onclick="finalizeSession('${session.id}')">Update Final Attendance & Calculate Charges</button>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><i class="fas fa-calendar-check"></i></div>
-          <div class="stat-content"><h3>32</h3><p>Sessions This Month</p><span class="stat-change">All completed</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"><i class="fas fa-check-circle"></i></div>
-          <div class="stat-content"><h3>98%</h3><p>Attendance Rate</p><span class="stat-change">Excellent performance</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"><i class="fas fa-badminton"></i></div>
-          <div class="stat-content"><h3>450</h3><p>Shuttles in Stock</p><span class="stat-change">Good inventory</span></div>
-        </div>
+      `;
+    });
+
+    return html;
+  },
+
+  // SHUTTLE STOCK PAGE
+  stock: () => {
+    const stock = JSON.parse(localStorage.getItem('flightStock') || '{"availableTubes": 0, "tubePrice": 0.5}');
+    
+    let html = `
+      <div class="page-header">
+        <h1>Shuttle Stock</h1>
+        <p>Manage inventory</p>
       </div>
-      <div class="quick-actions">
-        <h3>Quick Actions</h3>
-        <div class="action-buttons" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
-          <button class="action-btn" onclick="appController.navigate('attendance')" style="background: white; border: 1px solid #e0e6ed; padding: 15px; border-radius: 8px; cursor: pointer; text-align: center;"><i class="fas fa-check-circle" style="font-size: 24px; color: #00d4aa; display: block; margin-bottom: 8px;"></i><span>Mark Attendance</span></button>
-          <button class="action-btn" onclick="appController.navigate('sessionControl')" style="background: white; border: 1px solid #e0e6ed; padding: 15px; border-radius: 8px; cursor: pointer; text-align: center;"><i class="fas fa-sliders-h" style="font-size: 24px; color: #667eea; display: block; margin-bottom: 8px;"></i><span>Session Control</span></button>
-          <button class="action-btn" onclick="appController.navigate('shuttle')" style="background: white; border: 1px solid #e0e6ed; padding: 15px; border-radius: 8px; cursor: pointer; text-align: center;"><i class="fas fa-badminton" style="font-size: 24px; color: #ffa502; display: block; margin-bottom: 8px;"></i><span>Shuttle Stock</span></button>
-          <button class="action-btn" onclick="appController.navigate('reports')" style="background: white; border: 1px solid #e0e6ed; padding: 15px; border-radius: 8px; cursor: pointer; text-align: center;"><i class="fas fa-chart-bar" style="font-size: 24px; color: #f5576c; display: block; margin-bottom: 8px;"></i><span>View Reports</span></button>
-        </div>
-      </div>
+
       <div class="card">
-        <h2>Recent Sessions</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+        <h2>Inventory Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #667eea;">📦</div>
+            <div class="stat-content">
+              <h3>${stock.availableTubes}</h3>
+              <p>Available Tubes</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #00d4aa;">💰</div>
+            <div class="stat-content">
+              <h3>${stock.tubePrice.toFixed(3)} BHD</h3>
+              <p>Current Tube Price</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Update Stock Settings</h2>
+        <form onsubmit="updateStock(event)">
+          <div class="form-group">
+            <label>Tube Price (BHD) *</label>
+            <input type="number" id="tubePrice" placeholder="0.000" step="0.001" value="${stock.tubePrice}" required>
+          </div>
+          <div class="form-group">
+            <label>Available Tubes *</label>
+            <input type="number" id="availableTubes" placeholder="0" value="${stock.availableTubes}" min="0" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Save Stock Settings</button>
+        </form>
+      </div>
+    `;
+
+    return html;
+  },
+
+  // REPORTS PAGE
+  reports: () => {
+    const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
+    const completedSessions = sessions.filter(s => s.status === 'COMPLETED');
+    const paidPlayers = JSON.parse(localStorage.getItem('paidPlayers') || '[]');
+    const unpaidPlayers = JSON.parse(localStorage.getItem('unpaidPlayers') || '[]');
+    
+    let html = `
+      <div class="page-header">
+        <h1>Reports & Sheets</h1>
+        <p>Flight metrics and player status</p>
+      </div>
+
+      <div class="card">
+        <h2>Flight Metrics Summary</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #667eea;">📊</div>
+            <div class="stat-content">
+              <h3>${JSON.parse(localStorage.getItem('flightStock') || '{}').availableTubes || 0}</h3>
+              <p>Total Available Shuttles</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #00d4aa;">✓</div>
+            <div class="stat-content">
+              <h3>${paidPlayers.length}</h3>
+              <p>Paid Players</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #ff4757;">✗</div>
+            <div class="stat-content">
+              <h3>${unpaidPlayers.length}</h3>
+              <p>Unpaid Players</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Paid Players Log</h2>
+        <table class="data-table">
           <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Date</th>
-              <th style="padding: 12px; text-align: left;">Activity</th>
-              <th style="padding: 12px; text-align: left;">Present/Total</th>
-              <th style="padding: 12px; text-align: left;">Charge/Player</th>
-              <th style="padding: 12px; text-align: left;">Status</th>
+            <tr>
+              <th>Player Name</th>
+              <th>Member ID</th>
+              <th>Amount Paid (BHD)</th>
+              <th>Date</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 12, 2024</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">24/30</td>
-              <td style="padding: 12px;">BHD 5.50</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Completed</span></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 10, 2024</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">26/30</td>
-              <td style="padding: 12px;">BHD 5.20</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Completed</span></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 08, 2024</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">28/30</td>
-              <td style="padding: 12px;">BHD 4.80</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Completed</span></td>
-            </tr>
+    `;
+
+    if (paidPlayers.length === 0) {
+      html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No paid players</td></tr>`;
+    } else {
+      paidPlayers.forEach(player => {
+        html += `
+          <tr>
+            <td>${player.name}</td>
+            <td>${player.memberId}</td>
+            <td>${player.amount.toFixed(3)}</td>
+            <td>${player.date}</td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
           </tbody>
         </table>
       </div>
-    </div>
-  `,
 
-  attendanceSection: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Mark Attendance</h1>
-        <p>Record attendance for today's session</p>
-      </div>
       <div class="card">
-        <h2>Select Session</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-          <select style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px;">
-            <option>Badminton Level 1</option>
-            <option>Badminton Level 2</option>
-            <option>Badminton Level 3</option>
+        <h2>Unpaid Players Log</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Player Name</th>
+              <th>Member ID</th>
+              <th>Amount Due (BHD)</th>
+              <th>Days Overdue</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    if (unpaidPlayers.length === 0) {
+      html += `<tr><td colspan="4" style="text-align: center; padding: 20px;">No unpaid players</td></tr>`;
+    } else {
+      unpaidPlayers.forEach(player => {
+        html += `
+          <tr>
+            <td>${player.name}</td>
+            <td>${player.memberId}</td>
+            <td>${player.amount.toFixed(3)}</td>
+            <td>${player.daysOverdue}</td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
+          </tbody>
+        </table>
+        <button class="btn btn-primary" onclick="window.print()" style="margin-top: 20px;">🖨️ Print Report</button>
+      </div>
+    `;
+
+    return html;
+  },
+
+  // FLIGHT FINANCE PAGE
+  finance: () => {
+    const members = JSON.parse(localStorage.getItem('members') || '[]');
+    
+    let html = `
+      <div class="page-header">
+        <h1>Flight Finance</h1>
+        <p>Manage member credits and payments</p>
+      </div>
+
+      <div class="card">
+        <h2>Member Credit Management</h2>
+        <div class="form-group">
+          <label>Select Member *</label>
+          <select id="selectedMember" onchange="updateMemberBalance()">
+            <option value="">Select member...</option>
+      `;
+
+      members.forEach(member => {
+        html += `<option value="${member.uid}">${member.name}</option>`;
+      });
+
+      html += `
           </select>
-          <input type="date" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px;">
-          <button class="btn btn-primary" onclick="appController.showNotification('Session loaded', 'success')" style="padding: 12px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-search"></i> Load Session</button>
         </div>
-      </div>
-      <div class="card">
-        <h2>Members Attendance (30 Total)</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Member Name</th>
-              <th style="padding: 12px; text-align: left;">Email</th>
-              <th style="padding: 12px; text-align: left;">Phone</th>
-              <th style="padding: 12px; text-align: left;">Status</th>
-              <th style="padding: 12px; text-align: left;">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Ahmed Al-Mansouri</td>
-              <td style="padding: 12px;">ahmed@example.com</td>
-              <td style="padding: 12px;">+973 1234 5680</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Present</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Marked as absent', 'warning')" style="padding: 6px 10px; background: #ffa502; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Mark Absent</button></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Fatima Al-Dosari</td>
-              <td style="padding: 12px;">fatima@example.com</td>
-              <td style="padding: 12px;">+973 3344 5566</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Present</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Marked as absent', 'warning')" style="padding: 6px 10px; background: #ffa502; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Mark Absent</button></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Mohammed Al-Khalifa</td>
-              <td style="padding: 12px;">mohammed@example.com</td>
-              <td style="padding: 12px;">+973 5566 7788</td>
-              <td style="padding: 12px;"><span style="background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Absent</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Marked as present', 'success')" style="padding: 6px 10px; background: #00d4aa; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Mark Present</button></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Noor Al-Ansari</td>
-              <td style="padding: 12px;">noor@example.com</td>
-              <td style="padding: 12px;">+973 7788 9900</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Present</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Marked as absent', 'warning')" style="padding: 6px 10px; background: #ffa502; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Mark Absent</button></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sara Al-Sulaiti</td>
-              <td style="padding: 12px;">sara@example.com</td>
-              <td style="padding: 12px;">+973 9900 1122</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Present</span></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Marked as absent', 'warning')" style="padding: 6px 10px; background: #ffa502; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Mark Absent</button></td>
-            </tr>
-          </tbody>
-        </table>
-        <button class="btn btn-primary" onclick="appController.showNotification('Attendance saved successfully!', 'success')" style="margin-top: 15px; padding: 12px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-save"></i> Save Attendance</button>
-      </div>
-    </div>
-  `,
 
-  sessionControlSection: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Session Control & Finalization</h1>
-        <p>Finalize attendance and calculate charges</p>
-      </div>
-      <div class="card">
-        <h2>Pending Sessions</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Date</th>
-              <th style="padding: 12px; text-align: left;">Activity</th>
-              <th style="padding: 12px; text-align: left;">Present</th>
-              <th style="padding: 12px; text-align: left;">Shuttles Used</th>
-              <th style="padding: 12px; text-align: left;">Tube Price</th>
-              <th style="padding: 12px; text-align: left;">Charge/Player</th>
-              <th style="padding: 12px; text-align: left;">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 12, 2024</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">24</td>
-              <td style="padding: 12px;"><input type="number" value="20" style="width: 60px; padding: 6px; border: 1px solid #e0e6ed; border-radius: 4px;"></td>
-              <td style="padding: 12px;">BHD 2.50</td>
-              <td style="padding: 12px;"><strong>BHD 5.50</strong></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Session finalized', 'success')" style="padding: 6px 10px; background: #00d4aa; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Finalize</button></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 10, 2024</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">26</td>
-              <td style="padding: 12px;"><input type="number" value="18" style="width: 60px; padding: 6px; border: 1px solid #e0e6ed; border-radius: 4px;"></td>
-              <td style="padding: 12px;">BHD 2.50</td>
-              <td style="padding: 12px;"><strong>BHD 5.20</strong></td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Session finalized', 'success')" style="padding: 6px 10px; background: #00d4aa; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Finalize</button></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="card">
-        <h2>Completed Sessions</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Date</th>
-              <th style="padding: 12px; text-align: left;">Activity</th>
-              <th style="padding: 12px; text-align: left;">Present</th>
-              <th style="padding: 12px; text-align: left;">Charge/Player</th>
-              <th style="padding: 12px; text-align: left;">Total Revenue</th>
-              <th style="padding: 12px; text-align: left;">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 08, 2024</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">28</td>
-              <td style="padding: 12px;">BHD 4.80</td>
-              <td style="padding: 12px;">BHD 134.40</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Completed</span></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 06, 2024</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">25</td>
-              <td style="padding: 12px;">BHD 5.00</td>
-              <td style="padding: 12px;">BHD 125.00</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Completed</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `,
+        <div id="memberBalance" style="background: #f5f7fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
+          <p><strong>Current Balance:</strong> <span id="balanceAmount">0.000</span> BHD</p>
+        </div>
 
-  shuttleSection: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Shuttle Stock Management</h1>
-        <p>Track and manage shuttle inventory</p>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><i class="fas fa-badminton"></i></div>
-          <div class="stat-content"><h3>450</h3><p>Total Shuttles</p><span class="stat-change">In stock</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><i class="fas fa-minus-circle"></i></div>
-          <div class="stat-content"><h3>120</h3><p>Used This Month</p><span class="stat-change">Replacement needed</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"><i class="fas fa-plus-circle"></i></div>
-          <div class="stat-content"><h3>200</h3><p>On Order</p><span class="stat-change">Arriving soon</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"><i class="fas fa-exclamation-triangle"></i></div>
-          <div class="stat-content"><h3>BHD 2.50</h3><p>Tube Price</p><span class="stat-change">Per tube</span></div>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Add Stock</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-          <input type="number" placeholder="Enter quantity" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px;">
-          <input type="number" placeholder="2.50" value="2.50" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px;">
-          <button class="btn btn-primary" onclick="appController.showNotification('Stock added successfully!', 'success')" style="padding: 12px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-plus"></i> Add Stock</button>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Stock History</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Date</th>
-              <th style="padding: 12px; text-align: left;">Type</th>
-              <th style="padding: 12px; text-align: left;">Quantity</th>
-              <th style="padding: 12px; text-align: left;">Balance</th>
-              <th style="padding: 12px; text-align: left;">Session</th>
-              <th style="padding: 12px; text-align: left;">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 12, 2024</td>
-              <td style="padding: 12px;"><span style="background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Used</span></td>
-              <td style="padding: 12px;">-20</td>
-              <td style="padding: 12px;">450</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">Session usage</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 10, 2024</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Added</span></td>
-              <td style="padding: 12px;">+100</td>
-              <td style="padding: 12px;">470</td>
-              <td style="padding: 12px;">-</td>
-              <td style="padding: 12px;">New stock received</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Sep 08, 2024</td>
-              <td style="padding: 12px;"><span style="background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Used</span></td>
-              <td style="padding: 12px;">-18</td>
-              <td style="padding: 12px;">370</td>
-              <td style="padding: 12px;">Badminton Level 1</td>
-              <td style="padding: 12px;">Session usage</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `,
+        <h3>Add Verified Credit</h3>
+        <form onsubmit="addCredit(event)">
+          <div class="form-group">
+            <label>Amount (BHD) *</label>
+            <input type="number" id="creditAmount" placeholder="0.000" step="0.001" min="0.001" required>
+          </div>
+          <div class="form-group">
+            <label>Note</label>
+            <textarea id="creditNote" placeholder="Add a note..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-secondary" id="addCreditBtn" disabled>Add Verified Credit</button>
+        </form>
 
-  reportsSection: () => `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Reports & Analytics</h1>
-        <p>View detailed reports and export data</p>
+        <h3 style="margin-top: 30px;">Deduct Wallet Credit</h3>
+        <form onsubmit="deductCredit(event)">
+          <div class="form-group">
+            <label>Amount (BHD) *</label>
+            <input type="number" id="deductAmount" placeholder="0.000" step="0.001" min="0.001" required>
+          </div>
+          <div class="form-group">
+            <label>Reason *</label>
+            <input type="text" id="deductReason" placeholder="Enter deduction reason" required>
+          </div>
+          <button type="submit" class="btn btn-danger" id="deductBtn" disabled>Deduct Selected Wallet Credit</button>
+        </form>
       </div>
+
       <div class="card">
-        <h2>Generate Report</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-          <select style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px;">
-            <option>Paid Players</option>
-            <option>Unpaid Players</option>
-            <option>Attendance Summary</option>
-            <option>Revenue Report</option>
-          </select>
-          <input type="date" style="width: 100%; padding: 12px; border: 1px solid #e0e6ed; border-radius: 8px;">
-          <button class="btn btn-primary" onclick="appController.showNotification('Report generated', 'success')" style="padding: 12px 15px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-file-pdf"></i> Generate</button>
-          <button class="btn btn-secondary" onclick="appController.showNotification('Report exported to CSV', 'success')" style="padding: 12px 15px; background: #00d4aa; color: white; border: none; border-radius: 6px; cursor: pointer;"><i class="fas fa-download"></i> Export CSV</button>
-        </div>
-      </div>
-      <div class="card">
-        <h2>Paid Players Report</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
+        <h2>Pending Payments Verification</h2>
+        <table class="data-table">
           <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Member Name</th>
-              <th style="padding: 12px; text-align: left;">Email</th>
-              <th style="padding: 12px; text-align: left;">Sessions</th>
-              <th style="padding: 12px; text-align: left;">Total Charge</th>
-              <th style="padding: 12px; text-align: left;">Paid Amount</th>
-              <th style="padding: 12px; text-align: left;">Status</th>
+            <tr>
+              <th>Player Name</th>
+              <th>Amount (BHD)</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Ahmed Al-Mansouri</td>
-              <td style="padding: 12px;">ahmed@example.com</td>
-              <td style="padding: 12px;">12</td>
-              <td style="padding: 12px;">BHD 60.00</td>
-              <td style="padding: 12px;">BHD 60.00</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Paid</span></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Fatima Al-Dosari</td>
-              <td style="padding: 12px;">fatima@example.com</td>
-              <td style="padding: 12px;">10</td>
-              <td style="padding: 12px;">BHD 50.00</td>
-              <td style="padding: 12px;">BHD 50.00</td>
-              <td style="padding: 12px;"><span style="background: #00d4aa; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Paid</span></td>
-            </tr>
+    `;
+
+    const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+    if (pendingPayments.length === 0) {
+      html += `<tr><td colspan="5" style="text-align: center; padding: 20px;">No pending payments</td></tr>`;
+    } else {
+      pendingPayments.forEach(payment => {
+        html += `
+          <tr>
+            <td>${payment.playerName}</td>
+            <td>${payment.amount.toFixed(3)}</td>
+            <td>${payment.method}</td>
+            <td>${payment.reference}</td>
+            <td><button class="btn btn-primary" onclick="verifyPayment('${payment.id}')">Verify</button></td>
+          </tr>
+        `;
+      });
+    }
+
+    html += `
           </tbody>
         </table>
+        <button class="btn btn-primary" onclick="window.print()" style="margin-top: 20px;">🖨️ Print Current Tab</button>
       </div>
-      <div class="card">
-        <h2>Unpaid Players Report</h2>
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f5f7fa; border-bottom: 2px solid #e0e6ed;">
-              <th style="padding: 12px; text-align: left;">Member Name</th>
-              <th style="padding: 12px; text-align: left;">Email</th>
-              <th style="padding: 12px; text-align: left;">Sessions</th>
-              <th style="padding: 12px; text-align: left;">Total Charge</th>
-              <th style="padding: 12px; text-align: left;">Outstanding</th>
-              <th style="padding: 12px; text-align: left;">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Mohammed Al-Khalifa</td>
-              <td style="padding: 12px;">mohammed@example.com</td>
-              <td style="padding: 12px;">8</td>
-              <td style="padding: 12px;">BHD 40.00</td>
-              <td style="padding: 12px;">BHD 40.00</td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Reminder sent', 'success')" style="padding: 6px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Send Reminder</button></td>
-            </tr>
-            <tr style="border-bottom: 1px solid #e0e6ed;">
-              <td style="padding: 12px;">Noor Al-Ansari</td>
-              <td style="padding: 12px;">noor@example.com</td>
-              <td style="padding: 12px;">6</td>
-              <td style="padding: 12px;">BHD 30.00</td>
-              <td style="padding: 12px;">BHD 30.00</td>
-              <td style="padding: 12px;"><button onclick="appController.showNotification('Reminder sent', 'success')" style="padding: 6px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Send Reminder</button></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `
+    `;
+
+    return html;
+  }
 };
 
-window.flightAdminViews = flightAdminViews;
-export { flightAdminViews };
+// ===== HELPER FUNCTIONS =====
+window.removePlayer = function(sessionId, playerUid) {
+  const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
+  const session = sessions.find(s => s.id === sessionId);
+  if (session) {
+    session.presentPlayers = JSON.stringify(
+      JSON.parse(session.presentPlayers || '[]').filter(p => p.uid !== playerUid)
+    );
+    localStorage.setItem('flightSessions', JSON.stringify(sessions));
+    alert('Player removed and marked absent');
+    location.reload();
+  }
+};
+
+window.addLateArrival = function(sessionId) {
+  const playerUid = document.getElementById(`latePlayer_${sessionId}`).value;
+  if (!playerUid) {
+    alert('Please select a player');
+    return;
+  }
+
+  const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
+  const session = sessions.find(s => s.id === sessionId);
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === playerUid);
+
+  if (session && member) {
+    const presentPlayers = JSON.parse(session.presentPlayers || '[]');
+    presentPlayers.push({ uid: member.uid, name: member.name });
+    session.presentPlayers = JSON.stringify(presentPlayers);
+    localStorage.setItem('flightSessions', JSON.stringify(sessions));
+    alert('Player added to present list');
+    location.reload();
+  }
+};
+
+window.finalizeSession = function(sessionId) {
+  const shuttles = parseInt(document.getElementById(`shuttles_${sessionId}`).value) || 0;
+  const attendees = parseInt(document.getElementById(`attendees_${sessionId}`).value) || 1;
+  const tubePrice = parseFloat(document.getElementById(`tubePrice_${sessionId}`).value) || 0.5;
+
+  if (shuttles < 0) {
+    alert('Shuttles used must be >= 0');
+    return;
+  }
+
+  // Calculate cost: ceil(shuttles / 2) * tubePrice (assuming 2 shuttles per tube)
+  const totalCost = Math.ceil(shuttles / 2) * tubePrice;
+  const costPerPlayer = totalCost / attendees;
+
+  alert(`Session finalized!\nTotal Cost: ${totalCost.toFixed(3)} BHD\nCost per Player: ${costPerPlayer.toFixed(3)} BHD`);
+
+  const sessions = JSON.parse(localStorage.getItem('flightSessions') || '[]');
+  const session = sessions.find(s => s.id === sessionId);
+  if (session) {
+    session.status = 'COMPLETED';
+    session.totalCost = totalCost;
+    session.costPerPlayer = costPerPlayer;
+    localStorage.setItem('flightSessions', JSON.stringify(sessions));
+    location.reload();
+  }
+};
+
+window.updateStock = function(event) {
+  event.preventDefault();
+  const tubePrice = parseFloat(document.getElementById('tubePrice').value);
+  const availableTubes = parseInt(document.getElementById('availableTubes').value);
+
+  if (tubePrice <= 0 || availableTubes < 0) {
+    alert('Please enter valid values');
+    return;
+  }
+
+  const stock = {
+    tubePrice: Math.round(tubePrice * 1000) / 1000,
+    availableTubes,
+    updatedAt: new Date().toISOString()
+  };
+
+  localStorage.setItem('flightStock', JSON.stringify(stock));
+  alert('Stock settings saved');
+  event.target.reset();
+};
+
+window.updateMemberBalance = function() {
+  const memberUid = document.getElementById('selectedMember').value;
+  const addCreditBtn = document.getElementById('addCreditBtn');
+  const deductBtn = document.getElementById('deductBtn');
+
+  if (memberUid) {
+    const members = JSON.parse(localStorage.getItem('members') || '[]');
+    const member = members.find(m => m.uid === memberUid);
+    if (member) {
+      document.getElementById('memberBalance').style.display = 'block';
+      document.getElementById('balanceAmount').textContent = (member.balance || 0).toFixed(3);
+      addCreditBtn.disabled = false;
+      deductBtn.disabled = false;
+    }
+  } else {
+    document.getElementById('memberBalance').style.display = 'none';
+    addCreditBtn.disabled = true;
+    deductBtn.disabled = true;
+  }
+};
+
+window.addCredit = function(event) {
+  event.preventDefault();
+  const memberUid = document.getElementById('selectedMember').value;
+  const amount = parseFloat(document.getElementById('creditAmount').value);
+  const note = document.getElementById('creditNote').value;
+
+  if (!memberUid || amount <= 0) {
+    alert('Please select member and enter valid amount');
+    return;
+  }
+
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === memberUid);
+  if (member) {
+    member.balance = (member.balance || 0) + amount;
+    localStorage.setItem('members', JSON.stringify(members));
+    alert(`Added ${amount.toFixed(3)} BHD to ${member.name}`);
+    event.target.reset();
+  }
+};
+
+window.deductCredit = function(event) {
+  event.preventDefault();
+  const memberUid = document.getElementById('selectedMember').value;
+  const amount = parseFloat(document.getElementById('deductAmount').value);
+  const reason = document.getElementById('deductReason').value;
+
+  if (!memberUid || amount <= 0) {
+    alert('Please select member and enter valid amount');
+    return;
+  }
+
+  const members = JSON.parse(localStorage.getItem('members') || '[]');
+  const member = members.find(m => m.uid === memberUid);
+  if (member) {
+    member.balance = Math.max(0, (member.balance || 0) - amount);
+    localStorage.setItem('members', JSON.stringify(members));
+    alert(`Deducted ${amount.toFixed(3)} BHD from ${member.name}`);
+    event.target.reset();
+  }
+};
+
+window.verifyPayment = function(paymentId) {
+  const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+  const payment = pendingPayments.find(p => p.id === paymentId);
+  if (payment) {
+    pendingPayments.splice(pendingPayments.indexOf(payment), 1);
+    localStorage.setItem('pendingPayments', JSON.stringify(pendingPayments));
+    alert('Payment verified');
+    location.reload();
+  }
+};
+
 console.log('✅ flightAdminViews.js loaded successfully');
 
