@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Indian Club Bahrain - Member Portal</title>
-  <link rel="icon" type="image/png" href="https://firebasestorage.googleapis.com/v0/b/indian-club-bahrain.appspot.com/o/logo.png?alt=media">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' fill='%23D4AF37'>🏏</text></svg>">
   <style>
     * {
       margin: 0;
@@ -13,381 +13,491 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --primary: #1e40af;
+      --secondary: #0f766e;
+      --accent: #d97706;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --warning: #f59e0b;
+      --light: #f3f4f6;
+      --dark: #1f2937;
+      --border: #e5e7eb;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f5f7fa;
-      color: #333;
-    }
-
-    /* ===== LOGIN PAGE ===== */
-    #login {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 20px;
-    }
-
-    .login-container {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-      max-width: 900px;
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      overflow: hidden;
-    }
-
-    .login-left {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 60px 40px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-    }
-
-    .login-logo {
-      width: 120px;
-      height: 120px;
-      background: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 30px;
-      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .login-logo img {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-    }
-
-    .login-left h1 {
-      font-size: 32px;
-      margin-bottom: 15px;
-      font-weight: 700;
-    }
-
-    .login-left p {
-      font-size: 14px;
-      opacity: 0.9;
+      color: var(--dark);
       line-height: 1.6;
-    }
-
-    .login-right {
-      padding: 40px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      overflow-y: auto;
-      max-height: 100vh;
-    }
-
-    .login-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #eee;
-      flex-wrap: wrap;
-    }
-
-    .login-tab {
-      padding: 10px 15px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      color: #999;
-      border-bottom: 3px solid transparent;
-      transition: all 0.3s ease;
-    }
-
-    .login-tab.active {
-      color: #667eea;
-      border-bottom-color: #667eea;
-    }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 600;
-      font-size: 12px;
-      color: #333;
-    }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 13px;
-      transition: border-color 0.3s ease;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .form-group textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: inline-block;
-      text-align: center;
-      width: 100%;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-    }
-
-    #errorMessage {
-      padding: 12px;
-      border-radius: 6px;
-      margin-bottom: 15px;
-      font-size: 12px;
-      display: none;
-    }
-
-    .file-input-wrapper {
-      position: relative;
-      overflow: hidden;
-      display: inline-block;
-      width: 100%;
-    }
-
-    .file-input-wrapper input[type=file] {
-      position: absolute;
-      left: -9999px;
-    }
-
-    .file-input-label {
-      display: block;
-      padding: 10px;
-      background: #f0f0f0;
-      border: 2px dashed #ddd;
-      border-radius: 6px;
-      text-align: center;
-      cursor: pointer;
-      font-size: 12px;
-      color: #666;
-      transition: all 0.3s ease;
-    }
-
-    .file-input-label:hover {
-      border-color: #667eea;
-      background: #f9f9ff;
-    }
-
-    .file-name {
-      font-size: 11px;
-      color: #667eea;
-      margin-top: 5px;
-    }
-
-    /* ===== APP PAGE ===== */
-    #app {
-      display: none;
-      flex-direction: column;
       min-height: 100vh;
-      background: #f5f7fa;
+      display: flex;
+      flex-direction: column;
     }
 
+    /* ===== HEADER ===== */
     .app-header {
       background: white;
-      border-bottom: 1px solid #eee;
-      padding: 15px 30px;
+      border-bottom: 2px solid var(--primary);
+      padding: 1rem 2rem;
+      box-shadow: var(--shadow);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 20px;
     }
 
     .header-logo {
-      width: 50px;
-      height: 50px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 8px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 20px;
+      gap: 1rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--primary);
     }
 
     .header-logo img {
       width: 40px;
       height: 40px;
-      object-fit: contain;
+      border-radius: 50%;
     }
 
-    .header-title h1 {
-      font-size: 20px;
-      font-weight: 700;
-      color: #333;
-      margin: 0;
-    }
-
-    .header-title p {
-      font-size: 12px;
-      color: #999;
-      margin: 0;
-    }
-
-    .header-right {
+    .header-info {
       display: flex;
       align-items: center;
-      gap: 30px;
+      gap: 2rem;
     }
 
-    .user-info {
+    .header-user {
       text-align: right;
     }
 
-    .user-info p {
-      font-size: 12px;
-      color: #666;
-      margin: 0;
-    }
-
-    .user-info strong {
+    .header-user small {
+      color: #6b7280;
       display: block;
-      font-size: 13px;
-      color: #333;
     }
 
-    .user-badge {
-      display: inline-block;
-      background: #e3f2fd;
-      color: #1976d2;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 10px;
-      font-weight: 600;
-      margin-top: 5px;
-    }
-
-    .logout-btn {
-      background: #f44336;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-    }
-
-    .logout-btn:hover {
-      background: #d32f2f;
-      transform: translateY(-2px);
-    }
-
+    /* ===== MAIN CONTAINER ===== */
     .app-container {
       display: flex;
       flex: 1;
-      overflow: hidden;
+      gap: 0;
     }
 
-    .sidebar {
+    /* ===== SIDEBAR NAVIGATION ===== */
+    .app-nav {
       width: 250px;
       background: white;
-      border-right: 1px solid #eee;
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
       overflow-y: auto;
-      padding: 20px 0;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      box-shadow: var(--shadow);
     }
 
-    .nav-item {
-      display: block;
-      width: 100%;
-      padding: 12px 20px;
-      background: none;
+    .nav-header {
+      padding: 0 1.5rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+
+    .nav-header h3 {
+      color: var(--primary);
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .nav-header small {
+      color: #6b7280;
+      font-size: 0.85rem;
+    }
+
+    .nav-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .nav-tab {
+      padding: 0.75rem 1rem;
+      background: transparent;
       border: none;
-      text-align: left;
-      cursor: pointer;
-      font-size: 13px;
-      color: #666;
-      transition: all 0.3s ease;
       border-left: 3px solid transparent;
+      color: var(--dark);
+      cursor: pointer;
+      text-align: left;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      border-radius: 0 4px 4px 0;
     }
 
-    .nav-item:hover {
-      background: #f5f7fa;
-      color: #667eea;
+    .nav-tab:hover {
+      background: var(--light);
+      border-left-color: var(--accent);
     }
 
-    .nav-item.active {
-      background: #f0f3ff;
-      color: #667eea;
-      border-left-color: #667eea;
+    .nav-tab.active {
+      background: #eff6ff;
+      border-left-color: var(--primary);
+      color: var(--primary);
       font-weight: 600;
     }
 
-    .main-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 30px;
+    .nav-footer {
+      padding: 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
     }
 
-    #pageContent {
+    .nav-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s ease;
+    }
+
+    .nav-btn:hover {
+      background: #b91c1c;
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .app-content {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      background: var(--light);
+    }
+
+    #app-content {
       max-width: 1200px;
       margin: 0 auto;
     }
 
-    .app-footer {
+    /* ===== CARDS ===== */
+    .card {
       background: white;
-      border-top: 1px solid #eee;
-      padding: 20px 30px;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .card h2 {
+      color: var(--primary);
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card h3 {
+      color: var(--dark);
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 0.5rem;
+    }
+
+    .note {
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ===== GRID ===== */
+    .grid {
+      display: grid;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    /* ===== FIELDS & FORMS ===== */
+    .field {
+      margin-bottom: 1rem;
+    }
+
+    .field label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--dark);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.3s ease;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    /* ===== BUTTONS ===== */
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .primary {
+      background: var(--primary);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      width: 100%;
+    }
+
+    .primary:hover {
+      background: #1e3a8a;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .pill {
+      background: var(--light);
+      color: var(--dark);
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: inline-block;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .pill:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .pill.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* ===== TAGS ===== */
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .tag.blue {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .tag.red {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .tag.green {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .tag.amber {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .tag.purple {
+      background: #f3e8ff;
+      color: #7c3aed;
+    }
+
+    /* ===== TABLES ===== */
+    .table-wrap {
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    table thead {
+      background: var(--light);
+      border-bottom: 2px solid var(--border);
+    }
+
+    table th {
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--dark);
+    }
+
+    table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    table tbody tr:hover {
+      background: #fafafa;
+    }
+
+    /* ===== SESSION DISPLAY ===== */
+    .session {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: var(--light);
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+
+    .session b {
+      font-size: 1.5rem;
+      color: var(--primary);
+    }
+
+    .session small {
+      color: #6b7280;
+    }
+
+    .grow {
+      flex: 1;
+    }
+
+    /* ===== ACTIONS ===== */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ===== LOGIN PAGE ===== */
+    .login-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 2rem;
+    }
+
+    .login-box {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .login-header {
       text-align: center;
-      font-size: 11px;
-      color: #999;
+      margin-bottom: 2rem;
+    }
+
+    .login-header .logo {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .login-header h1 {
+      color: var(--primary);
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .login-header p {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .login-form .field {
+      margin-bottom: 0;
+    }
+
+    .login-form .primary {
+      margin-top: 0.5rem;
+    }
+
+    .login-info {
+      background: #eff6ff;
+      border-left: 4px solid var(--primary);
+      padding: 1rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #1e40af;
+      margin-top: 1.5rem;
+    }
+
+    .login-info strong {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .login-info ul {
+      margin-left: 1.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .login-info li {
+      margin-bottom: 0.25rem;
+    }
+
+    /* ===== FOOTER ===== */
+    .app-footer {
+      background: var(--dark);
+      color: white;
+      text-align: center;
+      padding: 1.5rem;
+      border-top: 2px solid var(--primary);
       margin-top: auto;
+      font-size: 0.9rem;
     }
 
     .app-footer a {
-      color: #667eea;
+      color: var(--accent);
       text-decoration: none;
     }
 
@@ -395,12 +505,30 @@
       text-decoration: underline;
     }
 
-    #notifications {
+    /* ===== TOAST NOTIFICATIONS ===== */
+    .toast {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--dark);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 4px;
+      box-shadow: var(--shadow-lg);
       z-index: 1000;
-      max-width: 400px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.success {
+      background: var(--success);
+    }
+
+    .toast.error {
+      background: var(--danger);
+    }
+
+    .toast.warning {
+      background: var(--warning);
     }
 
     @keyframes slideIn {
@@ -414,12 +542,56 @@
       }
     }
 
+    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
-      .login-container {
+      .app-container {
+        flex-direction: column;
+      }
+
+      .app-nav {
+        width: 100%;
+        max-height: 200px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .nav-tabs {
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0 1rem;
+      }
+
+      .nav-tab {
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .app-content {
+        padding: 1rem;
+      }
+
+      .grid.two {
         grid-template-columns: 1fr;
       }
 
-      .login-left {
+      .header-info {
+        gap: 1rem;
+      }
+
+      .app-header {
+        flex-direction: column;
+        gap: 1rem;
+      }
+    }
+
+    /* ===== PRINT STYLES ===== */
+    @media print {
+      .app-header,
+      .app-nav,
+      .app-footer,
+      .nav-btn,
+      button {
         display: none;
       }
 
@@ -427,364 +599,90 @@
         flex-direction: column;
       }
 
-      .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        overflow-x: auto;
+      .app-content {
         padding: 0;
-      }
-
-      .nav-item {
-        white-space: nowrap;
-        border-left: none;
-        border-bottom: 3px solid transparent;
-        padding: 12px 15px;
-      }
-
-      .nav-item.active {
-        border-left: none;
-        border-bottom-color: #667eea;
-      }
-
-      .header-right {
-        gap: 15px;
-      }
-
-      .user-info {
-        display: none;
+        background: white;
       }
     }
   </style>
 </head>
 <body>
-  <!-- ===== LOGIN PAGE ===== -->
-  <div id="login">
-    <div class="login-container">
-      <!-- Left Side -->
-      <div class="login-left">
-        <div class="login-logo">
-          <img src="https://firebasestorage.googleapis.com/v0/b/indian-club-bahrain.appspot.com/o/logo.png?alt=media" alt="Indian Club Logo">
-        </div>
-        <h1>Indian Club Bahrain</h1>
-        <p>Welcome to your exclusive member portal. Manage your activities, payments, and connect with fellow members.</p>
-      </div>
-
-      <!-- Right Side -->
-      <div class="login-right">
-        <div id="errorMessage"></div>
-
-        <!-- Tabs -->
-        <div class="login-tabs">
-          <button class="login-tab active" id="loginTab" onclick="window.switchAuthTab('login')">Sign In</button>
-          <button class="login-tab" id="activateTab" onclick="window.switchAuthTab('activate')">Activate</button>
-          <button class="login-tab" id="submitAdTab" onclick="window.switchAuthTab('submitAd')">Submit Ad</button>
-          <button class="login-tab" id="updateAdTab" onclick="window.switchAuthTab('updateAd')">Update Ad</button>
-        </div>
-
-        <!-- Login Form -->
-        <form id="loginForm" onsubmit="window.handleLogin(event)">
-          <div class="form-group">
-            <label>Email Address *</label>
-            <input type="email" id="loginEmail" placeholder="your@email.com" required>
-          </div>
-
-          <div class="form-group">
-            <label>Password *</label>
-            <input type="password" id="loginPassword" placeholder="••••••••" required>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Sign In</button>
-        </form>
-
-        <!-- Activation Form -->
-        <form id="activateForm" style="display: none;" onsubmit="window.handleActivate(event)">
-          <div class="form-group">
-            <label>Full Name *</label>
-            <input type="text" id="actFullName" placeholder="Your full name" required>
-          </div>
-
-          <div class="form-group">
-            <label>Phone Number *</label>
-            <input type="tel" id="actPhone" placeholder="+973 XXXX XXXX" required>
-          </div>
-
-          <div class="form-group">
-            <label>New Password *</label>
-            <input type="password" id="actNewPass" placeholder="••••••••" minlength="6" required>
-          </div>
-
-          <div class="form-group">
-            <label>Confirm Password *</label>
-            <input type="password" id="actConfirmPass" placeholder="••••••••" minlength="6" required>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Activate My Account</button>
-        </form>
-
-        <!-- Submit Ad Form -->
-        <form id="submitAdForm" style="display: none;" onsubmit="window.handleSubmitAd(event)">
-          <div class="form-group">
-            <label>Business Name *</label>
-            <input type="text" id="adBusinessName" placeholder="Your business name" required>
-          </div>
-
-          <div class="form-group">
-            <label>Contact Email *</label>
-            <input type="email" id="adEmail" placeholder="contact@business.com" required>
-          </div>
-
-          <div class="form-group">
-            <label>Phone Number *</label>
-            <input type="tel" id="adPhone" placeholder="+973 XXXX XXXX" required>
-          </div>
-
-          <div class="form-group">
-            <label>Business Description *</label>
-            <textarea id="adDescription" placeholder="Describe your business, products, or services..." required></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Upload Flyer/Image *</label>
-            <div class="file-input-wrapper">
-              <input type="file" id="adFlyer" accept="image/png,image/jpeg,image/webp" required onchange="window.updateFileName('adFlyer', 'adFlyerName')">
-              <label for="adFlyer" class="file-input-label">📁 Click to upload or drag & drop (PNG, JPEG, WebP - Max 2MB)</label>
-              <div class="file-name" id="adFlyerName"></div>
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Submit for Approval</button>
-        </form>
-
-        <!-- Update Ad Form -->
-        <form id="updateAdForm" style="display: none;" onsubmit="window.handleUpdateAd(event)">
-          <div class="form-group">
-            <label>Your Ad ID *</label>
-            <input type="text" id="updateAdId" placeholder="e.g., AD_20260914_0001" required>
-          </div>
-
-          <div class="form-group">
-            <label>Business Name *</label>
-            <input type="text" id="updateAdBusinessName" placeholder="Your business name" required>
-          </div>
-
-          <div class="form-group">
-            <label>Business Description *</label>
-            <textarea id="updateAdDescription" placeholder="Update your business description..." required></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Update Flyer/Image (Optional)</label>
-            <div class="file-input-wrapper">
-              <input type="file" id="updateAdFlyer" accept="image/png,image/jpeg,image/webp" onchange="window.updateFileName('updateAdFlyer', 'updateAdFlyerName')">
-              <label for="updateAdFlyer" class="file-input-label">📁 Click to upload new flyer (PNG, JPEG, WebP - Max 2MB)</label>
-              <div class="file-name" id="updateAdFlyerName"></div>
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Submit Update for Approval</button>
-        </form>
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <div class="header-logo">
+      <span>🏏</span>
+      <span>Indian Club Bahrain</span>
+    </div>
+    <div class="header-info" id="headerInfo" style="display: none;">
+      <div class="header-user">
+        <div id="headerUserName">Member</div>
+        <small id="headerUserRole">Player</small>
       </div>
     </div>
+  </header>
+
+  <!-- ===== MAIN CONTAINER ===== -->
+  <div class="app-container">
+    <!-- ===== SIDEBAR NAVIGATION ===== -->
+    <nav class="app-nav" id="app-nav">
+      <div class="nav-header">
+        <h3>Loading...</h3>
+        <small>Please wait</small>
+      </div>
+    </nav>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="app-content">
+      <div id="app-content">
+        <section class="card">
+          <h2>🏏 Indian Club Bahrain</h2>
+          <p class="note">Member Portal - Loading...</p>
+        </section>
+      </div>
+    </main>
   </div>
 
-  <!-- ===== APP PAGE ===== -->
-  <div id="app">
-    <!-- Header -->
-    <div class="app-header">
-      <div class="header-left">
-        <div class="header-logo">
-          <img src="https://firebasestorage.googleapis.com/v0/b/indian-club-bahrain.appspot.com/o/logo.png?alt=media" alt="Logo">
-        </div>
-        <div class="header-title">
-          <h1>Indian Club Bahrain</h1>
-          <p>Member Portal</p>
-        </div>
-      </div>
-
-      <div class="header-right">
-        <div class="user-info">
-          <p>Welcome,</p>
-          <strong id="userName">User</strong>
-          <span class="user-badge" id="userRole">Player</span>
-          <p style="font-size: 10px; margin-top: 5px;">Flight: <strong id="userFlight">N/A</strong></p>
-        </div>
-        <button class="logout-btn" onclick="window.logout()">🚪 Logout</button>
-      </div>
-    </div>
-
-    <!-- Main Container -->
-    <div class="app-container">
-      <!-- Sidebar Navigation -->
-      <div class="sidebar" id="navMenu">
-        <!-- Navigation items will be populated by router.js -->
-      </div>
-
-      <!-- Main Content -->
-      <div class="main-content">
-        <div id="pageContent">
-          <!-- Page content will be loaded here -->
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="app-footer">
-      <p>© 2026 Indian Club Bahrain. All rights reserved. | Powered by <strong>A1 Groups</strong></p>
-    </div>
-  </div>
-
-  <!-- Notifications Container -->
-  <div id="notifications"></div>
+  <!-- ===== FOOTER ===== -->
+  <footer class="app-footer">
+    <p>🏏 Indian Club Bahrain © 2026 | All Rights Reserved | <strong>Powered by A1 Groups</strong></p>
+  </footer>
 
   <!-- ===== SCRIPTS ===== -->
-  <script>
-    window.appState = {
-      member: null,
-      role: null,
-      token: null,
-      isAuthenticated: false,
-      sessionsAttended: 0,
-      pendingAmount: 0,
-      arrears: 0,
-      walletBalanceFils: 0,
-      upcomingSession: null,
-      currentPage: null,
-      flightId: null
-    };
-
-    window.updateFileName = function(inputId, displayId) {
-      const input = document.getElementById(inputId);
-      const display = document.getElementById(displayId);
-      if (input.files && input.files[0]) {
-        display.textContent = '✅ ' + input.files[0].name;
-      }
-    };
-
-    window.switchAuthTab = function(tab) {
-      console.log('🔄 Switching auth tab to:', tab);
-
-      const forms = ['loginForm', 'activateForm', 'submitAdForm', 'updateAdForm'];
-      const tabs = ['loginTab', 'activateTab', 'submitAdTab', 'updateAdTab'];
-
-      forms.forEach(form => {
-        document.getElementById(form).style.display = 'none';
-      });
-
-      tabs.forEach(tabBtn => {
-        document.getElementById(tabBtn).classList.remove('active');
-      });
-
-      if (tab === 'login') {
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('loginTab').classList.add('active');
-      } else if (tab === 'activate') {
-        document.getElementById('activateForm').style.display = 'block';
-        document.getElementById('activateTab').classList.add('active');
-      } else if (tab === 'submitAd') {
-        document.getElementById('submitAdForm').style.display = 'block';
-        document.getElementById('submitAdTab').classList.add('active');
-      } else if (tab === 'updateAd') {
-        document.getElementById('updateAdForm').style.display = 'block';
-        document.getElementById('updateAdTab').classList.add('active');
-      }
-    };
-
-    window.handleSubmitAd = async function(event) {
-      event.preventDefault();
-      console.log('📤 Submitting ad...');
-
-      const data = {
-        businessName: document.getElementById('adBusinessName').value,
-        email: document.getElementById('adEmail').value,
-        phone: document.getElementById('adPhone').value,
-        description: document.getElementById('adDescription').value,
-        flyer: document.getElementById('adFlyer').files[0]
-      };
-
-      if (window.ads && window.ads.submitAd) {
-        const result = await window.ads.submitAd(data);
-        if (result.success) {
-          window.showNotification(`✅ Ad submitted! Your Ad ID: ${result.adId}`, 'success');
-          document.getElementById('submitAdForm').reset();
-          document.getElementById('adFlyerName').textContent = '';
-        } else {
-          window.showNotification('❌ ' + result.message, 'error');
-        }
-      }
-    };
-
-    window.handleUpdateAd = async function(event) {
-      event.preventDefault();
-      console.log('🔄 Updating ad...');
-
-      const adId = document.getElementById('updateAdId').value;
-      const data = {
-        businessName: document.getElementById('updateAdBusinessName').value,
-        description: document.getElementById('updateAdDescription').value,
-        flyer: document.getElementById('updateAdFlyer').files[0]
-      };
-
-      if (window.ads && window.ads.updateAd) {
-        const result = await window.ads.updateAd(adId, data);
-        if (result.success) {
-          window.showNotification('✅ Ad update submitted for approval', 'success');
-          document.getElementById('updateAdForm').reset();
-          document.getElementById('updateAdFlyerName').textContent = '';
-        } else {
-          window.showNotification('❌ ' + result.message, 'error');
-        }
-      }
-    };
-
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('📱 App initializing...');
-      
-      if (window.checkAuth && window.checkAuth()) {
-        console.log('✅ User authenticated, loading app');
-        document.getElementById('login').style.display = 'none';
-        document.getElementById('app').style.display = 'flex';
-        if (window.updateUserUI) window.updateUserUI();
-        if (window.initializeRouter) window.initializeRouter();
-      } else {
-        console.log('⚠️ User not authenticated, showing login');
-        document.getElementById('app').style.display = 'none';
-        document.getElementById('login').style.display = 'flex';
-      }
-
-      const loginForm = document.getElementById('loginForm');
-      if (loginForm && window.handleLogin) {
-        loginForm.addEventListener('submit', window.handleLogin);
-      }
-
-      const activateForm = document.getElementById('activateForm');
-      if (activateForm && window.handleActivate) {
-        activateForm.addEventListener('submit', window.handleActivate);
-      }
-
-      console.log('✅ App initialized');
-    });
-  </script>
-
   <script type="module">
-    import { views } from './js/modules/views.js';
-    import { flightAdminViews } from './js/modules/flightAdminViews.js';
-    import { adminViews } from './js/modules/adminViews.js';
-    import { checkAuth, handleLogin, handleActivate } from './js/modules/auth.js';
-    import { api } from './js/modules/api.js';
-    import { ads } from './js/modules/ads.js';
+    import { initializeApp } from "./js/modules/router.js";
 
-    window.views = views;
-    window.flightAdminViews = flightAdminViews;
-    window.adminViews = adminViews;
-    window.checkAuth = checkAuth;
-    window.handleLogin = handleLogin;
-    window.handleActivate = handleActivate;
-    window.api = api;
-    window.ads = ads;
+    // ===== TOAST NOTIFICATION SYSTEM =====
+    window.addEventListener("indianclub:toast", (event) => {
+      const message = event.detail;
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      
+      if (message.includes("✅") || message.includes("success")) {
+        toast.classList.add("success");
+      } else if (message.includes("❌") || message.includes("error")) {
+        toast.classList.add("error");
+      } else if (message.includes("⚠️") || message.includes("warning")) {
+        toast.classList.add("warning");
+      }
+      
+      toast.textContent = message;
+      document.body.appendChild(toast);
 
-    console.log('✅ All modules imported');
+      setTimeout(() => {
+        toast.style.animation = "slideOut 0.3s ease";
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    });
+
+    // ===== RENDER EVENT LISTENER =====
+    window.addEventListener("indianclub:render", () => {
+      const { state } = await import("./js/modules/router.js");
+      const { renderPage } = await import("./js/modules/router.js");
+      renderPage();
+    });
+
+    // ===== INITIALIZE APP =====
+    initializeApp();
   </script>
 </body>
 </html>
