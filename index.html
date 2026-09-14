@@ -408,13 +408,15 @@
       margin-bottom: 1rem;
     }
 
-    /* ===== LOGIN PAGE ===== */
-    .login-container {
+    /* ===== LOGIN PAGE STYLES ===== */
+    .login-page {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       flex: 1;
       padding: 2rem;
+      gap: 2rem;
     }
 
     .login-box {
@@ -461,28 +463,184 @@
       margin-top: 0.5rem;
     }
 
-    .login-info {
-      background: #eff6ff;
-      border-left: 4px solid var(--primary);
-      padding: 1rem;
-      border-radius: 4px;
-      font-size: 0.85rem;
-      color: #1e40af;
-      margin-top: 1.5rem;
+    /* ===== CLUB ANNOUNCEMENTS TAB ===== */
+    .announcements-section {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      max-width: 800px;
+      width: 100%;
     }
 
-    .login-info strong {
-      display: block;
+    .announcements-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 1rem;
+    }
+
+    .announcements-header h2 {
+      color: var(--primary);
+      font-size: 1.3rem;
       margin-bottom: 0.5rem;
     }
 
-    .login-info ul {
-      margin-left: 1.5rem;
-      margin-top: 0.5rem;
+    .announcements-header p {
+      color: #6b7280;
+      font-size: 0.9rem;
     }
 
-    .login-info li {
-      margin-bottom: 0.25rem;
+    .announcement-item {
+      background: var(--light);
+      border-left: 4px solid var(--primary);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+    }
+
+    .announcement-item h4 {
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .announcement-item p {
+      color: var(--dark);
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .announcement-item small {
+      color: #6b7280;
+      display: block;
+    }
+
+    /* ===== BUSINESS ADS CAROUSEL TABS ===== */
+    .ads-carousel-section {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      max-width: 800px;
+      width: 100%;
+    }
+
+    .carousel-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 3px solid var(--accent);
+      padding-bottom: 1rem;
+    }
+
+    .carousel-header h2 {
+      color: var(--accent);
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .carousel-header p {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    .carousel-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+
+    .carousel-tab {
+      padding: 0.5rem 1rem;
+      background: var(--light);
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+
+    .carousel-tab:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .carousel-tab.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .carousel-content {
+      background: var(--light);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .carousel-ad {
+      display: none;
+    }
+
+    .carousel-ad.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .ad-image {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .ad-title {
+      color: var(--primary);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .ad-description {
+      color: var(--dark);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .ad-contact {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .ad-contact button {
+      padding: 0.5rem 1rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.3s ease;
+    }
+
+    .ad-contact button:hover {
+      background: #1e3a8a;
     }
 
     /* ===== FOOTER ===== */
@@ -583,6 +741,20 @@
         flex-direction: column;
         gap: 1rem;
       }
+
+      .login-page {
+        padding: 1rem;
+      }
+
+      .login-box,
+      .announcements-section,
+      .ads-carousel-section {
+        max-width: 100%;
+      }
+
+      .carousel-tabs {
+        justify-content: center;
+      }
     }
 
     /* ===== PRINT STYLES ===== */
@@ -634,10 +806,7 @@
     <!-- ===== MAIN CONTENT ===== -->
     <main class="app-content">
       <div id="app-content">
-        <section class="card">
-          <h2>🏏 Indian Club Bahrain</h2>
-          <p class="note">Member Portal - Loading...</p>
-        </section>
+        <!-- LOGIN PAGE CONTENT WILL BE RENDERED HERE -->
       </div>
     </main>
   </div>
@@ -675,11 +844,24 @@
     });
 
     // ===== RENDER EVENT LISTENER =====
-    window.addEventListener("indianclub:render", () => {
-      const { state } = await import("./js/modules/router.js");
-      const { renderPage } = await import("./js/modules/router.js");
+    window.addEventListener("indianclub:render", async () => {
+      const { state, renderPage } = await import("./js/modules/router.js");
       renderPage();
     });
+
+    // ===== CAROUSEL FUNCTIONALITY =====
+    window.switchCarouselTab = function(tabIndex) {
+      const tabs = document.querySelectorAll(".carousel-tab");
+      const ads = document.querySelectorAll(".carousel-ad");
+      
+      tabs.forEach((tab, index) => {
+        tab.classList.toggle("active", index === tabIndex);
+      });
+      
+      ads.forEach((ad, index) => {
+        ad.classList.toggle("active", index === tabIndex);
+      });
+    };
 
     // ===== INITIALIZE APP =====
     initializeApp();
