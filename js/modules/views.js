@@ -1,754 +1,497 @@
 
-// ============================================
-// views.js - PLAYER PAGES (COMPLETE)
-// ============================================
+import { api } from "./auth.js";
+import { state } from "../router.js";
 
-export const views = {
-  // ===== HOME DASHBOARD =====
-  home: async function() {
-    const member = window.appState?.member;
-    const role = window.appState?.role;
+const escapeHtml = value => String(value ?? "")
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replaceAll('"', "&quot;")
+  .replaceAll("'", "&#039;");
 
-    if (!member) {
-      return '<div class="error-message">❌ Member data not found</div>';
-    }
+const bhd = fils => `BHD ${(Number(fils || 0) / 1000).toFixed(3)}`;
 
-    try {
-      // Fetch member's attendance data
-      const attendanceData = await window.api.getAttendance(member.id);
-      const sessionsData = await window.api.getSessions(member.flightId);
+function clubDate(value) {
+  if (!value) return null;
+  const date = value?._seconds ? new Date(Number(value._seconds) * 1000) : new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
 
-      // Calculate metrics
-      const sessionsAttended = attendanceData?.attendance?.filter(a => a.status === 'PRESENT').length || 0;
-      const pendingAmount = member.pendingAmount || 0;
-      const arrears = member.arrears || 0;
-      const walletBalanceBHD = (member.walletBalanceFils || 0) / 1000;
+function dateLabel(value) {
+  const date = clubDate(value);
+  return date ? date.toLocaleDateString("en-BH", { dateStyle: "medium", timeZone: "Asia/Bahrain" }) : "—";
+}
 
-      // Find upcoming session
-      const upcomingSession = sessionsData?.sessions?.find(s => s.status === 'SCHEDULED') || null;
+function dateTime(value) {
+  const date = clubDate(value);
+  return date ? date.toLocaleString("en-BH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bahrain" }) : "—";
+}
 
-      // Update app state
-      window.setState({
-        sessionsAttended: sessionsAttended,
-        pendingAmount: pendingAmount,
-        arrears: arrears,
-        walletBalanceFils: member.walletBalanceFils || 0,
-        upcomingSession: upcomingSession
-      });
+function notify(message) {
+  window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: message }));
+}
 
-      let html = `
-        <div class="page-header">
-          <h1>👋 Welcome, ${member.fullName}</h1>
-          <p>Your personal dashboard</p>
-        </div>
+function refresh() {
+  window.dispatchEvent(new CustomEvent("indianclub:render"));
+}
 
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #e3f2fd; color: #1976d2;">📊</div>
-            <div class="stat-content">
-              <h3>${sessionsAttended}</h3>
-              <p>Sessions Attended</p>
-            </div>
-          </div>
+// ===== PLAYER HOME PAGE =====
+export async function playerHomeView() {
+  const [member, sessions, wallet, attendance] = await Promise.all([
+    api("/members/me"),
+    api("/timetable/mine"),
+    api("/wallet/me"),
+    api("/attendance/mine")
+  ]);
 
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #fff3e0; color: #f57c00;">⏳</div>
-            <div class="stat-content">
-              <h3>BHD ${(pendingAmount / 1000).toFixed(3)}</h3>
-              <p>Pending Amount</p>
-            </div>
-          </div>
+  const upcomingSessions = sessions.filter(s => new Date(s.startAt) > new Date()).slice(0, 3);
+  const recentAttendance = attendance.slice(0, 5);
+  const pendingAmount = wallet.pendingAmount || 0;
 
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #ffebee; color: #d32f2f;">⚠️</div>
-            <div class="stat-content">
-              <h3>BHD ${(arrears / 1000).toFixed(3)}</h3>
-              <p>Arrears</p>
-            </div>
-          </div>
+  return `
+    <section class="card">
+      <h2>Welcome, ${escapeHtml(member.fullName)}</h2>
+      <p class="note">Member ID: ${escapeHtml(member.memberId)} | Flight: ${escapeHtml(member.flightName)}</p>
+    </section>
 
-          <div class="stat-card">
-            <div class="stat-icon" style="background: #e8f5e9; color: #388e3c;">💰</div>
-            <div class="stat-content">
-              <h3>BHD ${walletBalanceBHD.toFixed(3)}</h3>
-              <p>Wallet Credit</p>
-            </div>
-          </div>
-        </div>
-      `;
+    <div class="grid two">
+      <section class="card">
+        <h3>💰 Wallet Balance</h3>
+        <div class="session"><b>${bhd(wallet.balanceFils || 0)}</b></div>
+        <small>Available credit</small>
+      </section>
 
-      // Upcoming Session Card
-      if (upcomingSession) {
-        html += `
-          <div class="card">
-            <h2>📅 Upcoming Session</h2>
-            <div style="background: #f5f7fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-              <p><strong>Activity:</strong> ${upcomingSession.activity}</p>
-              <p><strong>Day:</strong> ${upcomingSession.day}</p>
-              <p><strong>Time:</strong> ${upcomingSession.startTime} - ${upcomingSession.endTime}</p>
-              <p><strong>Flight:</strong> ${upcomingSession.flight}</p>
-              <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="btn btn-success" onclick="window.respondToSession('${upcomingSession.id}', 'PRESENT')" data-self-attendance="PRESENT">
-                  ✓ I am coming
-                </button>
-                <button class="btn btn-danger" onclick="window.respondToSession('${upcomingSession.id}', 'ABSENT')" data-self-attendance="ABSENT">
-                  ✗ Not coming
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }
+      <section class="card">
+        <h3>💳 Pending Amount</h3>
+        <div class="session"><b>${bhd(pendingAmount)}</b></div>
+        <small>Due for payment</small>
+      </section>
 
-      html += `
-        <div class="card">
-          <h2>📊 Quick Stats</h2>
-          <table class="data-table">
-            <tr>
-              <td><strong>Member Since:</strong></td>
-              <td>${member.memberSince || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td><strong>Flight Level:</strong></td>
-              <td>${member.flightId || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td><strong>Status:</strong></td>
-              <td><span class="badge badge-success">${member.active ? 'ACTIVE' : 'INACTIVE'}</span></td>
-            </tr>
-            <tr>
-              <td><strong>Role:</strong></td>
-              <td>${role === 'LEVEL_ADMIN' ? 'Flight Admin' : role === 'SUPER_ADMIN' ? 'Super Admin' : 'Player'}</td>
-            </tr>
-          </table>
-        </div>
-      `;
+      <section class="card">
+        <h3>🎮 Sessions Attended</h3>
+        <div class="session"><b>${attendance.length}</b></div>
+        <small>Total games played</small>
+      </section>
 
-      return html;
+      <section class="card">
+        <h3>📅 Upcoming Sessions</h3>
+        <div class="session"><b>${upcomingSessions.length}</b></div>
+        <small>Scheduled for you</small>
+      </section>
+    </div>
 
-    } catch (error) {
-      console.error('❌ Error loading home:', error);
-      return `<div class="error-message">❌ Error loading dashboard: ${error.message}</div>`;
-    }
-  },
-
-  // ===== MY TIMETABLE =====
-  timetable: async function() {
-    const member = window.appState?.member;
-
-    if (!member) {
-      return '<div class="error-message">❌ Member data not found</div>';
-    }
-
-    try {
-      const timetableData = await window.api.getTimetable(member.flightId);
-      const timetable = timetableData?.timetable || [];
-
-      let html = `
-        <div class="page-header">
-          <h1>📅 My Timetable</h1>
-          <p>Weekly schedule for ${member.flightId} flight</p>
-        </div>
-
-        <div class="card">
-          <h2>Weekly Schedule</h2>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Level</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Activity</th>
-                <th>Court</th>
-              </tr>
-            </thead>
+    <section class="card">
+      <h3>📅 Upcoming Sessions</h3>
+      ${upcomingSessions.length ? `
+        <div class="table-wrap">
+          <table class="schedule">
+            <thead><tr><th>Date</th><th>Flight</th><th>Time</th><th>Status</th></tr></thead>
             <tbody>
-      `;
-
-      if (timetable.length === 0) {
-        html += '<tr><td colspan="6" style="text-align: center; color: #999;">No sessions scheduled</td></tr>';
-      } else {
-        timetable.forEach(slot => {
-          html += `
-            <tr>
-              <td><strong>${slot.day}</strong></td>
-              <td>${slot.level}</td>
-              <td>${slot.startTime}</td>
-              <td>${slot.endTime}</td>
-              <td>${slot.activity}</td>
-              <td>${slot.court}</td>
-            </tr>
-          `;
-        });
-      }
-
-      html += `
+              ${upcomingSessions.map(s => `
+                <tr>
+                  <td>${escapeHtml(dateLabel(s.startAt))}</td>
+                  <td>${escapeHtml(s.flightName)}</td>
+                  <td>${escapeHtml(dateTime(s.startAt))}</td>
+                  <td><span class="tag blue">${escapeHtml(s.status || "SCHEDULED")}</span></td>
+                </tr>
+              `).join("")}
             </tbody>
           </table>
         </div>
-      `;
+      ` : `<p class="note">No upcoming sessions scheduled.</p>`}
+    </section>
 
-      return html;
-
-    } catch (error) {
-      console.error('❌ Error loading timetable:', error);
-      return `<div class="error-message">❌ Error loading timetable: ${error.message}</div>`;
-    }
-  },
-
-  // ===== ATTENDANCE ROSTER =====
-  attendance: async function() {
-    const member = window.appState?.member;
-
-    if (!member) {
-      return '<div class="error-message">❌ Member data not found</div>';
-    }
-
-    try {
-      const sessionsData = await window.api.getSessions(member.flightId);
-      const upcomingSession = sessionsData?.sessions?.find(s => s.status === 'SCHEDULED');
-
-      if (!upcomingSession) {
-        return `
-          <div class="page-header">
-            <h1>✓ Attendance Roster</h1>
-            <p>Real-time headcount for upcoming sessions</p>
-          </div>
-          <div class="card">
-            <p style="color: #999; text-align: center; padding: 40px;">No upcoming sessions</p>
-          </div>
-        `;
-      }
-
-      const attendanceData = await window.api.getAttendance(upcomingSession.id);
-      const presentMembers = attendanceData?.attendance?.filter(a => a.status === 'PRESENT') || [];
-
-      let html = `
-        <div class="page-header">
-          <h1>✓ Attendance Roster</h1>
-          <p>Real-time headcount for ${upcomingSession.day} - ${upcomingSession.startTime}</p>
-        </div>
-
-        <div class="card">
-          <h2>Present Members (${presentMembers.length})</h2>
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Time In</th>
-              </tr>
-            </thead>
+    <section class="card">
+      <h3>📊 Recent Attendance</h3>
+      ${recentAttendance.length ? `
+        <div class="table-wrap">
+          <table class="schedule">
+            <thead><tr><th>Date</th><th>Flight</th><th>Status</th><th>Amount</th></tr></thead>
             <tbody>
-      `;
-
-      if (presentMembers.length === 0) {
-        html += '<tr><td colspan="4" style="text-align: center; color: #999;">No members present yet</td></tr>';
-      } else {
-        presentMembers.forEach((member, index) => {
-          html += `
-            <tr>
-              <td>${index + 1}</td>
-              <td><strong>${member.name}</strong></td>
-              <td><span class="badge badge-success">PRESENT</span></td>
-              <td>${member.timeIn || 'N/A'}</td>
-            </tr>
-          `;
-        });
-      }
-
-      html += `
+              ${recentAttendance.map(a => `
+                <tr>
+                  <td>${escapeHtml(dateLabel(a.sessionDate))}</td>
+                  <td>${escapeHtml(a.flightName)}</td>
+                  <td><span class="tag ${a.status === "PRESENT" ? "blue" : "red"}">${escapeHtml(a.status)}</span></td>
+                  <td>${bhd(a.chargeFils || 0)}</td>
+                </tr>
+              `).join("")}
             </tbody>
           </table>
         </div>
-      `;
+      ` : `<p class="note">No attendance records yet.</p>`}
+    </section>
+  `;
+}
 
-      return html;
+// ===== PLAYER TIMETABLE PAGE =====
+export async function playerTimetableView() {
+  const sessions = await api("/timetable/mine");
+  const today = new Date();
+  const upcomingSessions = sessions.filter(s => new Date(s.startAt) >= today);
+  const pastSessions = sessions.filter(s => new Date(s.startAt) < today);
 
-    } catch (error) {
-      console.error('❌ Error loading attendance:', error);
-      return `<div class="error-message">❌ Error loading attendance: ${error.message}</div>`;
-    }
-  },
+  return `
+    <section class="card">
+      <h2>📅 My Timetable</h2>
+      <p class="note">Your scheduled sessions for ${escapeHtml(state.member.flightName)}</p>
+    </section>
 
-  // ===== WALLET & PAYMENTS =====
-  wallet: async function() {
-    const member = window.appState?.member;
+    <section class="card">
+      <h3>🔜 Upcoming Sessions (${upcomingSessions.length})</h3>
+      ${upcomingSessions.length ? `
+        <div class="table-wrap">
+          <table class="schedule">
+            <thead><tr><th>Date</th><th>Time</th><th>Duration</th><th>Status</th></tr></thead>
+            <tbody>
+              ${upcomingSessions.map(s => {
+                const start = new Date(s.startAt);
+                const end = new Date(s.endAt);
+                const duration = Math.round((end - start) / 60000);
+                return `
+                  <tr>
+                    <td><b>${escapeHtml(dateLabel(s.startAt))}</b></td>
+                    <td>${escapeHtml(dateTime(s.startAt))}</td>
+                    <td>${duration} minutes</td>
+                    <td><span class="tag blue">${escapeHtml(s.status || "SCHEDULED")}</span></td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : `<p class="note">No upcoming sessions scheduled.</p>`}
+    </section>
 
-    if (!member) {
-      return '<div class="error-message">❌ Member data not found</div>';
-    }
+    <section class="card">
+      <h3>✅ Past Sessions (${pastSessions.length})</h3>
+      ${pastSessions.length ? `
+        <div class="table-wrap">
+          <table class="schedule">
+            <thead><tr><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+            <tbody>
+              ${pastSessions.slice(0, 10).map(s => `
+                <tr>
+                  <td>${escapeHtml(dateLabel(s.startAt))}</td>
+                  <td>${escapeHtml(dateTime(s.startAt))}</td>
+                  <td><span class="tag ${s.status === "COMPLETED" ? "blue" : "amber"}">${escapeHtml(s.status || "COMPLETED")}</span></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : `<p class="note">No past sessions.</p>`}
+    </section>
+  `;
+}
 
-    const walletBalanceBHD = (member.walletBalanceFils || 0) / 1000;
+// ===== PLAYER ATTENDANCE PAGE =====
+export async function playerAttendanceView() {
+  const attendance = await api("/attendance/mine");
+  const presentCount = attendance.filter(a => a.status === "PRESENT").length;
+  const absentCount = attendance.filter(a => a.status === "ABSENT").length;
 
-    let html = `
-      <div class="page-header">
-        <h1>💰 Wallet & Payments</h1>
-        <p>Manage your account balance and payments</p>
+  return `
+    <section class="card">
+      <h2>📊 My Attendance</h2>
+      <p class="note">Complete attendance history for all sessions</p>
+    </section>
+
+    <div class="grid two">
+      <section class="card">
+        <h3>✅ Present</h3>
+        <div class="session"><b>${presentCount}</b></div>
+        <small>Sessions attended</small>
+      </section>
+
+      <section class="card">
+        <h3>❌ Absent</h3>
+        <div class="session"><b>${absentCount}</b></div>
+        <small>Sessions missed</small>
+      </section>
+    </div>
+
+    <section class="card">
+      <h3>📋 Attendance Records</h3>
+      ${attendance.length ? `
+        <div class="table-wrap">
+          <table class="schedule">
+            <thead><tr><th>Date</th><th>Flight</th><th>Status</th><th>Charge</th><th>Payment</th></tr></thead>
+            <tbody>
+              ${attendance.map(a => `
+                <tr>
+                  <td>${escapeHtml(dateLabel(a.sessionDate))}</td>
+                  <td>${escapeHtml(a.flightName)}</td>
+                  <td><span class="tag ${a.status === "PRESENT" ? "blue" : "red"}">${escapeHtml(a.status)}</span></td>
+                  <td>${bhd(a.chargeFils || 0)}</td>
+                  <td><span class="tag ${a.paymentStatus === "PAID" ? "blue" : "red"}">${escapeHtml(a.paymentStatus || "PENDING")}</span></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : `<p class="note">No attendance records yet.</p>`}
+    </section>
+  `;
+}
+
+// ===== PLAYER WALLET PAGE =====
+export async function playerWalletView() {
+  const [wallet, transactions] = await Promise.all([
+    api("/wallet/me"),
+    api("/wallet/transactions")
+  ]);
+
+  const credits = transactions.filter(t => t.type === "CREDIT");
+  const charges = transactions.filter(t => t.type === "CHARGE");
+  const payments = transactions.filter(t => t.type === "PAYMENT");
+
+  return `
+    <section class="card">
+      <h2>💰 My Wallet</h2>
+      <p class="note">Manage your credits, charges, and payments</p>
+    </section>
+
+    <div class="grid two">
+      <section class="card">
+        <h3>💳 Available Balance</h3>
+        <div class="session"><b>${bhd(wallet.balanceFils || 0)}</b></div>
+        <small>Ready to use</small>
+      </section>
+
+      <section class="card">
+        <h3>⚠️ Pending Charges</h3>
+        <div class="session"><b>${bhd(wallet.pendingAmount || 0)}</b></div>
+        <small>Due for payment</small>
+      </section>
+
+      <section class="card">
+        <h3>➕ Total Credits</h3>
+        <div class="session"><b>${bhd(credits.reduce((sum, t) => sum + (t.amountFils || 0), 0))}</b></div>
+        <small>Received</small>
+      </section>
+
+      <section class="card">
+        <h3>➖ Total Charges</h3>
+        <div class="session"><b>${bhd(charges.reduce((sum, t) => sum + (t.amountFils || 0), 0))}</b></div>
+        <small>Incurred</small>
+      </section>
+    </div>
+
+    <section class="card">
+      <h3>📜 Transaction History</h3>
+      ${transactions.length ? `
+        <div class="table-wrap">
+          <table class="schedule">
+            <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Description</th><th>Status</th></tr></thead>
+            <tbody>
+              ${transactions.slice(0, 20).map(t => `
+                <tr>
+                  <td>${escapeHtml(dateLabel(t.createdAt))}</td>
+                  <td><span class="tag ${t.type === "CREDIT" ? "blue" : t.type === "CHARGE" ? "red" : "green"}">${escapeHtml(t.type)}</span></td>
+                  <td>${bhd(t.amountFils || 0)}</td>
+                  <td>${escapeHtml(t.description || "—")}</td>
+                  <td><span class="tag ${t.status === "COMPLETED" ? "blue" : "amber"}">${escapeHtml(t.status || "PENDING")}</span></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : `<p class="note">No transactions yet.</p>`}
+    </section>
+  `;
+}
+
+// ===== PLAYER BAZAAR PAGE =====
+export async function playerBazaarView() {
+  const businesses = await api("/business/approved");
+  const categories = [...new Set(businesses.map(b => b.category))];
+
+  return `
+    <section class="card">
+      <h2>🏪 Community Directory</h2>
+      <p class="note">Approved businesses and services for club members</p>
+    </section>
+
+    <section class="card">
+      <h3>🔍 Filter by Category</h3>
+      <div class="actions">
+        <button class="pill" onclick="window.filterBazaar('')">All (${businesses.length})</button>
+        ${categories.map(cat => {
+          const count = businesses.filter(b => b.category === cat).length;
+          return `<button class="pill" onclick="window.filterBazaar('${escapeHtml(cat)}')">${escapeHtml(cat)} (${count})</button>`;
+        }).join("")}
       </div>
+    </section>
 
-      <div class="card">
-        <h2>Current Balance</h2>
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
-          <p style="font-size: 14px; opacity: 0.9;">Available Balance</p>
-          <h1 style="font-size: 48px; margin: 10px 0;">BHD ${walletBalanceBHD.toFixed(3)}</h1>
-          <p style="font-size: 12px; opacity: 0.8;">${member.walletBalanceFils} Fils</p>
+    <div id="bazaarList">
+      ${businesses.length ? businesses.map(b => `
+        <article class="card">
+          <div class="session">
+            <div class="grow">
+              <b>${escapeHtml(b.businessName)}</b>
+              <p>${escapeHtml(b.description || "")}</p>
+              <small>Category: ${escapeHtml(b.category)}</small>
+            </div>
+            <span class="tag blue">APPROVED</span>
+          </div>
+          <div class="actions">
+            <button class="pill" onclick="window.contactBusiness('${escapeHtml(b.phone)}')">📞 Call</button>
+            <button class="pill" onclick="window.contactBusiness('${escapeHtml(b.email)}')">📧 Email</button>
+            ${b.website ? `<button class="pill" onclick="window.open('${escapeHtml(b.website)}', '_blank')">🌐 Website</button>` : ""}
+          </div>
+        </article>
+      `).join("") : `<p class="note">No approved businesses yet.</p>`}
+    </div>
+  `;
+}
+
+// ===== PLAYER PROFILE PAGE =====
+export async function playerProfileView() {
+  const member = await api("/members/me");
+
+  return `
+    <section class="card">
+      <h2>👤 My Profile</h2>
+      <p class="note">Manage your personal information</p>
+    </section>
+
+    <section class="card">
+      <h3>📸 Profile Picture</h3>
+      <div class="field">
+        ${member.photoUrl ? `<img src="${escapeHtml(member.photoUrl)}" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">` : `<p class="note">No profile picture yet</p>`}
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="document.getElementById('photoUpload').click()">📤 Upload Photo</button>
+        <input type="file" id="photoUpload" accept="image/*" style="display: none;" onchange="window.uploadProfilePhoto(event)">
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>📋 Personal Information</h3>
+      <div class="grid two">
+        <div class="field">
+          <label>Full Name</label>
+          <div class="session"><b>${escapeHtml(member.fullName)}</b></div>
+        </div>
+        <div class="field">
+          <label>Member ID</label>
+          <div class="session"><b>${escapeHtml(member.memberId)}</b></div>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <div class="session"><b>${escapeHtml(member.email)}</b></div>
+        </div>
+        <div class="field">
+          <label>Phone</label>
+          <div class="session"><b>${escapeHtml(member.phone)}</b></div>
+        </div>
+        <div class="field">
+          <label>Flight / Level</label>
+          <div class="session"><b>${escapeHtml(member.flightName)}</b></div>
+        </div>
+        <div class="field">
+          <label>Member Since</label>
+          <div class="session"><b>${escapeHtml(dateLabel(member.createdAt))}</b></div>
         </div>
       </div>
+    </section>
 
-      <div class="card">
-        <h2>Submit Payment</h2>
-        <form id="paymentForm" onsubmit="window.submitPayment(event)">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Payment Method *</label>
-              <select id="paymentMethod" required>
-                <option value="">Select method</option>
-                <option value="BENEFIT_PAY">BenefitPay</option>
-                <option value="CASH">Cash</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Reference Number *</label>
-              <input type="text" id="paymentRef" placeholder="Transaction reference" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Amount (BHD) *</label>
-            <input type="number" id="paymentAmount" placeholder="0.000" step="0.001" min="0" required>
-          </div>
-
-          <button type="submit" class="btn btn-primary" id="submitPaymentBtn">Submit Payment</button>
-        </form>
+    <section class="card">
+      <h3>🔐 Account Settings</h3>
+      <div class="actions">
+        <button class="primary" onclick="window.changePassword()">🔑 Change Password</button>
+        <button class="pill" onclick="window.logout()">🚪 Logout</button>
       </div>
+    </section>
+  `;
+}
 
-      <div class="card">
-        <h2>Payment Statement</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Amount (BHD)</th>
-              <th>Type</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>2026-09-14</td>
-              <td>Session charge - Badminton</td>
-              <td>-0.167</td>
-              <td>Deduction</td>
-              <td><span class="badge badge-success">PAID</span></td>
-            </tr>
-            <tr>
-              <td>2026-09-13</td>
-              <td>Manual credit</td>
-              <td>+10.000</td>
-              <td>Credit</td>
-              <td><span class="badge badge-success">VERIFIED</span></td>
-            </tr>
-            <tr>
-              <td>2026-09-12</td>
-              <td>Payment submission</td>
-              <td>+5.000</td>
-              <td>Credit</td>
-              <td><span class="badge badge-warning">PENDING</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
+// ===== PLAYER LOGS PAGE =====
+export async function playerLogsView() {
+  const logs = await api("/members/audit/me");
 
-    return html;
-  },
+  return `
+    <section class="card">
+      <h2>📜 My Activity Log</h2>
+      <p class="note">Complete history of your actions and transactions</p>
+    </section>
 
-  // ===== MY PROFILE =====
-  profile: async function() {
-    const member = window.appState?.member;
-
-    if (!member) {
-      return '<div class="error-message">❌ Member data not found</div>';
-    }
-
-    let html = `
-      <div class="page-header">
-        <h1>👤 My Profile</h1>
-        <p>Manage your personal information</p>
-      </div>
-
-      <div class="card">
-        <h2>Personal Information</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Full Name</label>
-            <input type="text" value="${member.fullName}" disabled>
-          </div>
-          <div class="form-group">
-            <label>Email Address</label>
-            <input type="email" value="${member.email}" disabled>
-          </div>
+    <section class="card">
+      <h3>📋 Recent Activities</h3>
+      ${logs.length ? `
+        <div class="table-wrap">
+          <table class="schedule">
+            <thead><tr><th>Date</th><th>Action</th><th>Category</th><th>Details</th></tr></thead>
+            <tbody>
+              ${logs.slice(0, 50).map(log => `
+                <tr>
+                  <td>${escapeHtml(dateTime(log.createdAt))}</td>
+                  <td>${escapeHtml(log.action || "—")}</td>
+                  <td><span class="tag amber">${escapeHtml(log.category || "ACTIVITY")}</span></td>
+                  <td>${escapeHtml(log.detail || "—")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
         </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Phone Number</label>
-            <input type="tel" value="${member.phone}" disabled>
-          </div>
-          <div class="form-group">
-            <label>Member Since</label>
-            <input type="text" value="${member.memberSince || 'N/A'}" disabled>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Activity Information</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Primary Activity</label>
-            <input type="text" value="Badminton" disabled>
-          </div>
-          <div class="form-group">
-            <label>Flight Level</label>
-            <input type="text" value="${member.flightId}" disabled>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Status</label>
-            <input type="text" value="${member.active ? 'ACTIVE' : 'INACTIVE'}" disabled>
-          </div>
-          <div class="form-group">
-            <label>Role</label>
-            <input type="text" value="${member.role}" disabled>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Change Password</h2>
-        <form id="changePasswordForm" onsubmit="window.changePassword(event)">
-          <div class="form-group">
-            <label>Current Password *</label>
-            <input type="password" id="currentPassword" placeholder="••••••••" required>
-          </div>
-
-          <div class="form-group">
-            <label>New Password *</label>
-            <input type="password" id="newPassword" placeholder="••••••••" minlength="6" required>
-          </div>
-
-          <div class="form-group">
-            <label>Confirm New Password *</label>
-            <input type="password" id="confirmPassword" placeholder="••••••••" minlength="6" required>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Update Password</button>
-        </form>
-      </div>
-    `;
-
-    return html;
-  },
-
-  // ===== BAZAAR =====
-  bazaar: async function() {
-    let html = `
-      <div class="page-header">
-        <h1>🛍️ BaZaar - Community Marketplace</h1>
-        <p>Buy, sell, and connect with club members</p>
-      </div>
-
-      <div class="card">
-        <h2>Post New Item</h2>
-        <form id="bazaarForm" onsubmit="window.submitBazaarItem(event)">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Item Title *</label>
-              <input type="text" id="bazaarTitle" placeholder="What are you selling?" required>
-            </div>
-            <div class="form-group">
-              <label>Category *</label>
-              <select id="bazaarCategory" required>
-                <option value="">Select category</option>
-                <option value="sports">Sports Equipment</option>
-                <option value="electronics">Electronics</option>
-                <option value="furniture">Furniture</option>
-                <option value="clothing">Clothing</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Price (BHD) *</label>
-              <input type="number" id="bazaarPrice" placeholder="0.000" step="0.001" min="0" required>
-            </div>
-            <div class="form-group">
-              <label>Contact Number *</label>
-              <input type="tel" id="bazaarPhone" placeholder="+973 XXXX XXXX" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Description</label>
-            <textarea id="bazaarDescription" placeholder="Describe your item..."></textarea>
-          </div>
-
-          <button type="submit" class="btn btn-primary">Post Item</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>Available Items</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
-          <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
-            <h4>Badminton Racket</h4>
-            <p style="color: #999; font-size: 12px;">Sports Equipment</p>
-            <p style="margin: 10px 0;"><strong>BHD 25.000</strong></p>
-            <p style="font-size: 13px; color: #666;">Barely used, excellent condition</p>
-            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;">Contact Seller</button>
-          </div>
-
-          <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
-            <h4>Sports Shoes</h4>
-            <p style="color: #999; font-size: 12px;">Clothing</p>
-            <p style="margin: 10px 0;"><strong>BHD 35.000</strong></p>
-            <p style="font-size: 13px; color: #666;">Size 42, professional grade</p>
-            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;">Contact Seller</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    return html;
-  },
-
-  // ===== ACTIVITY LOGS =====
-  logs: async function() {
-    const member = window.appState?.member;
-
-    if (!member) {
-      return '<div class="error-message">❌ Member data not found</div>';
-    }
-
-    let html = `
-      <div class="page-header">
-        <h1>📜 Activity Logs</h1>
-        <p>Your personal activity history</p>
-      </div>
-
-      <div class="card">
-        <h2>Login & Authentication Logs</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date & Time</th>
-              <th>Event</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>2026-09-14 11:30:00</td>
-              <td>Login successful</td>
-              <td><span class="badge badge-success">SUCCESS</span></td>
-            </tr>
-            <tr>
-              <td>2026-09-13 18:45:00</td>
-              <td>Login successful</td>
-              <td><span class="badge badge-success">SUCCESS</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Attendance Logs</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Session</th>
-              <th>Status</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>2026-09-14</td>
-              <td>Badminton - Premier</td>
-              <td><span class="badge badge-success">PRESENT</span></td>
-              <td>06:00</td>
-            </tr>
-            <tr>
-              <td>2026-09-12</td>
-              <td>Badminton - Premier</td>
-              <td><span class="badge badge-success">PRESENT</span></td>
-              <td>06:05</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Wallet & Payment Logs</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date & Time</th>
-              <th>Transaction</th>
-              <th>Amount (BHD)</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>2026-09-14 06:15:00</td>
-              <td>Session charge deduction</td>
-              <td>-0.167</td>
-              <td><span class="badge badge-success">PAID</span></td>
-            </tr>
-            <tr>
-              <td>2026-09-13 15:30:00</td>
-              <td>Manual credit added</td>
-              <td>+10.000</td>
-              <td><span class="badge badge-success">VERIFIED</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    return html;
-  }
-};
+      ` : `<p class="note">No activity logs yet.</p>`}
+    </section>
+  `;
+}
 
 // ===== GLOBAL FUNCTIONS =====
+window.filterBazaar = function(category) {
+  const businesses = document.querySelectorAll('[data-category]');
+  businesses.forEach(b => {
+    b.style.display = category === "" || b.dataset.category === category ? "block" : "none";
+  });
+};
 
-window.respondToSession = async function(sessionId, status) {
-  try {
-    const response = await window.api.respondToSession(sessionId, status);
-    if (response.success) {
-      alert(`✅ Response recorded: ${status}`);
-      window.navigateTo('home');
-    } else {
-      alert(`❌ ${response.message}`);
-    }
-  } catch (error) {
-    alert(`❌ Error: ${error.message}`);
+window.contactBusiness = function(contact) {
+  if (contact.includes("@")) {
+    window.location.href = `mailto:${contact}`;
+  } else {
+    window.location.href = `tel:${contact}`;
   }
 };
 
-window.submitPayment = async function(event) {
-  event.preventDefault();
-
-  const method = document.getElementById('paymentMethod')?.value;
-  const ref = document.getElementById('paymentRef')?.value?.trim();
-  const amountBHD = parseFloat(document.getElementById('paymentAmount')?.value);
-
-  // Validation
-  if (!method || !ref || !amountBHD || amountBHD <= 0) {
-    alert('❌ All fields required and amount must be > 0');
-    return;
-  }
+window.uploadProfilePhoto = async function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
   try {
-    const amountFils = Math.round(amountBHD * 1000);
-    const response = await window.api.submitPayment({
-      method: method,
-      reference: ref,
-      amountFils: amountFils,
-      status: 'PENDING_VERIFICATION'
-    });
-
-    if (response.success) {
-      alert('✅ Payment submitted for verification');
-      document.getElementById('paymentForm').reset();
-      window.navigateTo('wallet');
-    } else {
-      alert(`❌ ${response.message}`);
-    }
+    const formData = new FormData();
+    formData.append("photo", file);
+    const result = await api("/members/me/photo", { method: "POST", body: formData });
+    notify("✅ Profile photo updated successfully");
+    refresh();
   } catch (error) {
-    alert(`❌ Error: ${error.message}`);
+    notify("❌ Error uploading photo: " + error.message);
   }
 };
 
-window.changePassword = async function(event) {
-  event.preventDefault();
-
-  const current = document.getElementById('currentPassword')?.value;
-  const newPass = document.getElementById('newPassword')?.value;
-  const confirm = document.getElementById('confirmPassword')?.value;
-
-  if (newPass !== confirm) {
-    alert('❌ Passwords do not match');
-    return;
-  }
-
-  if (newPass.length < 6) {
-    alert('❌ Password must be at least 6 characters');
-    return;
-  }
-
-  try {
-    const response = await window.api.changePassword({
-      currentPassword: current,
-      newPassword: newPass
-    });
-
-    if (response.success) {
-      alert('✅ Password changed successfully');
-      document.getElementById('changePasswordForm').reset();
-    } else {
-      alert(`❌ ${response.message}`);
-    }
-  } catch (error) {
-    alert(`❌ Error: ${error.message}`);
-  }
+window.changePassword = function() {
+  const newPassword = prompt("Enter new password:");
+  if (!newPassword) return;
+  
+  api("/members/me/password", {
+    method: "POST",
+    body: JSON.stringify({ newPassword })
+  }).then(() => {
+    notify("✅ Password changed successfully");
+  }).catch(err => {
+    notify("❌ Error: " + err.message);
+  });
 };
 
-window.submitBazaarItem = async function(event) {
-  event.preventDefault();
-
-  const title = document.getElementById('bazaarTitle')?.value?.trim();
-  const category = document.getElementById('bazaarCategory')?.value;
-  const price = parseFloat(document.getElementById('bazaarPrice')?.value);
-  const phone = document.getElementById('bazaarPhone')?.value?.trim();
-  const description = document.getElementById('bazaarDescription')?.value?.trim();
-
-  if (!title || !category || !price || !phone) {
-    alert('❌ All required fields must be filled');
-    return;
-  }
-
-  try {
-    const response = await window.api.submitBazaarItem({
-      title: title,
-      category: category,
-      priceBHD: price,
-      phone: phone,
-      description: description
-    });
-
-    if (response.success) {
-      alert('✅ Item posted successfully');
-      document.getElementById('bazaarForm').reset();
-      window.navigateTo('bazaar');
-    } else {
-      alert(`❌ ${response.message}`);
-    }
-  } catch (error) {
-    alert(`❌ Error: ${error.message}`);
-  }
+export const views = {
+  home: playerHomeView,
+  timetable: playerTimetableView,
+  attendance: playerAttendanceView,
+  wallet: playerWalletView,
+  bazaar: playerBazaarView,
+  profile: playerProfileView,
+  logs: playerLogsView
 };
-
-console.log('✅ views.js loaded successfully');
 
