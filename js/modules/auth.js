@@ -1,7 +1,38 @@
 
 // ============================================
-// auth.js - AUTHENTICATION & LOGIN SYSTEM
+// auth.js - AUTHENTICATION SYSTEM (FIXED)
 // ============================================
+
+// ===== CHECK AUTHENTICATION =====
+export function checkAuth() {
+  const token = sessionStorage.getItem('authToken');
+  const memberData = sessionStorage.getItem('memberData');
+  
+  if (token && memberData) {
+    try {
+      const member = JSON.parse(memberData);
+      window.appState = {
+        ...window.appState,
+        member: member,
+        role: member.role,
+        token: token,
+        isAuthenticated: true,
+        walletBalanceFils: member.walletBalanceFils || 0,
+        sessionsAttended: member.sessionsAttended || 0,
+        pendingAmount: member.pendingAmount || 0,
+        arrears: member.arrears || 0
+      };
+      console.log('✅ Auth check passed:', member);
+      return true;
+    } catch (error) {
+      console.error('❌ Error parsing member data:', error);
+      return false;
+    }
+  }
+  
+  console.log('⚠️ No auth token found');
+  return false;
+}
 
 // ===== HANDLE LOGIN =====
 export async function handleLogin(event) {
@@ -9,93 +40,95 @@ export async function handleLogin(event) {
   
   const email = document.getElementById('loginEmail')?.value?.trim();
   const password = document.getElementById('loginPassword')?.value?.trim();
-  const errorDiv = document.getElementById('errorMessage');
+  const errorMsg = document.getElementById('errorMessage');
+
+  console.log('🔐 Login attempt:', email);
 
   // Validation
   if (!email || !password) {
-    if (errorDiv) errorDiv.textContent = '❌ Email and password are required';
-    return;
-  }
-
-  if (!window.validateEmail(email)) {
-    if (errorDiv) errorDiv.textContent = '❌ Invalid email format';
+    errorMsg.textContent = '❌ Please enter email and password';
+    errorMsg.style.display = 'block';
     return;
   }
 
   try {
     // Show loading state
-    if (errorDiv) errorDiv.textContent = '⏳ Logging in...';
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = '⏳ Signing in...';
+    submitBtn.disabled = true;
 
-    // Simulate Firebase Auth (replace with real Firebase)
+    // Call API login
+    console.log('📡 Calling API login...');
     const response = await window.api.login(email, password);
 
-    if (!response || !response.success) {
-      if (errorDiv) errorDiv.textContent = '❌ Invalid email or password';
+    console.log('📡 API response:', response);
+
+    if (!response.success) {
+      errorMsg.textContent = `❌ ${response.message || 'Login failed'}`;
+      errorMsg.style.display = 'block';
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+      console.error('❌ Login failed:', response.message);
       return;
     }
 
-    // Get member details from API
-    const memberResponse = await window.api.getMemberDetails();
-    
-    if (!memberResponse || !memberResponse.member) {
-      if (errorDiv) errorDiv.textContent = '❌ Failed to retrieve member details';
-      return;
-    }
-
-    const member = memberResponse.member;
-
-    // Check if member is active
-    if (!member.active) {
-      if (errorDiv) errorDiv.textContent = '❌ Your account is not yet activated. Please use the "Activate Account" tab.';
-      return;
-    }
-
-    // Normalize role
-    const normalizedRole = window.normalizeRole(member.role);
-
-    // Save to session
+    // Store authentication data
+    console.log('💾 Storing auth data...');
     sessionStorage.setItem('authToken', response.token);
-    sessionStorage.setItem('memberData', JSON.stringify(member));
-    sessionStorage.setItem('userRole', normalizedRole);
+    sessionStorage.setItem('memberData', JSON.stringify(response.member));
 
     // Update app state
-    if (window.setState) {
-      window.setState({
-        member: member,
-        role: normalizedRole,
-        token: response.token,
-        isAuthenticated: true
-      });
-    }
+    window.appState = {
+      ...window.appState,
+      member: response.member,
+      role: response.member.role,
+      token: response.token,
+      isAuthenticated: true,
+      walletBalanceFils: response.member.walletBalanceFils || 0,
+      sessionsAttended: response.member.sessionsAttended || 0,
+      pendingAmount: response.member.pendingAmount || 0,
+      arrears: response.member.arrears || 0
+    };
 
-    // Log activity
-    if (window.logActivity) {
-      window.logActivity('LOGIN', `User ${email} logged in successfully`, 'SUCCESS');
-    }
+    console.log('✅ Login successful:', response.member);
 
-    // Hide login, show app
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
+    // Show success message
+    errorMsg.style.background = '#d4edda';
+    errorMsg.style.color = '#155724';
+    errorMsg.style.border = '1px solid #c3e6cb';
+    errorMsg.textContent = '✅ Login successful! Redirecting...';
+    errorMsg.style.display = 'block';
 
-    // Update UI
-    if (window.updateUserUI) {
+    // Redirect to app
+    setTimeout(() => {
+      console.log('🔄 Switching to app view...');
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      
+      // Update UI
       window.updateUserUI();
-    }
-
-    // Initialize router and navigate to home
-    if (window.initializeRouter) {
       window.initializeRouter();
-    }
-
-    if (window.navigateTo) {
-      window.navigateTo('home');
-    }
-
-    console.log('✅ Login successful for:', email);
+      
+      // Reset form
+      document.getElementById('loginForm').reset();
+      errorMsg.textContent = '';
+      errorMsg.style.background = '#f8d7da';
+      errorMsg.style.color = '#721c24';
+      errorMsg.style.border = '1px solid #f5c6cb';
+      errorMsg.style.display = 'none';
+      
+      console.log('✅ App loaded successfully');
+    }, 1000);
 
   } catch (error) {
     console.error('❌ Login error:', error);
-    if (errorDiv) errorDiv.textContent = '❌ Login failed. Please try again.';
+    errorMsg.textContent = `❌ Login error: ${error.message}`;
+    errorMsg.style.display = 'block';
+    
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    submitBtn.textContent = 'Sign In';
+    submitBtn.disabled = false;
   }
 }
 
@@ -107,133 +140,174 @@ export async function handleActivate(event) {
   const phone = document.getElementById('actPhone')?.value?.trim();
   const newPass = document.getElementById('actNewPass')?.value?.trim();
   const confirmPass = document.getElementById('actConfirmPass')?.value?.trim();
-  const errorDiv = document.getElementById('errorMessage');
+  const errorMsg = document.getElementById('errorMessage');
+
+  console.log('📝 Activation attempt:', fullName);
 
   // Validation
   if (!fullName || !phone || !newPass || !confirmPass) {
-    if (errorDiv) errorDiv.textContent = '❌ All fields are required';
-    return;
-  }
-
-  if (!window.validatePhone(phone)) {
-    if (errorDiv) errorDiv.textContent = '❌ Invalid phone number format';
-    return;
-  }
-
-  if (!window.validatePassword(newPass)) {
-    if (errorDiv) errorDiv.textContent = '❌ Password must be at least 6 characters';
+    errorMsg.textContent = '❌ All fields are required';
+    errorMsg.style.display = 'block';
     return;
   }
 
   if (newPass !== confirmPass) {
-    if (errorDiv) errorDiv.textContent = '❌ Passwords do not match';
+    errorMsg.textContent = '❌ Passwords do not match';
+    errorMsg.style.display = 'block';
     return;
   }
 
   try {
     // Show loading state
-    if (errorDiv) errorDiv.textContent = '⏳ Activating account...';
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = '⏳ Activating...';
+    submitBtn.disabled = true;
 
-    // Call activation API
+    // Call API
+    console.log('📡 Calling API activate...');
     const response = await window.api.activateAccount({
       fullName: fullName,
       phone: phone,
       password: newPass
     });
 
-    if (!response || !response.success) {
-      if (errorDiv) errorDiv.textContent = response?.message || '❌ Activation failed. Name and phone do not match our records.';
+    console.log('📡 API response:', response);
+
+    if (!response.success) {
+      errorMsg.textContent = `❌ ${response.message || 'Activation failed'}`;
+      errorMsg.style.display = 'block';
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+      console.error('❌ Activation failed:', response.message);
       return;
     }
 
-    // Log activity
-    if (window.logActivity) {
-      window.logActivity('ACCOUNT_ACTIVATION', `Account activated for ${fullName}`, 'SUCCESS');
-    }
+    console.log('✅ Account activated:', response.member);
 
     // Show success message
-    if (errorDiv) {
-      errorDiv.style.color = '#155724';
-      errorDiv.style.background = '#d4edda';
-      errorDiv.textContent = '✅ Account activated successfully! Please login with your new password.';
-    }
+    errorMsg.style.background = '#d4edda';
+    errorMsg.style.color = '#155724';
+    errorMsg.style.border = '1px solid #c3e6cb';
+    errorMsg.textContent = '✅ Account activated! You can now login.';
+    errorMsg.style.display = 'block';
 
-    // Clear form
-    document.getElementById('activateForm').reset();
-
-    // Switch back to login tab after 2 seconds
+    // Reset form and switch to login tab
     setTimeout(() => {
-      window.switchLoginTab('login');
-      if (errorDiv) {
-        errorDiv.style.color = '#721c24';
-        errorDiv.style.background = '#f8d7da';
-        errorDiv.textContent = '';
-      }
-    }, 2000);
-
-    console.log('✅ Account activated for:', fullName);
+      document.getElementById('activateForm').reset();
+      window.switchAuthTab('login');
+      errorMsg.textContent = '';
+      errorMsg.style.background = '#f8d7da';
+      errorMsg.style.color = '#721c24';
+      errorMsg.style.border = '1px solid #f5c6cb';
+      errorMsg.style.display = 'none';
+    }, 1500);
 
   } catch (error) {
     console.error('❌ Activation error:', error);
-    if (errorDiv) errorDiv.textContent = '❌ Activation failed. Please try again.';
-  }
-}
-
-// ===== CHECK AUTHENTICATION =====
-export function checkAuth() {
-  const token = sessionStorage.getItem('authToken');
-  const memberData = sessionStorage.getItem('memberData');
-
-  if (!token || !memberData) {
-    return false;
-  }
-
-  try {
-    const member = JSON.parse(memberData);
-    if (window.setState) {
-      window.setState({
-        member: member,
-        role: window.normalizeRole(member.role),
-        token: token,
-        isAuthenticated: true
-      });
-    }
-    return true;
-  } catch (error) {
-    console.error('❌ Auth check error:', error);
-    return false;
+    errorMsg.textContent = `❌ Activation error: ${error.message}`;
+    errorMsg.style.display = 'block';
+    
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    submitBtn.textContent = 'Activate Account';
+    submitBtn.disabled = false;
   }
 }
 
 // ===== LOGOUT =====
 export function logout() {
-  sessionStorage.removeItem('authToken');
-  sessionStorage.removeItem('memberData');
-  sessionStorage.removeItem('userRole');
+  if (confirm('Are you sure you want to logout?')) {
+    console.log('🚪 Logging out...');
+    
+    // Clear session storage
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('memberData');
 
-  if (window.setState) {
-    window.setState({
+    // Reset app state
+    window.appState = {
       member: null,
       role: null,
       token: null,
-      isAuthenticated: false
+      isAuthenticated: false,
+      sessionsAttended: 0,
+      pendingAmount: 0,
+      arrears: 0,
+      walletBalanceFils: 0,
+      upcomingSession: null
+    };
+
+    // Show login page
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'flex';
+
+    // Reset forms
+    document.getElementById('loginForm').reset();
+    document.getElementById('activateForm').reset();
+    document.getElementById('errorMessage').textContent = '';
+    document.getElementById('errorMessage').style.display = 'none';
+
+    console.log('✅ Logged out successfully');
+  }
+}
+
+// ===== UPDATE USER UI =====
+window.updateUserUI = function() {
+  console.log('🎨 Updating user UI...');
+  
+  const member = window.appState?.member;
+  const role = window.appState?.role;
+  
+  if (!member) {
+    console.warn('⚠️ No member data available');
+    return;
+  }
+
+  // Update user name in header
+  const userNameEl = document.getElementById('userName');
+  if (userNameEl) {
+    userNameEl.textContent = member.fullName || 'User';
+    console.log('✅ Updated user name:', member.fullName);
+  }
+
+  // Update role badge
+  const roleEl = document.getElementById('userRole');
+  if (roleEl) {
+    const roleDisplay = role === 'LEVEL_ADMIN' ? 'Flight Admin' : role === 'SUPER_ADMIN' ? 'Super Admin' : 'Player';
+    roleEl.textContent = roleDisplay;
+    console.log('✅ Updated role:', roleDisplay);
+  }
+
+  // Show/hide navigation based on role
+  updateNavigationVisibility(role);
+};
+
+// ===== UPDATE NAVIGATION VISIBILITY =====
+function updateNavigationVisibility(role) {
+  console.log('🔀 Updating navigation for role:', role);
+  
+  // Hide all nav sections first
+  document.querySelectorAll('.nav-section').forEach(section => {
+    section.style.display = 'none';
+  });
+
+  // Show sections based on role
+  const navSections = document.querySelectorAll('.nav-section');
+  
+  if (role === 'PLAYER') {
+    if (navSections[0]) navSections[0].style.display = 'block';
+    if (navSections[3]) navSections[3].style.display = 'block';
+    console.log('✅ Showing PLAYER navigation');
+  } else if (role === 'LEVEL_ADMIN') {
+    if (navSections[0]) navSections[0].style.display = 'block';
+    if (navSections[1]) navSections[1].style.display = 'block';
+    if (navSections[3]) navSections[3].style.display = 'block';
+    console.log('✅ Showing LEVEL_ADMIN navigation');
+  } else if (role === 'SUPER_ADMIN') {
+    navSections.forEach(section => {
+      section.style.display = 'block';
     });
+    console.log('✅ Showing SUPER_ADMIN navigation');
   }
-
-  // Log activity
-  if (window.logActivity) {
-    window.logActivity('LOGOUT', 'User logged out', 'SUCCESS');
-  }
-
-  // Show login, hide app
-  document.getElementById('login').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-
-  // Clear forms
-  document.getElementById('loginForm').reset();
-  document.getElementById('activateForm').reset();
-
-  console.log('✅ Logged out successfully');
 }
 
 console.log('✅ auth.js loaded successfully');
