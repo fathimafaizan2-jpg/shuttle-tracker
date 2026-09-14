@@ -26,102 +26,163 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: white;
     }
 
-    .login-header-banner {
-      background: white;
-      padding: 20px;
+    .login-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 20px;
       text-align: center;
       border-bottom: 3px solid #667eea;
     }
 
-    .login-header-banner h1 {
-      font-size: 32px;
-      color: #667eea;
+    .login-header h1 {
+      font-size: 36px;
       margin-bottom: 5px;
     }
 
-    .login-header-banner p {
-      color: #999;
+    .login-header p {
       font-size: 14px;
+      opacity: 0.9;
     }
 
-    /* ===== ANNOUNCEMENTS BANNER ===== */
-    .announcements-banner {
+    .login-main {
+      flex: 1;
+      max-width: 1400px;
+      margin: 0 auto;
       width: 100%;
-      height: 180px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 20px;
+    }
+
+    /* ===== ANNOUNCEMENTS SECTION ===== */
+    .announcements-section {
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #667eea;
+    }
+
+    .announcements-box {
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      height: 200px;
       display: flex;
       align-items: center;
       justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       font-size: 18px;
       font-weight: 600;
       text-align: center;
-      overflow: hidden;
-      margin: 20px auto;
-      max-width: 1200px;
-      border-radius: 8px;
+      padding: 20px;
     }
 
-    .announcements-banner img {
+    .announcements-box img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
 
-    .announcements-banner.no-image {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    /* ===== CAROUSEL SECTION ===== */
+    .carousel-section {
+      margin-bottom: 40px;
     }
 
-    /* ===== CAROUSEL ===== */
     .carousel-container {
-      max-width: 1200px;
-      margin: 20px auto;
-      padding: 0 20px;
-    }
-
-    .carousel {
       position: relative;
-      width: 100%;
-      height: 250px;
-      background: #f0f0f0;
+      background: white;
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
-    .carousel-slide {
-      display: none;
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
+    .carousel-wrapper {
+      position: relative;
+      height: 250px;
+      overflow: hidden;
     }
 
-    .carousel-slide.active {
+    .carousel-track {
+      display: flex;
+      transition: transform 0.5s ease-in-out;
+      height: 100%;
+    }
+
+    .carousel-item {
+      min-width: calc(100% / 3);
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      font-size: 24px;
+      font-size: 16px;
       font-weight: 600;
-      animation: fadeIn 0.5s ease-in-out;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease;
     }
 
-    .carousel-slide img {
+    .carousel-item:hover {
+      transform: scale(1.02);
+    }
+
+    .carousel-item img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
 
-    .carousel-controls {
+    .carousel-item-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 10px;
+      font-size: 12px;
+    }
+
+    .carousel-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.4);
+      color: white;
+      border: none;
+      font-size: 24px;
+      padding: 12px 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+
+    .carousel-arrow:hover {
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .carousel-arrow.prev {
+      left: 10px;
+    }
+
+    .carousel-arrow.next {
+      right: 10px;
+    }
+
+    .carousel-dots {
       position: absolute;
       bottom: 15px;
       left: 50%;
@@ -146,108 +207,168 @@
       border-radius: 5px;
     }
 
-    .carousel-arrow {
+    /* ===== MODAL FOR EXPANDED CAROUSEL ===== */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow: auto;
+      position: relative;
+    }
+
+    .modal-close {
       position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(0, 0, 0, 0.3);
+      top: 15px;
+      right: 15px;
+      background: #667eea;
       color: white;
       border: none;
       font-size: 24px;
-      padding: 10px 15px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
       cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.3s ease;
-      z-index: 5;
+      z-index: 10;
     }
 
-    .carousel-arrow:hover {
-      background: rgba(0, 0, 0, 0.6);
-    }
-
-    .carousel-arrow.prev {
-      left: 10px;
-    }
-
-    .carousel-arrow.next {
-      right: 10px;
-    }
-
-    /* ===== LOGIN CONTENT ===== */
-    .login-content {
-      display: flex;
-      flex: 1;
-      max-width: 1200px;
-      margin: 0 auto;
+    .modal-image {
       width: 100%;
-      gap: 30px;
-      padding: 30px 20px;
+      height: auto;
+      display: block;
     }
 
-    .login-left {
-      flex: 1;
-      min-width: 300px;
+    .modal-text {
+      padding: 20px;
     }
 
-    .login-right {
-      flex: 1;
-      min-width: 300px;
+    /* ===== ACTION BUTTONS SECTION ===== */
+    .action-buttons-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
     }
 
-    .login-container {
+    .action-button {
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-      padding: 40px;
-    }
-
-    .login-header {
+      border-radius: 8px;
+      padding: 30px;
       text-align: center;
-      margin-bottom: 30px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
     }
 
-    .login-header h2 {
-      font-size: 24px;
-      color: #667eea;
+    .action-button:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      border-color: #667eea;
+    }
+
+    .action-button-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+
+    .action-button h3 {
+      font-size: 18px;
+      color: #333;
       margin-bottom: 10px;
     }
 
-    .login-header p {
+    .action-button p {
+      font-size: 13px;
       color: #999;
-      font-size: 14px;
+      margin-bottom: 15px;
     }
 
-    .login-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 30px;
-      border-bottom: 2px solid #f0f0f0;
-    }
-
-    .login-tab-btn {
-      flex: 1;
-      padding: 12px;
-      background: none;
+    .action-button .btn {
+      background: #667eea;
+      color: white;
+      padding: 10px 20px;
       border: none;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 14px;
       font-weight: 600;
-      color: #999;
-      border-bottom: 3px solid transparent;
       transition: all 0.3s ease;
     }
 
-    .login-tab-btn.active {
-      color: #667eea;
-      border-bottom-color: #667eea;
+    .action-button .btn:hover {
+      background: #5568d3;
     }
 
-    .login-tab {
-      display: none;
+    /* ===== COMMUNITY DIRECTORY SECTION ===== */
+    .community-section {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      margin-bottom: 40px;
     }
 
-    .login-tab.active {
-      display: block;
+    .community-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .community-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .community-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .community-card-icon {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    .community-card h4 {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .community-card p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    /* ===== BUSINESS FORM SECTION ===== */
+    .business-form-section {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .form-group {
@@ -263,52 +384,144 @@
     }
 
     .form-group input,
-    .form-group select {
+    .form-group select,
+    .form-group textarea {
       width: 100%;
       padding: 12px;
       border: 1px solid #ddd;
       border-radius: 6px;
       font-size: 14px;
+      font-family: inherit;
       transition: border-color 0.3s ease;
     }
 
     .form-group input:focus,
-    .form-group select:focus {
+    .form-group select:focus,
+    .form-group textarea:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
-    .btn {
-      padding: 12px 24px;
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .btn-submit {
+      background: #667eea;
+      color: white;
+      padding: 12px 30px;
       border: none;
       border-radius: 6px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
-      display: inline-block;
-    }
-
-    .btn-primary {
-      background: #667eea;
-      color: white;
       width: 100%;
     }
 
-    .btn-primary:hover {
+    .btn-submit:hover {
       background: #5568d3;
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
     }
 
-    .btn-secondary {
-      background: #f0f0f0;
-      color: #333;
+    /* ===== LOGIN/SIGNUP MODAL ===== */
+    .auth-modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      align-items: center;
+      justify-content: center;
     }
 
-    .btn-secondary:hover {
-      background: #e0e0e0;
+    .auth-modal.active {
+      display: flex;
+    }
+
+    .auth-modal-content {
+      background: white;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      padding: 40px;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .auth-modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #f0f0f0;
+      color: #333;
+      border: none;
+      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .auth-modal-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .auth-modal-header h2 {
+      font-size: 24px;
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    .auth-modal-header p {
+      color: #999;
+      font-size: 14px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .auth-tab-btn {
+      flex: 1;
+      padding: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #999;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .auth-tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .auth-tab {
+      display: none;
+    }
+
+    .auth-tab.active {
+      display: block;
     }
 
     #errorMessage {
@@ -325,60 +538,30 @@
       display: block;
     }
 
+    .btn-primary {
+      background: #667eea;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+    }
+
     .login-footer {
       text-align: center;
       margin-top: 20px;
       font-size: 12px;
       color: #999;
-    }
-
-    .login-footer a {
-      color: #667eea;
-      text-decoration: none;
-    }
-
-    /* ===== ADS SECTION ===== */
-    .ads-section {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .ads-section h3 {
-      font-size: 16px;
-      color: #333;
-      margin-bottom: 15px;
-      border-bottom: 2px solid #f0f0f0;
-      padding-bottom: 10px;
-    }
-
-    .ad-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      text-align: center;
-    }
-
-    .ad-card h4 {
-      font-size: 16px;
-      margin-bottom: 8px;
-    }
-
-    .ad-card p {
-      font-size: 13px;
-      margin-bottom: 10px;
-      opacity: 0.9;
-    }
-
-    .ad-card .offer {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-weight: 600;
-      display: inline-block;
+      padding-top: 20px;
+      border-top: 1px solid #f0f0f0;
     }
 
     /* ===== APP LAYOUT ===== */
@@ -477,161 +660,17 @@
       overflow-y: auto;
     }
 
-    .page-header {
-      margin-bottom: 30px;
-    }
-
-    .page-header h1 {
-      font-size: 28px;
-      color: #333;
-      margin-bottom: 5px;
-    }
-
-    .page-header p {
-      color: #999;
-      font-size: 14px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 8px;
-      padding: 25px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .card h2 {
-      font-size: 18px;
-      color: #333;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #f0f0f0;
-      padding-bottom: 15px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
-    .stat-card {
-      background: white;
-      border-radius: 8px;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .stat-icon {
-      width: 60px;
-      height: 60px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-    }
-
-    .stat-content h3 {
-      font-size: 24px;
-      color: #333;
-      margin-bottom: 5px;
-    }
-
-    .stat-content p {
-      font-size: 12px;
-      color: #999;
-    }
-
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-
-    .data-table thead {
-      background: #f5f7fa;
-    }
-
-    .data-table th {
-      padding: 12px;
-      text-align: left;
-      font-weight: 600;
-      color: #666;
-      font-size: 13px;
-      border-bottom: 2px solid #e0e0e0;
-    }
-
-    .data-table td {
-      padding: 12px;
-      border-bottom: 1px solid #f0f0f0;
-      font-size: 14px;
-    }
-
-    .data-table tr:hover {
-      background: #f9f9f9;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .badge-success {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .badge-danger {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .badge-warning {
-      background: #fff3cd;
-      color: #856404;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-
-    @media (max-width: 1024px) {
-      .login-content {
-        flex-direction: column;
-      }
-
-      .sidebar {
-        width: 200px;
-      }
-    }
-
     @media (max-width: 768px) {
-      .login-content {
-        flex-direction: column;
-        padding: 15px;
+      .login-main {
+        padding: 20px 10px;
       }
 
-      .login-container {
-        padding: 25px;
+      .action-buttons-section {
+        grid-template-columns: 1fr;
       }
 
-      .announcements-banner {
-        height: 120px;
-        margin: 15px auto;
-      }
-
-      .carousel {
-        height: 180px;
+      .carousel-item {
+        min-width: 100%;
       }
 
       .sidebar {
@@ -644,161 +683,235 @@
         padding: 15px;
       }
     }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
-    }
   </style>
 </head>
 <body>
   <!-- ===== LOGIN PAGE ===== -->
   <div id="login">
-    <!-- Header Banner -->
-    <div class="login-header-banner">
+    <!-- Header -->
+    <div class="login-header">
       <h1>🏏 Indian Club Bahrain</h1>
-      <p>Member Portal - Sports & Community Management</p>
+      <p>Sports & Community Management Platform</p>
     </div>
 
-    <!-- Announcements Banner -->
-    <div class="announcements-banner no-image">
-      📢 Welcome to Indian Club Bahrain - Your Premier Sports Community
-    </div>
-
-    <!-- Carousel Ads -->
-    <div class="carousel-container">
-      <div class="carousel">
-        <div class="carousel-slide active">
-          🎉 Al-Noor Restaurant - 20% Discount for Members!
-        </div>
-        <div class="carousel-slide">
-          💪 Fitness Plus Gym - Free Trial Week!
-        </div>
-        <div class="carousel-slide">
-          🏨 Hilton Hotel - Special Member Rates!
-        </div>
-        <div class="carousel-slide">
-          🍕 Pizza Palace - Buy 1 Get 1 Free!
-        </div>
-        <button class="carousel-arrow prev" onclick="window.prevSlide()">❮</button>
-        <button class="carousel-arrow next" onclick="window.nextSlide()">❯</button>
-        <div class="carousel-controls">
-          <div class="carousel-dot active" onclick="window.goToSlide(0)"></div>
-          <div class="carousel-dot" onclick="window.goToSlide(1)"></div>
-          <div class="carousel-dot" onclick="window.goToSlide(2)"></div>
-          <div class="carousel-dot" onclick="window.goToSlide(3)"></div>
+    <!-- Main Content -->
+    <div class="login-main">
+      <!-- 1. ANNOUNCEMENTS SECTION -->
+      <div class="announcements-section">
+        <h2 class="section-title">📢 Club Announcements</h2>
+        <div class="announcements-box">
+          Welcome to Indian Club Bahrain - Your Premier Sports Community!
         </div>
       </div>
-    </div>
 
-    <!-- Login Content -->
-    <div class="login-content">
-      <!-- Left: Login & Activation Forms -->
-      <div class="login-left">
-        <div class="login-container">
-          <div class="login-header">
-            <h2>Member Access</h2>
-            <p>Sign in or activate your account</p>
-          </div>
-
-          <div id="errorMessage"></div>
-
-          <div class="login-tabs">
-            <button class="login-tab-btn active" onclick="window.switchLoginTab('login')">Login</button>
-            <button class="login-tab-btn" onclick="window.switchLoginTab('activate')">Activate</button>
-          </div>
-
-          <!-- Login Tab -->
-          <div id="login-form" class="login-tab active">
-            <form id="loginForm" onsubmit="window.handleLogin(event)">
-              <div class="form-group">
-                <label>Email Address *</label>
-                <input type="email" id="loginEmail" placeholder="your@email.com" required>
+      <!-- 2. CAROUSEL SECTION -->
+      <div class="carousel-section">
+        <h2 class="section-title">🎠 Featured Offers & Updates</h2>
+        <div class="carousel-container">
+          <div class="carousel-wrapper">
+            <div class="carousel-track" id="carouselTrack">
+              <div class="carousel-item" onclick="window.expandCarousel(0)">
+                🍽️ Al-Noor Restaurant - 20% Discount
               </div>
-              <div class="form-group">
-                <label>Password *</label>
-                <input type="password" id="loginPassword" placeholder="••••••••" required>
+              <div class="carousel-item" onclick="window.expandCarousel(1)">
+                💪 Fitness Plus Gym - Free Trial
               </div>
-              <button type="submit" class="btn btn-primary">Sign In</button>
-            </form>
-          </div>
-
-          <!-- Activate Account Tab -->
-          <div id="activate-form" class="login-tab">
-            <form id="activateForm" onsubmit="window.handleActivate(event)">
-              <div class="form-group">
-                <label>Full Name *</label>
-                <input type="text" id="actFullName" placeholder="Your full name" required>
+              <div class="carousel-item" onclick="window.expandCarousel(2)">
+                🏨 Hilton Hotel - Special Rates
               </div>
-              <div class="form-group">
-                <label>Phone Number *</label>
-                <input type="tel" id="actPhone" placeholder="+973 XXXX XXXX" required>
+              <div class="carousel-item" onclick="window.expandCarousel(3)">
+                🍕 Pizza Palace - Buy 1 Get 1
               </div>
-              <div class="form-group">
-                <label>New Password *</label>
-                <input type="password" id="actNewPass" placeholder="••••••••" minlength="6" required>
+              <div class="carousel-item" onclick="window.expandCarousel(4)">
+                🎾 Sports Equipment - 15% Off
               </div>
-              <div class="form-group">
-                <label>Confirm Password *</label>
-                <input type="password" id="actConfirmPass" placeholder="••••••••" minlength="6" required>
+              <div class="carousel-item" onclick="window.expandCarousel(5)">
+                📚 Online Courses - Member Exclusive
               </div>
-              <button type="submit" class="btn btn-primary">Activate Account</button>
-            </form>
-          </div>
-
-          <div class="login-footer">
-            <p>© 2026 Indian Club Bahrain. All rights reserved.</p>
+            </div>
+            <button class="carousel-arrow prev" onclick="window.prevCarousel()">❮</button>
+            <button class="carousel-arrow next" onclick="window.nextCarousel()">❯</button>
+            <div class="carousel-dots" id="carouselDots"></div>
           </div>
         </div>
       </div>
 
-      <!-- Right: Ads & Info -->
-      <div class="login-right">
-        <div class="ads-section">
-          <h3>📢 Featured Offers</h3>
-          
-          <div class="ad-card">
-            <h4>🍽️ Al-Noor Restaurant</h4>
-            <p>Food & Dining</p>
-            <div class="offer">20% Discount</div>
-          </div>
-
-          <div class="ad-card">
-            <h4>💪 Fitness Plus Gym</h4>
-            <p>Health & Fitness</p>
-            <div class="offer">Free Trial Week</div>
-          </div>
-
-          <div class="ad-card">
-            <h4>🏨 Hilton Hotel</h4>
-            <p>Accommodation</p>
-            <div class="offer">Special Rates</div>
-          </div>
-
-          <div class="ad-card">
-            <h4>🍕 Pizza Palace</h4>
-            <p>Food & Dining</p>
-            <div class="offer">Buy 1 Get 1</div>
-          </div>
+      <!-- 3. ACTION BUTTONS SECTION -->
+      <div class="action-buttons-section">
+        <div class="action-button">
+          <div class="action-button-icon">🔐</div>
+          <h3>Member Login</h3>
+          <p>Access your account and manage your profile</p>
+          <button class="btn" onclick="window.openAuthModal('login')">Sign In</button>
         </div>
 
-        <div class="ads-section" style="margin-top: 20px;">
-          <h3>ℹ️ Club Information</h3>
-          <p style="font-size: 13px; line-height: 1.6; color: #666;">
-            <strong>Indian Club Bahrain</strong> is a premier sports and community organization dedicated to promoting athletic excellence and social engagement among our members.
-          </p>
-          <p style="font-size: 13px; line-height: 1.6; color: #666; margin-top: 10px;">
-            <strong>Activities:</strong> Badminton, Cricket, Tennis, and more!
-          </p>
-          <p style="font-size: 13px; line-height: 1.6; color: #666; margin-top: 10px;">
-            <strong>Contact:</strong> +973 1234 5678 | info@indianclub.bh
-          </p>
+        <div class="action-button">
+          <div class="action-button-icon">✍️</div>
+          <h3>New Member</h3>
+          <p>Activate your pre-registered account</p>
+          <button class="btn" onclick="window.openAuthModal('activate')">Sign Up</button>
+        </div>
+
+        <div class="action-button">
+          <div class="action-button-icon">👥</div>
+          <h3>Community Directory</h3>
+          <p>Browse members and connect with others</p>
+          <button class="btn" onclick="window.openCommunityDirectory()">Explore</button>
         </div>
       </div>
+
+      <!-- 4. COMMUNITY DIRECTORY SECTION -->
+      <div class="community-section" id="communitySection" style="display: none;">
+        <h2 class="section-title">👥 Community Directory</h2>
+        <p style="color: #999; margin-bottom: 20px;">Connect with members across different activities and flights</p>
+        <div class="community-grid">
+          <div class="community-card">
+            <div class="community-card-icon">🏸</div>
+            <h4>Badminton Players</h4>
+            <p>68 Active Members</p>
+          </div>
+          <div class="community-card">
+            <div class="community-card-icon">🏏</div>
+            <h4>Cricket Players</h4>
+            <p>52 Active Members</p>
+          </div>
+          <div class="community-card">
+            <div class="community-card-icon">🎾</div>
+            <h4>Tennis Players</h4>
+            <p>36 Active Members</p>
+          </div>
+          <div class="community-card">
+            <div class="community-card-icon">👨‍💼</div>
+            <h4>Flight Admins</h4>
+            <p>7 Administrators</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. BUSINESS FORM SECTION -->
+      <div class="business-form-section">
+        <h2 class="section-title">🏢 Have a Business in Bahrain?</h2>
+        <p style="color: #999; margin-bottom: 20px;">Submit your business details to be featured in our member directory and carousel</p>
+        
+        <form id="businessForm" onsubmit="window.submitBusinessForm(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Business Name *</label>
+              <input type="text" id="businessName" placeholder="Your business name" required>
+            </div>
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="businessCategory" required>
+                <option value="">Select category</option>
+                <option value="food">Food & Dining</option>
+                <option value="fitness">Health & Fitness</option>
+                <option value="hotel">Accommodation</option>
+                <option value="retail">Retail & Shopping</option>
+                <option value="services">Services</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Contact Person *</label>
+              <input type="text" id="businessContact" placeholder="Your name" required>
+            </div>
+            <div class="form-group">
+              <label>Phone Number *</label>
+              <input type="tel" id="businessPhone" placeholder="+973 XXXX XXXX" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Email Address *</label>
+            <input type="email" id="businessEmail" placeholder="your@email.com" required>
+          </div>
+
+          <div class="form-group">
+            <label>Special Offer for Members *</label>
+            <input type="text" id="businessOffer" placeholder="e.g., 20% Discount, Free Trial, etc." required>
+          </div>
+
+          <div class="form-group">
+            <label>Business Description</label>
+            <textarea id="businessDescription" placeholder="Tell us about your business..."></textarea>
+          </div>
+
+          <button type="submit" class="btn-submit">Submit Business Details</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AUTH MODAL ===== -->
+  <div class="auth-modal" id="authModal">
+    <div class="auth-modal-content">
+      <button class="auth-modal-close" onclick="window.closeAuthModal()">✕</button>
+      
+      <div class="auth-modal-header">
+        <h2 id="authModalTitle">Member Login</h2>
+        <p id="authModalSubtitle">Sign in to your account</p>
+      </div>
+
+      <div id="errorMessage"></div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="loginTabBtn" onclick="window.switchAuthTab('login')">Login</button>
+        <button class="auth-tab-btn" id="activateTabBtn" onclick="window.switchAuthTab('activate')">Activate</button>
+      </div>
+
+      <!-- Login Tab -->
+      <div id="login-tab" class="auth-tab active">
+        <form id="loginForm" onsubmit="window.handleLogin(event)">
+          <div class="form-group">
+            <label>Email Address *</label>
+            <input type="email" id="loginEmail" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label>Password *</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn-primary">Sign In</button>
+        </form>
+      </div>
+
+      <!-- Activate Tab -->
+      <div id="activate-tab" class="auth-tab">
+        <form id="activateForm" onsubmit="window.handleActivate(event)">
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="actFullName" placeholder="Your full name" required>
+          </div>
+          <div class="form-group">
+            <label>Phone Number *</label>
+            <input type="tel" id="actPhone" placeholder="+973 XXXX XXXX" required>
+          </div>
+          <div class="form-group">
+            <label>New Password *</label>
+            <input type="password" id="actNewPass" placeholder="••••••••" minlength="6" required>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password *</label>
+            <input type="password" id="actConfirmPass" placeholder="••••••••" minlength="6" required>
+          </div>
+          <button type="submit" class="btn-primary">Activate Account</button>
+        </form>
+      </div>
+
+      <div class="login-footer">
+        <p>© 2026 Indian Club Bahrain. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CAROUSEL EXPANDED MODAL ===== -->
+  <div class="modal" id="carouselModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="window.closeCarouselModal()">✕</button>
+      <img class="modal-image" id="modalImage" src="" alt="Carousel Item">
+      <div class="modal-text" id="modalText"></div>
     </div>
   </div>
 
@@ -810,7 +923,7 @@
       <div class="user-info">
         <span id="userName">User</span>
         <span class="badge" id="userRole">PLAYER</span>
-        <button class="btn btn-secondary" id="nav-logout" style="padding: 8px 16px; font-size: 12px;">Logout</button>
+        <button style="padding: 8px 16px; font-size: 12px; background: #f0f0f0; color: #333; border: none; border-radius: 6px; cursor: pointer;" id="nav-logout">Logout</button>
       </div>
     </div>
 
@@ -818,7 +931,6 @@
     <div class="app-container">
       <!-- Sidebar Navigation -->
       <div class="sidebar">
-        <!-- Player Navigation -->
         <div class="nav-section">
           <div class="nav-section-title">Player</div>
           <div class="nav-item active" id="nav-home">🏠 Home</div>
@@ -828,7 +940,6 @@
           <div class="nav-item" id="nav-profile">👤 Profile</div>
         </div>
 
-        <!-- Flight Admin Navigation -->
         <div class="nav-section" style="display: none;">
           <div class="nav-section-title">Flight Admin</div>
           <div class="nav-item" id="nav-sessions">📅 Sessions</div>
@@ -836,7 +947,6 @@
           <div class="nav-item" id="nav-reports">📊 Reports</div>
         </div>
 
-        <!-- Super Admin Navigation -->
         <div class="nav-section" style="display: none;">
           <div class="nav-section-title">Super Admin</div>
           <div class="nav-item" id="nav-overview">📊 Overview</div>
@@ -847,7 +957,6 @@
           <div class="nav-item" id="nav-audit">🔍 Audit</div>
         </div>
 
-        <!-- Community Navigation -->
         <div class="nav-section">
           <div class="nav-section-title">Community</div>
           <div class="nav-item" id="nav-bazaar">🛍️ BaZaar</div>
@@ -857,7 +966,7 @@
 
       <!-- Content Area -->
       <div id="content">
-        <div class="page-header">
+        <div style="text-align: center; padding: 40px;">
           <h1>👋 Welcome to Indian Club Bahrain</h1>
           <p>Loading your dashboard...</p>
         </div>
@@ -869,7 +978,6 @@
   <script type="module">
     import * as auth from './js/modules/auth.js';
     import * as router from './js/modules/router.js';
-    import * as logs from './js/modules/logs.js';
     import * as api from './js/modules/api.js';
 
     // Initialize app state
@@ -877,21 +985,13 @@
       member: null,
       role: null,
       token: null,
-      isAuthenticated: false,
-      sessionsAttended: 12,
-      pendingAmount: 150,
-      arrears: 50,
-      walletBalanceFils: 50000,
-      upcomingSession: null
+      isAuthenticated: false
     };
 
-    // Global setState function
     window.setState = function(updates) {
       window.appState = { ...window.appState, ...updates };
-      console.log('📊 State updated:', window.appState);
     };
 
-    // Export functions globally
     window.handleLogin = auth.handleLogin;
     window.handleActivate = auth.handleActivate;
     window.logout = auth.logout;
@@ -899,56 +999,97 @@
     window.initializeRouter = router.initializeRouter;
 
     // ===== CAROUSEL FUNCTIONS =====
-    let currentSlide = 0;
-    const totalSlides = 4;
-
-    window.nextSlide = function() {
-      currentSlide = (currentSlide + 1) % totalSlides;
-      updateCarousel();
-    };
-
-    window.prevSlide = function() {
-      currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
-      updateCarousel();
-    };
-
-    window.goToSlide = function(index) {
-      currentSlide = index;
-      updateCarousel();
-    };
+    let carouselIndex = 0;
+    const carouselItems = 6;
+    const itemsPerView = 3;
 
     function updateCarousel() {
-      const slides = document.querySelectorAll('.carousel-slide');
+      const track = document.getElementById('carouselTrack');
+      const offset = -(carouselIndex * (100 / itemsPerView));
+      track.style.transform = `translateX(${offset}%)`;
+
+      // Update dots
       const dots = document.querySelectorAll('.carousel-dot');
-
-      slides.forEach((slide, index) => {
-        slide.classList.remove('active');
-        if (index === currentSlide) {
-          slide.classList.add('active');
-        }
-      });
-
       dots.forEach((dot, index) => {
         dot.classList.remove('active');
-        if (index === currentSlide) {
+        if (index === carouselIndex) {
           dot.classList.add('active');
         }
       });
     }
 
-    // Auto-rotate carousel every 5 seconds
-    setInterval(() => {
-      window.nextSlide();
-    }, 5000);
-
-    // ===== LOGIN TAB SWITCHING =====
-    window.switchLoginTab = function(tab) {
-      document.querySelectorAll('.login-tab').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.login-tab-btn').forEach(el => el.classList.remove('active'));
-      
-      document.getElementById(`${tab}-form`)?.classList.add('active');
-      event.target?.classList.add('active');
+    window.nextCarousel = function() {
+      carouselIndex = (carouselIndex + 1) % carouselItems;
+      updateCarousel();
     };
+
+    window.prevCarousel = function() {
+      carouselIndex = (carouselIndex - 1 + carouselItems) % carouselItems;
+      updateCarousel();
+    };
+
+    window.expandCarousel = function(index) {
+      const items = ['🍽️ Al-Noor Restaurant - 20% Discount', '💪 Fitness Plus Gym - Free Trial', '🏨 Hilton Hotel - Special Rates', '🍕 Pizza Palace - Buy 1 Get 1', '🎾 Sports Equipment - 15% Off', '📚 Online Courses - Member Exclusive'];
+      document.getElementById('modalText').textContent = items[index];
+      document.getElementById('carouselModal').classList.add('active');
+    };
+
+    window.closeCarouselModal = function() {
+      document.getElementById('carouselModal').classList.remove('active');
+    };
+
+    // Initialize carousel dots
+    const dotsContainer = document.getElementById('carouselDots');
+    for (let i = 0; i < carouselItems; i++) {
+      const dot = document.createElement('div');
+      dot.className = `carousel-dot ${i === 0 ? 'active' : ''}`;
+      dot.onclick = () => {
+        carouselIndex = i;
+        updateCarousel();
+      };
+      dotsContainer.appendChild(dot);
+    }
+
+    // ===== AUTH MODAL FUNCTIONS =====
+    window.openAuthModal = function(tab) {
+      document.getElementById('authModal').classList.add('active');
+      window.switchAuthTab(tab);
+    };
+
+    window.closeAuthModal = function() {
+      document.getElementById('authModal').classList.remove('active');
+    };
+
+    window.switchAuthTab = function(tab) {
+      document.querySelectorAll('.auth-tab').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.auth-tab-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(`${tab}-tab`)?.classList.add('active');
+      document.getElementById(`${tab}TabBtn`)?.classList.add('active');
+
+      const title = tab === 'login' ? 'Member Login' : 'Activate Account';
+      const subtitle = tab === 'login' ? 'Sign in to your account' : 'Create your account';
+      document.getElementById('authModalTitle').textContent = title;
+      document.getElementById('authModalSubtitle').textContent = subtitle;
+    };
+
+    // ===== COMMUNITY DIRECTORY =====
+    window.openCommunityDirectory = function() {
+      const section = document.getElementById('communitySection');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+      section.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // ===== BUSINESS FORM =====
+    window.submitBusinessForm = function(event) {
+      event.preventDefault();
+      alert('✅ Thank you! Your business details have been submitted. We will review and contact you soon.');
+      document.getElementById('businessForm').reset();
+    };
+
+    // ===== AUTH FUNCTIONS =====
+    window.handleLogin = auth.handleLogin;
+    window.handleActivate = auth.handleActivate;
 
     // Check if already authenticated
     if (auth.checkAuth()) {
@@ -958,14 +1099,20 @@
       window.initializeRouter();
     }
 
-    // Service Worker registration
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(err => {
-        console.log('Service Worker registration failed:', err);
-      });
-    }
+    // Close modal on outside click
+    window.onclick = function(event) {
+      const authModal = document.getElementById('authModal');
+      const carouselModal = document.getElementById('carouselModal');
+      if (event.target === authModal) {
+        authModal.classList.remove('active');
+      }
+      if (event.target === carouselModal) {
+        carouselModal.classList.remove('active');
+      }
+    };
 
     console.log('✅ App initialized successfully');
   </script>
 </body>
 </html>
+
