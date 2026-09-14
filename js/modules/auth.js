@@ -1,314 +1,365 @@
 
-// ============================================
-// auth.js - AUTHENTICATION SYSTEM (FIXED)
-// ============================================
-
-// ===== CHECK AUTHENTICATION =====
-export function checkAuth() {
-  const token = sessionStorage.getItem('authToken');
-  const memberData = sessionStorage.getItem('memberData');
-  
-  if (token && memberData) {
-    try {
-      const member = JSON.parse(memberData);
-      window.appState = {
-        ...window.appState,
-        member: member,
-        role: member.role,
-        token: token,
-        isAuthenticated: true,
-        walletBalanceFils: member.walletBalanceFils || 0,
-        sessionsAttended: member.sessionsAttended || 0,
-        pendingAmount: member.pendingAmount || 0,
-        arrears: member.arrears || 0
-      };
-      console.log('✅ Auth check passed:', member);
-      return true;
-    } catch (error) {
-      console.error('❌ Error parsing member data:', error);
-      return false;
-    }
-  }
-  
-  console.log('⚠️ No auth token found');
-  return false;
-}
-
-// ===== HANDLE LOGIN =====
-export async function handleLogin(event) {
-  event.preventDefault();
-  
-  const email = document.getElementById('loginEmail')?.value?.trim();
-  const password = document.getElementById('loginPassword')?.value?.trim();
-  const errorMsg = document.getElementById('errorMessage');
-
-  console.log('🔐 Login attempt:', email);
-
-  // Validation
-  if (!email || !password) {
-    errorMsg.textContent = '❌ Please enter email and password';
-    errorMsg.style.display = 'block';
-    return;
-  }
-
-  try {
-    // Show loading state
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = '⏳ Signing in...';
-    submitBtn.disabled = true;
-
-    // Call API login
-    console.log('📡 Calling API login...');
-    const response = await window.api.login(email, password);
-
-    console.log('📡 API response:', response);
-
-    if (!response.success) {
-      errorMsg.textContent = `❌ ${response.message || 'Login failed'}`;
-      errorMsg.style.display = 'block';
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-      console.error('❌ Login failed:', response.message);
-      return;
-    }
-
-    // Store authentication data
-    console.log('💾 Storing auth data...');
-    sessionStorage.setItem('authToken', response.token);
-    sessionStorage.setItem('memberData', JSON.stringify(response.member));
-
-    // Update app state
-    window.appState = {
-      ...window.appState,
-      member: response.member,
-      role: response.member.role,
-      token: response.token,
-      isAuthenticated: true,
-      walletBalanceFils: response.member.walletBalanceFils || 0,
-      sessionsAttended: response.member.sessionsAttended || 0,
-      pendingAmount: response.member.pendingAmount || 0,
-      arrears: response.member.arrears || 0
-    };
-
-    console.log('✅ Login successful:', response.member);
-
-    // Show success message
-    errorMsg.style.background = '#d4edda';
-    errorMsg.style.color = '#155724';
-    errorMsg.style.border = '1px solid #c3e6cb';
-    errorMsg.textContent = '✅ Login successful! Redirecting...';
-    errorMsg.style.display = 'block';
-
-    // Redirect to app
-    setTimeout(() => {
-      console.log('🔄 Switching to app view...');
-      document.getElementById('login').style.display = 'none';
-      document.getElementById('app').style.display = 'flex';
-      
-      // Update UI
-      window.updateUserUI();
-      window.initializeRouter();
-      
-      // Reset form
-      document.getElementById('loginForm').reset();
-      errorMsg.textContent = '';
-      errorMsg.style.background = '#f8d7da';
-      errorMsg.style.color = '#721c24';
-      errorMsg.style.border = '1px solid #f5c6cb';
-      errorMsg.style.display = 'none';
-      
-      console.log('✅ App loaded successfully');
-    }, 1000);
-
-  } catch (error) {
-    console.error('❌ Login error:', error);
-    errorMsg.textContent = `❌ Login error: ${error.message}`;
-    errorMsg.style.display = 'block';
-    
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    submitBtn.textContent = 'Sign In';
-    submitBtn.disabled = false;
-  }
-}
-
-// ===== HANDLE ACCOUNT ACTIVATION =====
-export async function handleActivate(event) {
-  event.preventDefault();
-
-  const fullName = document.getElementById('actFullName')?.value?.trim();
-  const phone = document.getElementById('actPhone')?.value?.trim();
-  const newPass = document.getElementById('actNewPass')?.value?.trim();
-  const confirmPass = document.getElementById('actConfirmPass')?.value?.trim();
-  const errorMsg = document.getElementById('errorMessage');
-
-  console.log('📝 Activation attempt:', fullName);
-
-  // Validation
-  if (!fullName || !phone || !newPass || !confirmPass) {
-    errorMsg.textContent = '❌ All fields are required';
-    errorMsg.style.display = 'block';
-    return;
-  }
-
-  if (newPass !== confirmPass) {
-    errorMsg.textContent = '❌ Passwords do not match';
-    errorMsg.style.display = 'block';
-    return;
-  }
-
-  try {
-    // Show loading state
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = '⏳ Activating...';
-    submitBtn.disabled = true;
-
-    // Call API
-    console.log('📡 Calling API activate...');
-    const response = await window.api.activateAccount({
-      fullName: fullName,
-      phone: phone,
-      password: newPass
-    });
-
-    console.log('📡 API response:', response);
-
-    if (!response.success) {
-      errorMsg.textContent = `❌ ${response.message || 'Activation failed'}`;
-      errorMsg.style.display = 'block';
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-      console.error('❌ Activation failed:', response.message);
-      return;
-    }
-
-    console.log('✅ Account activated:', response.member);
-
-    // Show success message
-    errorMsg.style.background = '#d4edda';
-    errorMsg.style.color = '#155724';
-    errorMsg.style.border = '1px solid #c3e6cb';
-    errorMsg.textContent = '✅ Account activated! You can now login.';
-    errorMsg.style.display = 'block';
-
-    // Reset form and switch to login tab
-    setTimeout(() => {
-      document.getElementById('activateForm').reset();
-      window.switchAuthTab('login');
-      errorMsg.textContent = '';
-      errorMsg.style.background = '#f8d7da';
-      errorMsg.style.color = '#721c24';
-      errorMsg.style.border = '1px solid #f5c6cb';
-      errorMsg.style.display = 'none';
-    }, 1500);
-
-  } catch (error) {
-    console.error('❌ Activation error:', error);
-    errorMsg.textContent = `❌ Activation error: ${error.message}`;
-    errorMsg.style.display = 'block';
-    
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    submitBtn.textContent = 'Activate Account';
-    submitBtn.disabled = false;
-  }
-}
-
-// ===== LOGOUT =====
-export function logout() {
-  if (confirm('Are you sure you want to logout?')) {
-    console.log('🚪 Logging out...');
-    
-    // Clear session storage
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('memberData');
-
-    // Reset app state
-    window.appState = {
-      member: null,
-      role: null,
-      token: null,
-      isAuthenticated: false,
-      sessionsAttended: 0,
-      pendingAmount: 0,
-      arrears: 0,
-      walletBalanceFils: 0,
-      upcomingSession: null
-    };
-
-    // Show login page
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('login').style.display = 'flex';
-
-    // Reset forms
-    document.getElementById('loginForm').reset();
-    document.getElementById('activateForm').reset();
-    document.getElementById('errorMessage').textContent = '';
-    document.getElementById('errorMessage').style.display = 'none';
-
-    console.log('✅ Logged out successfully');
-  }
-}
-
-// ===== UPDATE USER UI =====
-window.updateUserUI = function() {
-  console.log('🎨 Updating user UI...');
-  
-  const member = window.appState?.member;
-  const role = window.appState?.role;
-  
-  if (!member) {
-    console.warn('⚠️ No member data available');
-    return;
-  }
-
-  // Update user name in header
-  const userNameEl = document.getElementById('userName');
-  if (userNameEl) {
-    userNameEl.textContent = member.fullName || 'User';
-    console.log('✅ Updated user name:', member.fullName);
-  }
-
-  // Update role badge
-  const roleEl = document.getElementById('userRole');
-  if (roleEl) {
-    const roleDisplay = role === 'LEVEL_ADMIN' ? 'Flight Admin' : role === 'SUPER_ADMIN' ? 'Super Admin' : 'Player';
-    roleEl.textContent = roleDisplay;
-    console.log('✅ Updated role:', roleDisplay);
-  }
-
-  // Show/hide navigation based on role
-  updateNavigationVisibility(role);
+// ===== FIREBASE CONFIGURATION =====
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDemoKeyForIndianClubBahrain",
+  authDomain: "indian-club-bahrain.firebaseapp.com",
+  projectId: "indian-club-bahrain",
+  storageBucket: "indian-club-bahrain.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456"
 };
 
-// ===== UPDATE NAVIGATION VISIBILITY =====
-function updateNavigationVisibility(role) {
-  console.log('🔀 Updating navigation for role:', role);
-  
-  // Hide all nav sections first
-  document.querySelectorAll('.nav-section').forEach(section => {
-    section.style.display = 'none';
-  });
-
-  // Show sections based on role
-  const navSections = document.querySelectorAll('.nav-section');
-  
-  if (role === 'PLAYER') {
-    if (navSections[0]) navSections[0].style.display = 'block';
-    if (navSections[3]) navSections[3].style.display = 'block';
-    console.log('✅ Showing PLAYER navigation');
-  } else if (role === 'LEVEL_ADMIN') {
-    if (navSections[0]) navSections[0].style.display = 'block';
-    if (navSections[1]) navSections[1].style.display = 'block';
-    if (navSections[3]) navSections[3].style.display = 'block';
-    console.log('✅ Showing LEVEL_ADMIN navigation');
-  } else if (role === 'SUPER_ADMIN') {
-    navSections.forEach(section => {
-      section.style.display = 'block';
-    });
-    console.log('✅ Showing SUPER_ADMIN navigation');
+// ===== MOCK DATABASE (Replace with Firebase Firestore) =====
+const MOCK_MEMBERS = [
+  {
+    id: "player1",
+    email: "player@example.com",
+    password: "password123",
+    fullName: "Ahmed Al-Mansouri",
+    role: "PLAYER",
+    flightId: "flight1",
+    flightName: "Flight 1",
+    phone: "+973 3366 1234",
+    profilePic: null,
+    walletBalance: 50000, // fils (BHD 0.050)
+    status: "ACTIVE",
+    createdAt: new Date("2026-01-15")
+  },
+  {
+    id: "leveladmin1",
+    email: "leveladmin@example.com",
+    password: "password123",
+    fullName: "Fatima Al-Dosari",
+    role: "LEVEL_ADMIN",
+    flightId: "flight1",
+    flightName: "Flight 1",
+    phone: "+973 3366 5678",
+    profilePic: null,
+    walletBalance: 100000,
+    status: "ACTIVE",
+    createdAt: new Date("2025-06-10")
+  },
+  {
+    id: "superadmin1",
+    email: "superadmin@example.com",
+    password: "password123",
+    fullName: "Mohammed Al-Khalifa",
+    role: "SUPER_ADMIN",
+    flightId: null,
+    flightName: null,
+    phone: "+973 3366 9999",
+    profilePic: null,
+    walletBalance: 0,
+    status: "ACTIVE",
+    createdAt: new Date("2025-01-01")
   }
+];
+
+const MOCK_ACTIVITIES = [
+  { id: "badminton", name: "Badminton", status: "ACTIVE", createdAt: new Date("2026-01-01") },
+  { id: "cricket", name: "Cricket", status: "ACTIVE", createdAt: new Date("2026-01-01") },
+  { id: "football", name: "Football", status: "ACTIVE", createdAt: new Date("2026-01-01") }
+];
+
+const MOCK_FLIGHTS = [
+  { id: "flight1", activityId: "badminton", name: "Flight 1", displayOrder: 1, status: "ACTIVE" },
+  { id: "flight2", activityId: "badminton", name: "Flight 2", displayOrder: 2, status: "ACTIVE" },
+  { id: "flight3", activityId: "badminton", name: "Flight 3", displayOrder: 3, status: "ACTIVE" },
+  { id: "flight4", activityId: "badminton", name: "Flight 4", displayOrder: 4, status: "ACTIVE" },
+  { id: "flight4a", activityId: "badminton", name: "Flight 4A", displayOrder: 5, status: "ACTIVE" },
+  { id: "flight4b", activityId: "badminton", name: "Flight 4B", displayOrder: 6, status: "ACTIVE" }
+];
+
+const MOCK_ANNOUNCEMENTS = [
+  {
+    id: "ann1",
+    title: "🏆 Annual Badminton Championship",
+    message: "Join us for the biggest badminton tournament of the year! Registration opens next week.",
+    image: null,
+    publishedAt: new Date("2026-09-10"),
+    isPublished: true
+  },
+  {
+    id: "ann2",
+    title: "🎉 Club Anniversary Celebration",
+    message: "Celebrate 25 years of Indian Club Bahrain with us! Special events and prizes await.",
+    image: null,
+    publishedAt: new Date("2026-09-05"),
+    isPublished: true
+  },
+  {
+    id: "ann3",
+    title: "📢 New Membership Drive",
+    message: "Invite your friends to join our vibrant community. Special discounts for new members!",
+    image: null,
+    publishedAt: new Date("2026-09-01"),
+    isPublished: true
+  }
+];
+
+const MOCK_ADS = [
+  {
+    id: "ad1",
+    businessName: "Al-Noor Restaurant",
+    category: "Food & Beverage",
+    email: "info@alnoor.bh",
+    phone: "+973 1234 5678",
+    description: "Authentic Bahraini cuisine with modern ambiance",
+    image: null,
+    status: "APPROVED",
+    inCarousel: true,
+    expiryDate: new Date("2026-12-31"),
+    createdAt: new Date("2026-08-01")
+  },
+  {
+    id: "ad2",
+    businessName: "Fitness Plus Gym",
+    category: "Health & Fitness",
+    email: "contact@fitnessplus.bh",
+    phone: "+973 3344 5566",
+    description: "State-of-the-art gym with professional trainers",
+    image: null,
+    status: "APPROVED",
+    inCarousel: true,
+    expiryDate: new Date("2026-12-31"),
+    createdAt: new Date("2026-08-15")
+  },
+  {
+    id: "ad3",
+    businessName: "Travel Bahrain Tours",
+    category: "Travel & Tourism",
+    email: "bookings@travelbahrain.bh",
+    phone: "+973 5566 7788",
+    description: "Explore Bahrain with our guided tours",
+    image: null,
+    status: "APPROVED",
+    inCarousel: true,
+    expiryDate: new Date("2026-12-31"),
+    createdAt: new Date("2026-08-20")
+  },
+  {
+    id: "ad4",
+    businessName: "Tech Solutions Ltd",
+    category: "Technology",
+    email: "sales@techsolutions.bh",
+    phone: "+973 7788 9900",
+    description: "IT services and software development",
+    image: null,
+    status: "APPROVED",
+    inCarousel: true,
+    expiryDate: new Date("2026-12-31"),
+    createdAt: new Date("2026-08-25")
+  },
+  {
+    id: "ad5",
+    businessName: "Beauty & Spa Center",
+    category: "Beauty & Wellness",
+    email: "bookings@beautyspa.bh",
+    phone: "+973 9900 1122",
+    description: "Premium beauty and spa treatments",
+    image: null,
+    status: "APPROVED",
+    inCarousel: true,
+    expiryDate: new Date("2026-12-31"),
+    createdAt: new Date("2026-08-28")
+  },
+  {
+    id: "ad6",
+    businessName: "Real Estate Bahrain",
+    category: "Real Estate",
+    email: "info@realestate.bh",
+    phone: "+973 1122 3344",
+    description: "Premium properties and investment opportunities",
+    image: null,
+    status: "APPROVED",
+    inCarousel: true,
+    expiryDate: new Date("2026-12-31"),
+    createdAt: new Date("2026-09-01")
+  }
+];
+
+// ===== API HANDLER =====
+export async function api(endpoint, options = {}) {
+  const method = options.method || "GET";
+  const body = options.body ? JSON.parse(options.body) : null;
+
+  console.log(`📡 API Call: ${method} ${endpoint}`, body);
+
+  // ===== AUTHENTICATION ENDPOINTS =====
+  if (endpoint === "/auth/login") {
+    const { email, password, role } = body;
+    
+    // Validate credentials
+    const member = MOCK_MEMBERS.find(m => m.email === email && m.password === password && m.role === role);
+    
+    if (!member) {
+      throw new Error("Invalid email, password, or role");
+    }
+
+    // Generate mock token
+    const token = btoa(JSON.stringify({ id: member.id, email: member.email, role: member.role, timestamp: Date.now() }));
+
+    console.log(`✅ Login successful: ${member.fullName}`);
+    return {
+      success: true,
+      token,
+      member: {
+        id: member.id,
+        email: member.email,
+        fullName: member.fullName,
+        role: member.role,
+        flightId: member.flightId,
+        flightName: member.flightName,
+        phone: member.phone,
+        profilePic: member.profilePic,
+        walletBalance: member.walletBalance,
+        status: member.status
+      }
+    };
+  }
+
+  if (endpoint === "/auth/verify") {
+    const { token } = body;
+    
+    try {
+      const decoded = JSON.parse(atob(token));
+      const member = MOCK_MEMBERS.find(m => m.id === decoded.id);
+      
+      if (!member) {
+        throw new Error("Member not found");
+      }
+
+      console.log(`✅ Token verified: ${member.fullName}`);
+      return {
+        success: true,
+        member: {
+          id: member.id,
+          email: member.email,
+          fullName: member.fullName,
+          role: member.role,
+          flightId: member.flightId,
+          flightName: member.flightName,
+          phone: member.phone,
+          profilePic: member.profilePic,
+          walletBalance: member.walletBalance,
+          status: member.status
+        }
+      };
+    } catch (error) {
+      throw new Error("Invalid token");
+    }
+  }
+
+  // ===== MEMBER ENDPOINTS =====
+  if (endpoint === "/members" && method === "GET") {
+    console.log(`✅ Fetched ${MOCK_MEMBERS.length} members`);
+    return MOCK_MEMBERS;
+  }
+
+  if (endpoint === "/members" && method === "POST") {
+    const newMember = { id: `member_${Date.now()}`, ...body, createdAt: new Date() };
+    MOCK_MEMBERS.push(newMember);
+    console.log(`✅ Member created: ${newMember.fullName}`);
+    return newMember;
+  }
+
+  // ===== ACTIVITY ENDPOINTS =====
+  if (endpoint === "/activities" && method === "GET") {
+    console.log(`✅ Fetched ${MOCK_ACTIVITIES.length} activities`);
+    return MOCK_ACTIVITIES;
+  }
+
+  if (endpoint === "/activities" && method === "POST") {
+    const newActivity = { id: `activity_${Date.now()}`, ...body, createdAt: new Date() };
+    MOCK_ACTIVITIES.push(newActivity);
+    console.log(`✅ Activity created: ${newActivity.name}`);
+    return newActivity;
+  }
+
+  // ===== FLIGHT ENDPOINTS =====
+  if (endpoint === "/flights" && method === "GET") {
+    console.log(`✅ Fetched ${MOCK_FLIGHTS.length} flights`);
+    return MOCK_FLIGHTS;
+  }
+
+  if (endpoint === "/flights" && method === "POST") {
+    const newFlight = { id: `flight_${Date.now()}`, ...body };
+    MOCK_FLIGHTS.push(newFlight);
+    console.log(`✅ Flight created: ${newFlight.name}`);
+    return newFlight;
+  }
+
+  // ===== ANNOUNCEMENTS ENDPOINTS =====
+  if (endpoint === "/announcements" && method === "GET") {
+    console.log(`✅ Fetched ${MOCK_ANNOUNCEMENTS.length} announcements`);
+    return MOCK_ANNOUNCEMENTS;
+  }
+
+  if (endpoint === "/announcements" && method === "POST") {
+    const newAnnouncement = { id: `ann_${Date.now()}`, ...body, publishedAt: new Date() };
+    MOCK_ANNOUNCEMENTS.push(newAnnouncement);
+    console.log(`✅ Announcement created: ${newAnnouncement.title}`);
+    return newAnnouncement;
+  }
+
+  // ===== ADS ENDPOINTS =====
+  if (endpoint === "/ads" && method === "GET") {
+    console.log(`✅ Fetched ${MOCK_ADS.length} ads`);
+    return MOCK_ADS;
+  }
+
+  if (endpoint === "/ads" && method === "POST") {
+    const newAd = { id: `ad_${Date.now()}`, ...body, createdAt: new Date() };
+    MOCK_ADS.push(newAd);
+    console.log(`✅ Ad created: ${newAd.businessName}`);
+    return newAd;
+  }
+
+  // ===== TIMETABLE ENDPOINTS =====
+  if (endpoint === "/timetable" && method === "GET") {
+    const mockSessions = [
+      { id: "session1", flightId: "flight1", activityId: "badminton", date: new Date("2026-09-15"), startTime: "18:00", endTime: "19:30", status: "SCHEDULED" },
+      { id: "session2", flightId: "flight1", activityId: "badminton", date: new Date("2026-09-17"), startTime: "18:00", endTime: "19:30", status: "SCHEDULED" },
+      { id: "session3", flightId: "flight2", activityId: "badminton", date: new Date("2026-09-16"), startTime: "19:30", endTime: "21:00", status: "SCHEDULED" }
+    ];
+    console.log(`✅ Fetched ${mockSessions.length} sessions`);
+    return mockSessions;
+  }
+
+  // ===== ATTENDANCE ENDPOINTS =====
+  if (endpoint === "/attendance" && method === "GET") {
+    const mockAttendance = [
+      { id: "att1", memberId: "player1", flightId: "flight1", sessionId: "session1", status: "PRESENT", chargeAmount: 5000, paymentStatus: "PAID", paymentMethod: "CASH", sessionDate: new Date("2026-09-10"), walletBalance: 50000 },
+      { id: "att2", memberId: "player1", flightId: "flight1", sessionId: "session2", status: "ABSENT", chargeAmount: 0, paymentStatus: "NONE", paymentMethod: null, sessionDate: new Date("2026-09-12"), walletBalance: 50000 }
+    ];
+    console.log(`✅ Fetched ${mockAttendance.length} attendance records`);
+    return mockAttendance;
+  }
+
+  // ===== AUDIT LOGS ENDPOINTS =====
+  if (endpoint === "/audit/logs" && method === "GET") {
+    const mockLogs = [
+      { id: "log1", category: "MEMBER", action: "Member Created", memberName: "Ahmed Al-Mansouri", flightName: "Flight 1", detail: "New player registered", actorName: "Fatima Al-Dosari", createdAt: new Date("2026-09-14T10:30:00") },
+      { id: "log2", category: "ATTENDANCE", action: "Attendance Marked", memberName: "Ahmed Al-Mansouri", flightName: "Flight 1", detail: "Present in session", actorName: "Fatima Al-Dosari", createdAt: new Date("2026-09-14T09:15:00") },
+      { id: "log3", category: "WALLET/PAYMENT", action: "Payment Confirmed", memberName: "Ahmed Al-Mansouri", flightName: "Flight 1", detail: "Cash payment received", actorName: "Fatima Al-Dosari", createdAt: new Date("2026-09-13T18:45:00") },
+      { id: "log4", category: "SESSION CONTROL", action: "Session Ended", memberName: null, flightName: "Flight 1", detail: "Badminton session completed", actorName: "Fatima Al-Dosari", createdAt: new Date("2026-09-13T20:00:00") },
+      { id: "log5", category: "SHUTTLE STOCK", action: "Stock Added", memberName: null, flightName: "Flight 1", detail: "50 shuttles added to inventory", actorName: "Fatima Al-Dosari", createdAt: new Date("2026-09-12T14:30:00") }
+    ];
+    console.log(`✅ Fetched ${mockLogs.length} audit logs`);
+    return mockLogs;
+  }
+
+  // ===== NOTICES ENDPOINTS =====
+  if (endpoint === "/notices" && method === "GET") {
+    console.log(`✅ Fetched ${MOCK_ANNOUNCEMENTS.length} notices`);
+    return MOCK_ANNOUNCEMENTS;
+  }
+
+  // ===== DEFAULT RESPONSE =====
+  console.warn(`⚠️ Unknown endpoint: ${endpoint}`);
+  return { success: false, message: "Endpoint not found" };
 }
 
-console.log('✅ auth.js loaded successfully');
+// ===== EXPORT =====
+export default { api };
 
