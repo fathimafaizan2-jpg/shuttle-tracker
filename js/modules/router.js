@@ -1,371 +1,318 @@
 
-// ============================================
-// router.js - COMPLETE ROUTING & NAVIGATION
-// ============================================
+import { views } from "./modules/views.js";
+import { flightAdminViews } from "./modules/flightAdminViews.js";
+import { adminViews } from "./modules/adminViews.js";
+import { api } from "./modules/auth.js";
 
-// ===== ROUTE DEFINITIONS =====
-const routes = {
-  // PLAYER ROUTES
-  'home': { view: 'views', page: 'home', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
-  'timetable': { view: 'views', page: 'timetable', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
-  'attendance': { view: 'views', page: 'attendance', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
-  'wallet': { view: 'views', page: 'wallet', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
-  'profile': { view: 'views', page: 'profile', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
-  'bazaar': { view: 'views', page: 'bazaar', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
-  'logs': { view: 'views', page: 'logs', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
-
-  // FLIGHT ADMIN ROUTES
-  'sessions': { view: 'flightAdminViews', page: 'sessions', roles: ['LEVEL_ADMIN', 'SUPER_ADMIN'] },
-  'stock': { view: 'flightAdminViews', page: 'stock', roles: ['LEVEL_ADMIN', 'SUPER_ADMIN'] },
-  'reports': { view: 'flightAdminViews', page: 'reports', roles: ['LEVEL_ADMIN', 'SUPER_ADMIN'] },
-
-  // SUPER ADMIN ROUTES
-  'overview': { view: 'adminViews', page: 'home', roles: ['SUPER_ADMIN'] },
-  'flights': { view: 'adminViews', page: 'flights', roles: ['SUPER_ADMIN'] },
-  'master': { view: 'adminViews', page: 'master', roles: ['SUPER_ADMIN'] },
-  'finance': { view: 'adminViews', page: 'finance', roles: ['SUPER_ADMIN'] },
-  'ads': { view: 'adminViews', page: 'ads', roles: ['SUPER_ADMIN'] },
-  'audit': { view: 'adminViews', page: 'audit', roles: ['SUPER_ADMIN'] }
+// ===== GLOBAL STATE =====
+export const state = {
+  member: null,
+  role: null,
+  flightId: null,
+  flightName: null,
+  currentTab: "home",
+  currentPage: "login"
 };
 
-// ===== NAVIGATION MENU STRUCTURE =====
-const navigationMenu = {
+// ===== ROLE-BASED TAB DEFINITIONS =====
+const TAB_CONFIG = {
   PLAYER: [
-    { label: '🏠 Home', route: 'home', icon: 'home' },
-    { label: '📅 Timetable', route: 'timetable', icon: 'calendar' },
-    { label: '✓ Attendance', route: 'attendance', icon: 'check' },
-    { label: '💰 Wallet', route: 'wallet', icon: 'wallet' },
-    { label: '👤 Profile', route: 'profile', icon: 'user' },
-    { label: '🛍️ BaZaar', route: 'bazaar', icon: 'shopping' },
-    { label: '📜 Logs', route: 'logs', icon: 'list' }
+    { id: "home", label: "🏠 Home", view: views.home },
+    { id: "timetable", label: "📅 Timetable", view: views.timetable },
+    { id: "attendance", label: "📊 Attendance", view: views.attendance },
+    { id: "wallet", label: "💰 Wallet", view: views.wallet },
+    { id: "bazaar", label: "🏪 Bazaar", view: views.bazaar },
+    { id: "profile", label: "👤 Profile", view: views.profile },
+    { id: "logs", label: "📜 Logs", view: views.logs }
   ],
   LEVEL_ADMIN: [
-    { label: '🏠 Home', route: 'home', icon: 'home' },
-    { label: '📅 Timetable', route: 'timetable', icon: 'calendar' },
-    { label: '✓ Attendance', route: 'attendance', icon: 'check' },
-    { label: '💰 Wallet', route: 'wallet', icon: 'wallet' },
-    { label: '👤 Profile', route: 'profile', icon: 'user' },
-    { label: '🛍️ BaZaar', route: 'bazaar', icon: 'shopping' },
-    { label: '📜 Logs', route: 'logs', icon: 'list' },
-    { label: '---', separator: true },
-    { label: '📅 Session Control', route: 'sessions', icon: 'control' },
-    { label: '📦 Shuttle Stock', route: 'stock', icon: 'package' },
-    { label: '📊 Reports', route: 'reports', icon: 'chart' }
+    // Player tabs (7)
+    { id: "home", label: "🏠 Home", view: flightAdminViews.home },
+    { id: "timetable", label: "📅 Timetable", view: flightAdminViews.timetable },
+    { id: "attendance", label: "📊 Attendance", view: flightAdminViews.attendance },
+    { id: "wallet", label: "💰 Wallet", view: flightAdminViews.wallet },
+    { id: "bazaar", label: "🏪 Bazaar", view: flightAdminViews.bazaar },
+    { id: "profile", label: "👤 Profile", view: flightAdminViews.profile },
+    { id: "logs", label: "📜 Logs", view: flightAdminViews.logs },
+    // Flight Admin tabs (3)
+    { id: "sessionControl", label: "🎮 Session Control", view: flightAdminViews.sessionControl },
+    { id: "stock", label: "📦 Stock", view: flightAdminViews.stock },
+    { id: "finance", label: "💳 Finance", view: flightAdminViews.finance }
   ],
   SUPER_ADMIN: [
-    { label: '🏠 Home', route: 'home', icon: 'home' },
-    { label: '📅 Timetable', route: 'timetable', icon: 'calendar' },
-    { label: '✓ Attendance', route: 'attendance', icon: 'check' },
-    { label: '💰 Wallet', route: 'wallet', icon: 'wallet' },
-    { label: '👤 Profile', route: 'profile', icon: 'user' },
-    { label: '🛍️ BaZaar', route: 'bazaar', icon: 'shopping' },
-    { label: '📜 Logs', route: 'logs', icon: 'list' },
-    { label: '---', separator: true },
-    { label: '📅 Session Control', route: 'sessions', icon: 'control' },
-    { label: '📦 Shuttle Stock', route: 'stock', icon: 'package' },
-    { label: '📊 Reports', route: 'reports', icon: 'chart' },
-    { label: '---', separator: true },
-    { label: '📊 Club Overview', route: 'overview', icon: 'dashboard' },
-    { label: '✈️ Flights & Members', route: 'flights', icon: 'flight' },
-    { label: '📅 Master Timetable', route: 'master', icon: 'calendar-master' },
-    { label: '💼 Executive Finance', route: 'finance', icon: 'finance' },
-    { label: '📢 Ads & Notices', route: 'ads', icon: 'megaphone' },
-    { label: '🔍 Audit Log', route: 'audit', icon: 'audit' }
+    // Player tabs (7)
+    { id: "home", label: "🏠 Home", view: adminViews.home },
+    { id: "timetable", label: "📅 Timetable", view: adminViews.timetable },
+    { id: "attendance", label: "📊 Attendance", view: adminViews.attendance },
+    { id: "wallet", label: "💰 Wallet", view: adminViews.wallet },
+    { id: "bazaar", label: "🏪 Bazaar", view: adminViews.bazaar },
+    { id: "profile", label: "👤 Profile", view: adminViews.profile },
+    { id: "logs", label: "📜 Logs", view: adminViews.logs },
+    // Super Admin tabs (6)
+    { id: "activities", label: "🎮 Activities & Flights", view: adminViews.activities },
+    { id: "masterTimetable", label: "📅 Master Timetable", view: adminViews.timetable },
+    { id: "finance", label: "💳 Finance", view: adminViews.finance },
+    { id: "auditLogs", label: "📜 Audit Logs", view: adminViews.auditLogs },
+    { id: "ads", label: "📢 Ads & Notices", view: adminViews.ads }
   ]
 };
 
-// ===== INITIALIZE ROUTER =====
-window.initializeRouter = function() {
-  console.log('🔄 Initializing router...');
-
-  // Check authentication
-  if (!window.appState?.isAuthenticated) {
-    console.warn('⚠️ Not authenticated, redirecting to login');
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('login').style.display = 'flex';
+// ===== NAVIGATION FUNCTIONS =====
+export async function navigate(tabId) {
+  if (!state.member) {
+    console.error("❌ Not authenticated");
     return;
   }
 
-  // Build navigation menu
-  window.buildNavigation();
+  const tabs = TAB_CONFIG[state.role];
+  const tab = tabs.find(t => t.id === tabId);
 
-  // Load default home page
-  window.navigateTo('home');
-
-  console.log('✅ Router initialized');
-};
-
-// ===== BUILD NAVIGATION MENU =====
-window.buildNavigation = function() {
-  const role = window.appState?.role;
-  const navContainer = document.getElementById('navMenu');
-
-  if (!navContainer) {
-    console.warn('⚠️ Navigation container not found');
+  if (!tab) {
+    console.error(`❌ Tab not found: ${tabId}`);
     return;
   }
 
-  const menu = navigationMenu[role] || navigationMenu.PLAYER;
-  let navHTML = '';
+  state.currentTab = tabId;
+  await renderPage();
+}
 
-  menu.forEach(item => {
-    if (item.separator) {
-      navHTML += '<div style="border-top: 1px solid #ddd; margin: 10px 0;"></div>';
-    } else {
-      navHTML += `
-        <button class="nav-item" onclick="window.navigateTo('${item.route}')" data-route="${item.route}">
-          ${item.label}
-        </button>
-      `;
-    }
-  });
-
-  navContainer.innerHTML = navHTML;
-  console.log('✅ Navigation menu built for role:', role);
-};
-
-// ===== NAVIGATE TO PAGE =====
-window.navigateTo = async function(routeName) {
-  console.log('🔄 Navigating to:', routeName);
-
-  // Check if route exists
-  const route = routes[routeName];
-  if (!route) {
-    console.error('❌ Route not found:', routeName);
-    window.showNotification('❌ Page not found: ' + routeName, 'error');
-    return;
-  }
-
-  // Check authentication
-  if (!window.appState?.isAuthenticated) {
-    console.warn('⚠️ Not authenticated');
-    window.showNotification('❌ Please login first', 'error');
-    return;
-  }
-
-  // Check role authorization
-  const userRole = window.appState?.role;
-  if (!route.roles.includes(userRole)) {
-    console.error('❌ Unauthorized access:', routeName, 'for role:', userRole);
-    window.showNotification('❌ You do not have permission to access this page', 'error');
+export async function renderPage() {
+  const container = document.getElementById("app-content");
+  if (!container) {
+    console.error("❌ App container not found");
     return;
   }
 
   try {
-    // Get the view module
-    let viewModule;
-    if (route.view === 'views') {
-      viewModule = window.views;
-    } else if (route.view === 'flightAdminViews') {
-      viewModule = window.flightAdminViews;
-    } else if (route.view === 'adminViews') {
-      viewModule = window.adminViews;
-    }
+    const tabs = TAB_CONFIG[state.role];
+    const currentTab = tabs.find(t => t.id === state.currentTab);
 
-    if (!viewModule) {
-      throw new Error(`View module not found: ${route.view}`);
-    }
-
-    // Get the page renderer
-    const pageRenderer = viewModule[route.page];
-    if (!pageRenderer) {
-      throw new Error(`Page not found: ${route.page}`);
+    if (!currentTab) {
+      container.innerHTML = `<p class="note">❌ Page not found: ${state.currentTab}</p>`;
+      return;
     }
 
     // Show loading state
-    const contentArea = document.getElementById('pageContent');
-    if (contentArea) {
-      contentArea.innerHTML = '<div style="text-align: center; padding: 40px;"><p>⏳ Loading...</p></div>';
-    }
+    container.innerHTML = `<div class="card"><p class="note">⏳ Loading...</p></div>`;
 
-    // Render the page
-    console.log('📄 Rendering page:', route.page);
-    const pageHTML = await pageRenderer();
+    // Render the tab view
+    const html = await currentTab.view();
+    container.innerHTML = html;
 
-    // Update content area
-    if (contentArea) {
-      contentArea.innerHTML = pageHTML;
-    }
+    // Update active tab in navigation
+    updateActiveTab();
 
-    // Update app state
-    window.appState.currentPage = routeName;
-
-    // Update active nav item
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.classList.remove('active');
-      if (item.dataset.route === routeName) {
-        item.classList.add('active');
-      }
-    });
-
-    console.log('✅ Page loaded:', routeName);
-
+    console.log(`✅ Rendered tab: ${state.currentTab}`);
   } catch (error) {
-    console.error('❌ Error navigating to:', routeName, error);
-    window.showNotification(`❌ Error loading page: ${error.message}`, 'error');
-    
-    const contentArea = document.getElementById('pageContent');
-    if (contentArea) {
-      contentArea.innerHTML = `<div class="error-message">❌ Error loading page: ${error.message}</div>`;
+    console.error("❌ Error rendering page:", error);
+    container.innerHTML = `<div class="card"><p class="note">❌ Error: ${error.message}</p></div>`;
+  }
+}
+
+function updateActiveTab() {
+  const tabs = document.querySelectorAll(".nav-tab");
+  tabs.forEach(tab => {
+    if (tab.dataset.tab === state.currentTab) {
+      tab.classList.add("active");
+    } else {
+      tab.classList.remove("active");
     }
-  }
-};
+  });
+}
 
-// ===== SHOW NOTIFICATION =====
-window.showNotification = function(message, type = 'info') {
-  console.log(`📢 [${type.toUpperCase()}] ${message}`);
+export function renderNavigation() {
+  const navContainer = document.getElementById("app-nav");
+  if (!navContainer) return;
 
-  const notificationContainer = document.getElementById('notifications');
-  if (!notificationContainer) {
-    console.warn('⚠️ Notification container not found');
-    return;
-  }
+  const tabs = TAB_CONFIG[state.role];
 
-  const notificationId = 'notif_' + Date.now();
-  const bgColor = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1';
-  const textColor = type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460';
-  const borderColor = type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb';
-
-  const notificationHTML = `
-    <div id="${notificationId}" style="
-      background: ${bgColor};
-      color: ${textColor};
-      border: 1px solid ${borderColor};
-      padding: 15px 20px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      animation: slideIn 0.3s ease-in-out;
-    ">
-      ${message}
+  navContainer.innerHTML = `
+    <div class="nav-header">
+      <h3>${state.flightName || state.member.fullName}</h3>
+      <small>${state.role === "SUPER_ADMIN" ? "🏢 Super Admin" : state.role === "LEVEL_ADMIN" ? "👨‍💼 Flight Admin" : "👤 Player"}</small>
+    </div>
+    <nav class="nav-tabs">
+      ${tabs.map(tab => `
+        <button class="nav-tab ${tab.id === state.currentTab ? "active" : ""}" 
+                data-tab="${tab.id}" 
+                onclick="window.navigate('${tab.id}')">
+          ${tab.label}
+        </button>
+      `).join("")}
+    </nav>
+    <div class="nav-footer">
+      <button class="nav-btn" onclick="window.logout()">🚪 Logout</button>
     </div>
   `;
+}
 
-  notificationContainer.innerHTML += notificationHTML;
+// ===== AUTHENTICATION FUNCTIONS =====
+export async function login(email, password, role) {
+  try {
+    const response = await api("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password, role })
+    });
 
-  // Auto-remove after 5 seconds
-  setTimeout(() => {
-    const element = document.getElementById(notificationId);
-    if (element) {
-      element.style.animation = 'slideOut 0.3s ease-in-out';
-      setTimeout(() => element.remove(), 300);
+    if (!response.member) {
+      throw new Error("Invalid credentials");
     }
-  }, 5000);
-};
 
-// ===== REQUIRE SUPER ADMIN =====
-window.requireSuperAdmin = function() {
-  if (window.appState?.role !== 'SUPER_ADMIN') {
-    console.error('❌ Super Admin access required');
-    window.showNotification('❌ Super Admin access required', 'error');
+    // Set global state
+    state.member = response.member;
+    state.role = response.member.role;
+    state.flightId = response.member.flightId;
+    state.flightName = response.member.flightName;
+    state.currentTab = "home";
+    state.currentPage = "dashboard";
+
+    // Store auth token
+    localStorage.setItem("authToken", response.token);
+    localStorage.setItem("memberRole", state.role);
+
+    console.log(`✅ Login successful: ${state.member.fullName} (${state.role})`);
+    
+    // Render navigation and home page
+    renderNavigation();
+    await navigate("home");
+
+    return true;
+  } catch (error) {
+    console.error("❌ Login failed:", error);
+    showNotification(`❌ Login failed: ${error.message}`);
     return false;
   }
-  return true;
-};
+}
 
-// ===== REQUIRE FLIGHT ADMIN =====
-window.requireFlightAdmin = function() {
-  const role = window.appState?.role;
-  if (role !== 'LEVEL_ADMIN' && role !== 'SUPER_ADMIN') {
-    console.error('❌ Flight Admin access required');
-    window.showNotification('❌ Flight Admin access required', 'error');
+export async function logout() {
+  if (confirm("Are you sure you want to logout?")) {
+    state.member = null;
+    state.role = null;
+    state.flightId = null;
+    state.flightName = null;
+    state.currentTab = "home";
+    state.currentPage = "login";
+
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("memberRole");
+
+    console.log("✅ Logged out successfully");
+    location.reload();
+  }
+}
+
+export async function checkAuth() {
+  const token = localStorage.getItem("authToken");
+  const role = localStorage.getItem("memberRole");
+
+  if (!token || !role) {
+    state.currentPage = "login";
     return false;
   }
-  return true;
-};
 
-// ===== SWITCH AUTH TAB =====
-window.switchAuthTab = function(tab) {
-  console.log('🔄 Switching auth tab to:', tab);
+  try {
+    const response = await api("/auth/verify", {
+      method: "POST",
+      body: JSON.stringify({ token })
+    });
 
-  const loginForm = document.getElementById('loginForm');
-  const activateForm = document.getElementById('activateForm');
-  const loginTab = document.getElementById('loginTab');
-  const activateTab = document.getElementById('activateTab');
+    if (response.member) {
+      state.member = response.member;
+      state.role = response.member.role;
+      state.flightId = response.member.flightId;
+      state.flightName = response.member.flightName;
+      state.currentPage = "dashboard";
+      state.currentTab = "home";
 
-  if (tab === 'login') {
-    loginForm.style.display = 'block';
-    activateForm.style.display = 'none';
-    loginTab.classList.add('active');
-    activateTab.classList.remove('active');
-  } else if (tab === 'activate') {
-    loginForm.style.display = 'none';
-    activateForm.style.display = 'block';
-    loginTab.classList.remove('active');
-    activateTab.classList.add('active');
+      console.log(`✅ Auth verified: ${state.member.fullName}`);
+      return true;
+    }
+  } catch (error) {
+    console.error("❌ Auth verification failed:", error);
   }
-};
 
-// ===== SET STATE =====
-window.setState = function(updates) {
-  window.appState = {
-    ...window.appState,
-    ...updates
-  };
-  console.log('📝 State updated:', updates);
-};
+  state.currentPage = "login";
+  return false;
+}
 
-// ===== GET STATE =====
-window.getState = function() {
-  return window.appState;
-};
+// ===== NOTIFICATION SYSTEM =====
+export function showNotification(message) {
+  window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: message }));
+}
 
-// ===== LOGOUT =====
-window.logout = function() {
-  if (confirm('Are you sure you want to logout?')) {
-    console.log('🚪 Logging out...');
+// ===== GLOBAL WINDOW FUNCTIONS =====
+window.navigate = navigate;
+window.logout = logout;
+window.showNotification = showNotification;
 
-    // Clear session storage
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('memberData');
+// ===== INITIALIZATION =====
+export async function initializeApp() {
+  console.log("🚀 Initializing Indian Club App...");
 
-    // Reset app state
-    window.appState = {
-      member: null,
-      role: null,
-      token: null,
-      isAuthenticated: false,
-      sessionsAttended: 0,
-      pendingAmount: 0,
-      arrears: 0,
-      walletBalanceFils: 0,
-      upcomingSession: null,
-      currentPage: null
-    };
+  const isAuthenticated = await checkAuth();
 
+  if (isAuthenticated) {
+    renderNavigation();
+    await navigate("home");
+  } else {
     // Show login page
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('login').style.display = 'flex';
+    const container = document.getElementById("app-content");
+    if (container) {
+      container.innerHTML = `
+        <section class="card">
+          <h2>🏏 Indian Club Bahrain</h2>
+          <p class="note">Member Portal</p>
+        </section>
+        <section class="card">
+          <h3>🔐 Login</h3>
+          <form onsubmit="window.handleLogin(event)">
+            <div class="field">
+              <label>Email *</label>
+              <input type="email" id="loginEmail" placeholder="your@email.com" required>
+            </div>
+            <div class="field">
+              <label>Password *</label>
+              <input type="password" id="loginPassword" placeholder="••••••••" required>
+            </div>
+            <div class="field">
+              <label>Role *</label>
+              <select id="loginRole" required>
+                <option value="">Select role...</option>
+                <option value="PLAYER">Player</option>
+                <option value="LEVEL_ADMIN">Flight Admin</option>
+                <option value="SUPER_ADMIN">Super Admin</option>
+              </select>
+            </div>
+            <button type="submit" class="primary">🔓 Login</button>
+          </form>
+        </section>
+        <section class="card">
+          <h3>📝 New Member?</h3>
+          <p class="note">Contact your Flight Admin or Super Admin to register</p>
+        </section>
+      `;
+    }
+  }
+}
 
-    // Reset forms
-    document.getElementById('loginForm').reset();
-    document.getElementById('activateForm').reset();
-    document.getElementById('errorMessage').textContent = '';
-    document.getElementById('errorMessage').style.display = 'none';
+window.handleLogin = async function(event) {
+  event.preventDefault();
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+  const role = document.getElementById("loginRole").value;
 
-    console.log('✅ Logged out successfully');
+  const success = await login(email, password, role);
+  if (!success) {
+    document.getElementById("loginPassword").value = "";
   }
 };
 
-// ===== HANDLE ROUTE CHANGES =====
-window.addEventListener('hashchange', function() {
-  const hash = window.location.hash.slice(1) || 'home';
-  window.navigateTo(hash);
-});
+// Auto-initialize on page load
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeApp);
+} else {
+  initializeApp();
+}
 
-// ===== KEYBOARD SHORTCUTS =====
-document.addEventListener('keydown', function(event) {
-  // Ctrl/Cmd + L = Logout
-  if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
-    event.preventDefault();
-    window.logout();
-  }
-
-  // Ctrl/Cmd + H = Home
-  if ((event.ctrlKey || event.metaKey) && event.key === 'h') {
-    event.preventDefault();
-    window.navigateTo('home');
-  }
-});
-
-console.log('✅ router.js loaded successfully');
+export default { navigate, renderPage, login, logout, checkAuth, state };
 
