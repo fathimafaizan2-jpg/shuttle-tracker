@@ -1,365 +1,371 @@
 
 // ============================================
-// router.js - ROUTING & NAVIGATION SYSTEM
+// router.js - COMPLETE ROUTING & NAVIGATION
 // ============================================
 
-import * as views from './views.js';
-import * as flightAdminViews from './flightAdminViews.js';
-import * as adminViews from './adminViews.js';
+// ===== ROUTE DEFINITIONS =====
+const routes = {
+  // PLAYER ROUTES
+  'home': { view: 'views', page: 'home', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
+  'timetable': { view: 'views', page: 'timetable', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
+  'attendance': { view: 'views', page: 'attendance', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
+  'wallet': { view: 'views', page: 'wallet', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
+  'profile': { view: 'views', page: 'profile', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
+  'bazaar': { view: 'views', page: 'bazaar', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
+  'logs': { view: 'views', page: 'logs', roles: ['PLAYER', 'LEVEL_ADMIN', 'SUPER_ADMIN'] },
 
-// ===== ROLE-BASED PAGE ACCESS =====
-const pageAccess = {
-  // PLAYER pages (accessible to PLAYER, LEVEL_ADMIN, SUPER_ADMIN)
-  PLAYER: ['home', 'timetable', 'attendance', 'wallet', 'profile', 'bazaar', 'logs'],
-  
-  // FLIGHT ADMIN pages (accessible to LEVEL_ADMIN, SUPER_ADMIN)
-  LEVEL_ADMIN: ['home', 'timetable', 'attendance', 'wallet', 'profile', 'bazaar', 'logs', 'sessions', 'stock', 'reports'],
-  
-  // SUPER ADMIN pages (accessible to SUPER_ADMIN only)
-  SUPER_ADMIN: ['home', 'overview', 'flights', 'master', 'admin-finance', 'ads', 'audit', 'bazaar', 'logs']
+  // FLIGHT ADMIN ROUTES
+  'sessions': { view: 'flightAdminViews', page: 'sessions', roles: ['LEVEL_ADMIN', 'SUPER_ADMIN'] },
+  'stock': { view: 'flightAdminViews', page: 'stock', roles: ['LEVEL_ADMIN', 'SUPER_ADMIN'] },
+  'reports': { view: 'flightAdminViews', page: 'reports', roles: ['LEVEL_ADMIN', 'SUPER_ADMIN'] },
+
+  // SUPER ADMIN ROUTES
+  'overview': { view: 'adminViews', page: 'home', roles: ['SUPER_ADMIN'] },
+  'flights': { view: 'adminViews', page: 'flights', roles: ['SUPER_ADMIN'] },
+  'master': { view: 'adminViews', page: 'master', roles: ['SUPER_ADMIN'] },
+  'finance': { view: 'adminViews', page: 'finance', roles: ['SUPER_ADMIN'] },
+  'ads': { view: 'adminViews', page: 'ads', roles: ['SUPER_ADMIN'] },
+  'audit': { view: 'adminViews', page: 'audit', roles: ['SUPER_ADMIN'] }
 };
 
-// ===== CURRENT ROUTE STATE =====
-let currentRoute = 'home';
-let currentLevel = 'premier'; // Default level filter
+// ===== NAVIGATION MENU STRUCTURE =====
+const navigationMenu = {
+  PLAYER: [
+    { label: '🏠 Home', route: 'home', icon: 'home' },
+    { label: '📅 Timetable', route: 'timetable', icon: 'calendar' },
+    { label: '✓ Attendance', route: 'attendance', icon: 'check' },
+    { label: '💰 Wallet', route: 'wallet', icon: 'wallet' },
+    { label: '👤 Profile', route: 'profile', icon: 'user' },
+    { label: '🛍️ BaZaar', route: 'bazaar', icon: 'shopping' },
+    { label: '📜 Logs', route: 'logs', icon: 'list' }
+  ],
+  LEVEL_ADMIN: [
+    { label: '🏠 Home', route: 'home', icon: 'home' },
+    { label: '📅 Timetable', route: 'timetable', icon: 'calendar' },
+    { label: '✓ Attendance', route: 'attendance', icon: 'check' },
+    { label: '💰 Wallet', route: 'wallet', icon: 'wallet' },
+    { label: '👤 Profile', route: 'profile', icon: 'user' },
+    { label: '🛍️ BaZaar', route: 'bazaar', icon: 'shopping' },
+    { label: '📜 Logs', route: 'logs', icon: 'list' },
+    { label: '---', separator: true },
+    { label: '📅 Session Control', route: 'sessions', icon: 'control' },
+    { label: '📦 Shuttle Stock', route: 'stock', icon: 'package' },
+    { label: '📊 Reports', route: 'reports', icon: 'chart' }
+  ],
+  SUPER_ADMIN: [
+    { label: '🏠 Home', route: 'home', icon: 'home' },
+    { label: '📅 Timetable', route: 'timetable', icon: 'calendar' },
+    { label: '✓ Attendance', route: 'attendance', icon: 'check' },
+    { label: '💰 Wallet', route: 'wallet', icon: 'wallet' },
+    { label: '👤 Profile', route: 'profile', icon: 'user' },
+    { label: '🛍️ BaZaar', route: 'bazaar', icon: 'shopping' },
+    { label: '📜 Logs', route: 'logs', icon: 'list' },
+    { label: '---', separator: true },
+    { label: '📅 Session Control', route: 'sessions', icon: 'control' },
+    { label: '📦 Shuttle Stock', route: 'stock', icon: 'package' },
+    { label: '📊 Reports', route: 'reports', icon: 'chart' },
+    { label: '---', separator: true },
+    { label: '📊 Club Overview', route: 'overview', icon: 'dashboard' },
+    { label: '✈️ Flights & Members', route: 'flights', icon: 'flight' },
+    { label: '📅 Master Timetable', route: 'master', icon: 'calendar-master' },
+    { label: '💼 Executive Finance', route: 'finance', icon: 'finance' },
+    { label: '📢 Ads & Notices', route: 'ads', icon: 'megaphone' },
+    { label: '🔍 Audit Log', route: 'audit', icon: 'audit' }
+  ]
+};
 
 // ===== INITIALIZE ROUTER =====
-export function initializeRouter() {
-  const userRole = window.appState?.role || 'PLAYER';
-  
-  console.log(`🔀 Router initialized for role: ${userRole}`);
-  
-  // Set up navigation event listeners
-  setupNavigationListeners();
-  
-  // Navigate to home
-  navigateTo('home');
-}
+window.initializeRouter = function() {
+  console.log('🔄 Initializing router...');
 
-// ===== SETUP NAVIGATION LISTENERS =====
-function setupNavigationListeners() {
-  // Player navigation
-  document.getElementById('nav-home')?.addEventListener('click', () => navigateTo('home'));
-  document.getElementById('nav-timetable')?.addEventListener('click', () => navigateTo('timetable'));
-  document.getElementById('nav-attendance')?.addEventListener('click', () => navigateTo('attendance'));
-  document.getElementById('nav-wallet')?.addEventListener('click', () => navigateTo('wallet'));
-  document.getElementById('nav-profile')?.addEventListener('click', () => navigateTo('profile'));
-  document.getElementById('nav-bazaar')?.addEventListener('click', () => navigateTo('bazaar'));
-  document.getElementById('nav-logs')?.addEventListener('click', () => navigateTo('logs'));
-  
-  // Flight Admin navigation
-  document.getElementById('nav-sessions')?.addEventListener('click', () => navigateTo('sessions'));
-  document.getElementById('nav-stock')?.addEventListener('click', () => navigateTo('stock'));
-  document.getElementById('nav-reports')?.addEventListener('click', () => navigateTo('reports'));
-  
-  // Super Admin navigation
-  document.getElementById('nav-overview')?.addEventListener('click', () => navigateTo('overview'));
-  document.getElementById('nav-flights')?.addEventListener('click', () => navigateTo('flights'));
-  document.getElementById('nav-master')?.addEventListener('click', () => navigateTo('master'));
-  document.getElementById('nav-admin-finance')?.addEventListener('click', () => navigateTo('admin-finance'));
-  document.getElementById('nav-ads')?.addEventListener('click', () => navigateTo('ads'));
-  document.getElementById('nav-audit')?.addEventListener('click', () => navigateTo('audit'));
-  
-  // Logout
-  document.getElementById('nav-logout')?.addEventListener('click', () => logout());
-}
-
-// ===== CHECK AUTHORIZATION =====
-function checkAuthorization(page) {
-  const userRole = window.appState?.role || 'PLAYER';
-  const allowedPages = pageAccess[userRole] || [];
-  
-  if (!allowedPages.includes(page)) {
-    console.warn(`❌ Access denied to page: ${page} for role: ${userRole}`);
-    return false;
+  // Check authentication
+  if (!window.appState?.isAuthenticated) {
+    console.warn('⚠️ Not authenticated, redirecting to login');
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'flex';
+    return;
   }
-  
-  return true;
-}
 
-// ===== REQUIRE SUPER ADMIN =====
-export function requireSuperAdmin() {
-  const userRole = window.appState?.role;
-  if (userRole !== 'SUPER_ADMIN') {
-    console.error('❌ Super Admin access required!');
-    if (window.showToast) {
-      window.showToast('❌ You do not have permission to access this feature');
+  // Build navigation menu
+  window.buildNavigation();
+
+  // Load default home page
+  window.navigateTo('home');
+
+  console.log('✅ Router initialized');
+};
+
+// ===== BUILD NAVIGATION MENU =====
+window.buildNavigation = function() {
+  const role = window.appState?.role;
+  const navContainer = document.getElementById('navMenu');
+
+  if (!navContainer) {
+    console.warn('⚠️ Navigation container not found');
+    return;
+  }
+
+  const menu = navigationMenu[role] || navigationMenu.PLAYER;
+  let navHTML = '';
+
+  menu.forEach(item => {
+    if (item.separator) {
+      navHTML += '<div style="border-top: 1px solid #ddd; margin: 10px 0;"></div>';
+    } else {
+      navHTML += `
+        <button class="nav-item" onclick="window.navigateTo('${item.route}')" data-route="${item.route}">
+          ${item.label}
+        </button>
+      `;
     }
-    return false;
-  }
-  return true;
-}
+  });
 
-// ===== REQUIRE FLIGHT ADMIN =====
-export function requireFlightAdmin() {
-  const userRole = window.appState?.role;
-  if (userRole !== 'LEVEL_ADMIN' && userRole !== 'SUPER_ADMIN') {
-    console.error('❌ Flight Admin access required!');
-    if (window.showToast) {
-      window.showToast('❌ You do not have permission to access this feature');
-    }
-    return false;
-  }
-  return true;
-}
+  navContainer.innerHTML = navHTML;
+  console.log('✅ Navigation menu built for role:', role);
+};
 
 // ===== NAVIGATE TO PAGE =====
-export function navigateTo(page) {
-  // Check authorization
-  if (!checkAuthorization(page)) {
-    if (window.showToast) {
-      window.showToast('❌ You do not have access to this page');
-    }
+window.navigateTo = async function(routeName) {
+  console.log('🔄 Navigating to:', routeName);
+
+  // Check if route exists
+  const route = routes[routeName];
+  if (!route) {
+    console.error('❌ Route not found:', routeName);
+    window.showNotification('❌ Page not found: ' + routeName, 'error');
     return;
   }
 
-  currentRoute = page;
-  renderPage(page);
-  updateActiveNavigation(page);
-  
-  console.log(`✅ Navigated to: ${page}`);
-}
-
-// ===== RENDER PAGE CONTENT =====
-function renderPage(page) {
-  const contentArea = document.getElementById('content');
-  if (!contentArea) {
-    console.error('❌ Content area not found');
+  // Check authentication
+  if (!window.appState?.isAuthenticated) {
+    console.warn('⚠️ Not authenticated');
+    window.showNotification('❌ Please login first', 'error');
     return;
   }
 
-  let html = '';
-  const userRole = window.appState?.role || 'PLAYER';
+  // Check role authorization
+  const userRole = window.appState?.role;
+  if (!route.roles.includes(userRole)) {
+    console.error('❌ Unauthorized access:', routeName, 'for role:', userRole);
+    window.showNotification('❌ You do not have permission to access this page', 'error');
+    return;
+  }
 
   try {
-    // PLAYER pages
-    if (page === 'home' && userRole !== 'SUPER_ADMIN') {
-      html = views.views.home();
-    } else if (page === 'timetable' && userRole !== 'SUPER_ADMIN') {
-      html = views.views.timetable();
-    } else if (page === 'attendance' && userRole !== 'SUPER_ADMIN') {
-      html = views.views.attendance();
-    } else if (page === 'wallet' && userRole !== 'SUPER_ADMIN') {
-      html = views.views.wallet();
-    } else if (page === 'profile') {
-      html = views.views.profile();
-    } else if (page === 'bazaar') {
-      html = views.views.bazaar();
-    } else if (page === 'logs') {
-      html = views.views.logs();
-    }
-    
-    // FLIGHT ADMIN pages
-    else if (page === 'sessions' && (userRole === 'LEVEL_ADMIN' || userRole === 'SUPER_ADMIN')) {
-      html = flightAdminViews.flightAdminViews.sessions();
-    } else if (page === 'stock' && (userRole === 'LEVEL_ADMIN' || userRole === 'SUPER_ADMIN')) {
-      html = flightAdminViews.flightAdminViews.stock();
-    } else if (page === 'reports' && (userRole === 'LEVEL_ADMIN' || userRole === 'SUPER_ADMIN')) {
-      html = flightAdminViews.flightAdminViews.reports();
-    }
-    
-    // SUPER ADMIN pages
-    else if (page === 'overview' && userRole === 'SUPER_ADMIN') {
-      html = adminViews.adminViews.overview();
-    } else if (page === 'flights' && userRole === 'SUPER_ADMIN') {
-      html = adminViews.adminViews.flights();
-    } else if (page === 'master' && userRole === 'SUPER_ADMIN') {
-      html = adminViews.adminViews.master();
-    } else if (page === 'admin-finance' && userRole === 'SUPER_ADMIN') {
-      html = adminViews.adminViews['admin-finance']();
-    } else if (page === 'ads' && userRole === 'SUPER_ADMIN') {
-      html = adminViews.adminViews.ads();
-    } else if (page === 'audit' && userRole === 'SUPER_ADMIN') {
-      html = adminViews.adminViews.audit();
-    }
-    
-    // Default to home
-    else {
-      html = views.views.home();
+    // Get the view module
+    let viewModule;
+    if (route.view === 'views') {
+      viewModule = window.views;
+    } else if (route.view === 'flightAdminViews') {
+      viewModule = window.flightAdminViews;
+    } else if (route.view === 'adminViews') {
+      viewModule = window.adminViews;
     }
 
-    contentArea.innerHTML = html;
-    
-    // Trigger render event for custom initialization
-    window.dispatchEvent(new CustomEvent('indianclub:render', { detail: { page: page } }));
-    
+    if (!viewModule) {
+      throw new Error(`View module not found: ${route.view}`);
+    }
+
+    // Get the page renderer
+    const pageRenderer = viewModule[route.page];
+    if (!pageRenderer) {
+      throw new Error(`Page not found: ${route.page}`);
+    }
+
+    // Show loading state
+    const contentArea = document.getElementById('pageContent');
+    if (contentArea) {
+      contentArea.innerHTML = '<div style="text-align: center; padding: 40px;"><p>⏳ Loading...</p></div>';
+    }
+
+    // Render the page
+    console.log('📄 Rendering page:', route.page);
+    const pageHTML = await pageRenderer();
+
+    // Update content area
+    if (contentArea) {
+      contentArea.innerHTML = pageHTML;
+    }
+
+    // Update app state
+    window.appState.currentPage = routeName;
+
+    // Update active nav item
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.remove('active');
+      if (item.dataset.route === routeName) {
+        item.classList.add('active');
+      }
+    });
+
+    console.log('✅ Page loaded:', routeName);
+
   } catch (error) {
-    console.error(`❌ Error rendering page ${page}:`, error);
-    contentArea.innerHTML = `<div class="error-message">❌ Error loading page. Please try again.</div>`;
+    console.error('❌ Error navigating to:', routeName, error);
+    window.showNotification(`❌ Error loading page: ${error.message}`, 'error');
+    
+    const contentArea = document.getElementById('pageContent');
+    if (contentArea) {
+      contentArea.innerHTML = `<div class="error-message">❌ Error loading page: ${error.message}</div>`;
+    }
   }
-}
+};
 
-// ===== UPDATE ACTIVE NAVIGATION =====
-function updateActiveNavigation(page) {
-  // Remove active class from all nav items
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.remove('active');
-  });
+// ===== SHOW NOTIFICATION =====
+window.showNotification = function(message, type = 'info') {
+  console.log(`📢 [${type.toUpperCase()}] ${message}`);
 
-  // Add active class to current nav item
-  const navItem = document.getElementById(`nav-${page}`);
-  if (navItem) {
-    navItem.classList.add('active');
+  const notificationContainer = document.getElementById('notifications');
+  if (!notificationContainer) {
+    console.warn('⚠️ Notification container not found');
+    return;
   }
-}
+
+  const notificationId = 'notif_' + Date.now();
+  const bgColor = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1';
+  const textColor = type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460';
+  const borderColor = type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb';
+
+  const notificationHTML = `
+    <div id="${notificationId}" style="
+      background: ${bgColor};
+      color: ${textColor};
+      border: 1px solid ${borderColor};
+      padding: 15px 20px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      animation: slideIn 0.3s ease-in-out;
+    ">
+      ${message}
+    </div>
+  `;
+
+  notificationContainer.innerHTML += notificationHTML;
+
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    const element = document.getElementById(notificationId);
+    if (element) {
+      element.style.animation = 'slideOut 0.3s ease-in-out';
+      setTimeout(() => element.remove(), 300);
+    }
+  }, 5000);
+};
+
+// ===== REQUIRE SUPER ADMIN =====
+window.requireSuperAdmin = function() {
+  if (window.appState?.role !== 'SUPER_ADMIN') {
+    console.error('❌ Super Admin access required');
+    window.showNotification('❌ Super Admin access required', 'error');
+    return false;
+  }
+  return true;
+};
+
+// ===== REQUIRE FLIGHT ADMIN =====
+window.requireFlightAdmin = function() {
+  const role = window.appState?.role;
+  if (role !== 'LEVEL_ADMIN' && role !== 'SUPER_ADMIN') {
+    console.error('❌ Flight Admin access required');
+    window.showNotification('❌ Flight Admin access required', 'error');
+    return false;
+  }
+  return true;
+};
+
+// ===== SWITCH AUTH TAB =====
+window.switchAuthTab = function(tab) {
+  console.log('🔄 Switching auth tab to:', tab);
+
+  const loginForm = document.getElementById('loginForm');
+  const activateForm = document.getElementById('activateForm');
+  const loginTab = document.getElementById('loginTab');
+  const activateTab = document.getElementById('activateTab');
+
+  if (tab === 'login') {
+    loginForm.style.display = 'block';
+    activateForm.style.display = 'none';
+    loginTab.classList.add('active');
+    activateTab.classList.remove('active');
+  } else if (tab === 'activate') {
+    loginForm.style.display = 'none';
+    activateForm.style.display = 'block';
+    loginTab.classList.remove('active');
+    activateTab.classList.add('active');
+  }
+};
+
+// ===== SET STATE =====
+window.setState = function(updates) {
+  window.appState = {
+    ...window.appState,
+    ...updates
+  };
+  console.log('📝 State updated:', updates);
+};
+
+// ===== GET STATE =====
+window.getState = function() {
+  return window.appState;
+};
 
 // ===== LOGOUT =====
-function logout() {
-  if (window.logout) {
+window.logout = function() {
+  if (confirm('Are you sure you want to logout?')) {
+    console.log('🚪 Logging out...');
+
+    // Clear session storage
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('memberData');
+
+    // Reset app state
+    window.appState = {
+      member: null,
+      role: null,
+      token: null,
+      isAuthenticated: false,
+      sessionsAttended: 0,
+      pendingAmount: 0,
+      arrears: 0,
+      walletBalanceFils: 0,
+      upcomingSession: null,
+      currentPage: null
+    };
+
+    // Show login page
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'flex';
+
+    // Reset forms
+    document.getElementById('loginForm').reset();
+    document.getElementById('activateForm').reset();
+    document.getElementById('errorMessage').textContent = '';
+    document.getElementById('errorMessage').style.display = 'none';
+
+    console.log('✅ Logged out successfully');
+  }
+};
+
+// ===== HANDLE ROUTE CHANGES =====
+window.addEventListener('hashchange', function() {
+  const hash = window.location.hash.slice(1) || 'home';
+  window.navigateTo(hash);
+});
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', function(event) {
+  // Ctrl/Cmd + L = Logout
+  if ((event.ctrlKey || event.metaKey) && event.key === 'l') {
+    event.preventDefault();
     window.logout();
   }
-}
 
-// ===== GET CURRENT ROUTE =====
-export function getCurrentRoute() {
-  return currentRoute;
-}
-
-// ===== GET CURRENT LEVEL =====
-export function getCurrentLevel() {
-  return currentLevel;
-}
-
-// ===== SET CURRENT LEVEL =====
-export function setCurrentLevel(level) {
-  currentLevel = level;
-  console.log(`📍 Level filter set to: ${level}`);
-}
-
-// ===== SWITCH LOGIN TAB =====
-window.switchLoginTab = function(tab) {
-  document.querySelectorAll('.login-tab').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.login-tab-btn').forEach(el => el.classList.remove('active'));
-  
-  document.getElementById(`${tab}-form`)?.classList.add('active');
-  event.target?.classList.add('active');
-};
-
-// ===== SHOW TOAST NOTIFICATION =====
-window.showToast = function(message) {
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.textContent = message;
-  toast.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #333;
-    color: white;
-    padding: 15px 20px;
-    border-radius: 8px;
-    z-index: 9999;
-    animation: slideIn 0.3s ease-in-out;
-  `;
-  
-  document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.animation = 'slideOut 0.3s ease-in-out';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-};
-
-// ===== NORMALIZE ROLE =====
-window.normalizeRole = function(role) {
-  if (!role) return 'PLAYER';
-  
-  const roleUpper = role.toUpperCase();
-  
-  if (roleUpper === 'SUPERADMIN' || roleUpper === 'ADMIN') {
-    return 'SUPER_ADMIN';
-  } else if (roleUpper === 'LEVELADMIN' || roleUpper === 'FLIGHT_ADMIN') {
-    return 'LEVEL_ADMIN';
+  // Ctrl/Cmd + H = Home
+  if ((event.ctrlKey || event.metaKey) && event.key === 'h') {
+    event.preventDefault();
+    window.navigateTo('home');
   }
-  
-  return 'PLAYER';
-};
-
-// ===== VALIDATE EMAIL =====
-window.validateEmail = function(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
-
-// ===== VALIDATE PHONE =====
-window.validatePhone = function(phone) {
-  const phoneRegex = /^[\d\s\-\+\(\)]+$/;
-  return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 7;
-};
-
-// ===== VALIDATE PASSWORD =====
-window.validatePassword = function(password) {
-  return password && password.length >= 6;
-};
-
-// ===== UPDATE USER UI =====
-window.updateUserUI = function() {
-  const member = window.appState?.member;
-  const role = window.appState?.role;
-  
-  if (!member) return;
-
-  // Update user name in header
-  const userNameEl = document.getElementById('userName');
-  if (userNameEl) {
-    userNameEl.textContent = member.fullName || 'User';
-  }
-
-  // Update role badge
-  const roleEl = document.getElementById('userRole');
-  if (roleEl) {
-    roleEl.textContent = role || 'PLAYER';
-  }
-
-  // Show/hide navigation based on role
-  updateNavigationVisibility(role);
-};
-
-// ===== UPDATE NAVIGATION VISIBILITY =====
-function updateNavigationVisibility(role) {
-  // Hide all nav items first
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.style.display = 'none';
-  });
-
-  // Show items based on role
-  const playerItems = ['nav-home', 'nav-timetable', 'nav-attendance', 'nav-wallet', 'nav-profile', 'nav-bazaar', 'nav-logs'];
-  const flightAdminItems = [...playerItems, 'nav-sessions', 'nav-stock', 'nav-reports'];
-  const superAdminItems = ['nav-home', 'nav-overview', 'nav-flights', 'nav-master', 'nav-admin-finance', 'nav-ads', 'nav-audit', 'nav-bazaar', 'nav-logs'];
-
-  let itemsToShow = playerItems;
-  
-  if (role === 'LEVEL_ADMIN') {
-    itemsToShow = flightAdminItems;
-  } else if (role === 'SUPER_ADMIN') {
-    itemsToShow = superAdminItems;
-  }
-
-  itemsToShow.forEach(itemId => {
-    const item = document.getElementById(itemId);
-    if (item) item.style.display = 'block';
-  });
-
-  // Always show logout
-  const logoutBtn = document.getElementById('nav-logout');
-  if (logoutBtn) logoutBtn.style.display = 'block';
-}
-
-// ===== FILTER BY LEVEL =====
-window.filterByLevel = function() {
-  const levelSelects = document.querySelectorAll('[id$="LevelFilter"]');
-  
-  levelSelects.forEach(select => {
-    const level = select.value;
-    if (level) {
-      setCurrentLevel(level);
-      console.log(`📍 Filtering by level: ${level}`);
-      
-      // Re-render current page with new filter
-      renderPage(currentRoute);
-    }
-  });
-};
+});
 
 console.log('✅ router.js loaded successfully');
 
