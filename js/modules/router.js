@@ -1,5 +1,5 @@
 
-import { login, logout, observeAuth, api } from "./modules/auth.js";
+import { login, logout, observeAuth, api } from "./modules/auth-wrapper.js";
 import { views } from "./modules/views.js";
 import { flightAdminViews } from "./modules/flightAdminViews.js";
 import { adminViews } from "./modules/adminViews.js";
