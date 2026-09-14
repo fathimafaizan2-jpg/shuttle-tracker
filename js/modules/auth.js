@@ -9,7 +9,7 @@ const FIREBASE_CONFIG = {
   appId: "1:123456789:web:abcdef123456"
 };
 
-// ===== MOCK DATABASE (Replace with Firebase Firestore) =====
+// ===== MOCK DATABASE =====
 const MOCK_MEMBERS = [
   {
     id: "player1",
@@ -21,7 +21,7 @@ const MOCK_MEMBERS = [
     flightName: "Flight 1",
     phone: "+973 3366 1234",
     profilePic: null,
-    walletBalance: 50000, // fils (BHD 0.050)
+    walletBalance: 50000,
     status: "ACTIVE",
     createdAt: new Date("2026-01-15")
   },
@@ -189,14 +189,12 @@ export async function api(endpoint, options = {}) {
   if (endpoint === "/auth/login") {
     const { email, password, role } = body;
     
-    // Validate credentials
     const member = MOCK_MEMBERS.find(m => m.email === email && m.password === password && m.role === role);
     
     if (!member) {
       throw new Error("Invalid email, password, or role");
     }
 
-    // Generate mock token
     const token = btoa(JSON.stringify({ id: member.id, email: member.email, role: member.role, timestamp: Date.now() }));
 
     console.log(`✅ Login successful: ${member.fullName}`);
