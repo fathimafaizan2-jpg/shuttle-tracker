@@ -1,1225 +1,1031 @@
 
 // ============================================
-// adminViews.js - SUPER ADMIN DASHBOARD
+// adminViews.js - SUPER ADMIN PAGES (COMPLETE)
 // ============================================
 
+// ===== LEVEL DROPDOWN COMPONENT =====
+function getLevelDropdown(selectedLevel = '') {
+  const levels = ['Premier', 'Flight 1', 'Flight 2', 'Flight 3', 'Flight 4', 'Flight 4A', 'Flight 4B'];
+  let html = `
+    <div class="form-group" style="margin-bottom: 20px;">
+      <label>Select Flight Level</label>
+      <select id="levelFilter" onchange="window.onLevelChange()" style="padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%; max-width: 300px;">
+        <option value="">All Levels</option>
+  `;
+  
+  levels.forEach(level => {
+    html += `<option value="${level}" ${selectedLevel === level ? 'selected' : ''}>${level}</option>`;
+  });
+  
+  html += `</select></div>`;
+  return html;
+}
+
 export const adminViews = {
-  // ===== HOME PAGE =====
-  home: function() {
-    return `
-      <div class="page-header">
-        <h1>🏆 Super Admin Dashboard</h1>
-        <p>Complete club management and oversight</p>
-      </div>
+  // ===== CLUB OVERVIEW =====
+  home: async function() {
+    try {
+      const overviewData = await window.api.getClubOverview();
 
-      <div class="level-selector">
-        <label>Select Flight Level:</label>
-        <select id="adminLevelFilter" onchange="window.filterByLevel()">
-          <option value="">All Levels</option>
-          <option value="premier">Premier</option>
-          <option value="flight1">Flight 1</option>
-          <option value="flight2">Flight 2</option>
-          <option value="flight3">Flight 3</option>
-          <option value="flight4">Flight 4</option>
-          <option value="flight4a">Flight 4A</option>
-          <option value="flight4b">Flight 4B</option>
-        </select>
-      </div>
+      let html = `
+        <div class="page-header">
+          <h1>📊 Club Overview</h1>
+          <p>Executive dashboard with club-wide metrics</p>
+        </div>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #667eea;">👥</div>
-          <div class="stat-content">
-            <h3>156</h3>
-            <p>Total Members</p>
+        ${getLevelDropdown()}
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #e3f2fd; color: #1976d2;">🏸</div>
+            <div class="stat-content">
+              <h3>${overviewData?.totalActivities || 0}</h3>
+              <p>Total Active Sports</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #e8f5e9; color: #388e3c;">👥</div>
+            <div class="stat-content">
+              <h3>${overviewData?.totalPlayers || 0}</h3>
+              <p>Registered Players</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fff3e0; color: #f57c00;">👨‍💼</div>
+            <div class="stat-content">
+              <h3>${overviewData?.totalAdmins || 0}</h3>
+              <p>Flight Admins</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f3e5f5; color: #7b1fa2;">💰</div>
+            <div class="stat-content">
+              <h3>BHD ${((overviewData?.totalWallet || 0) / 1000).toFixed(3)}</h3>
+              <p>Total Club Wallet</p>
+            </div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #2ed573;">⚽</div>
-          <div class="stat-content">
-            <h3>3</h3>
-            <p>Active Sports</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ffa502;">👨‍💼</div>
-          <div class="stat-content">
-            <h3>7</h3>
-            <p>Flight Admins</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ff6b6b;">💰</div>
-          <div class="stat-content">
-            <h3>156,000 BHD</h3>
-            <p>Total Club Wallet</p>
-          </div>
-        </div>
-      </div>
 
-      <div class="card">
-        <h2>📋 Quick Actions</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
-          <button class="btn btn-primary" onclick="window.navigateTo('overview')">Club Overview</button>
-          <button class="btn btn-primary" onclick="window.navigateTo('flights')">Activities & Flights</button>
-          <button class="btn btn-primary" onclick="window.navigateTo('master')">Master Timetable</button>
-          <button class="btn btn-primary" onclick="window.navigateTo('admin-finance')">Finance</button>
-          <button class="btn btn-primary" onclick="window.navigateTo('ads')">Ads & Notices</button>
-          <button class="btn btn-primary" onclick="window.navigateTo('audit')">Audit Log</button>
+        <div class="card">
+          <h2>Club Statistics</h2>
+          <table class="data-table">
+            <tr>
+              <td><strong>Active Members:</strong></td>
+              <td>${overviewData?.activeMembers || 0}</td>
+            </tr>
+            <tr>
+              <td><strong>Inactive Members:</strong></td>
+              <td>${overviewData?.inactiveMembers || 0}</td>
+            </tr>
+            <tr>
+              <td><strong>Total Sessions This Month:</strong></td>
+              <td>${overviewData?.sessionsThisMonth || 0}</td>
+            </tr>
+            <tr>
+              <td><strong>Pending Payments:</strong></td>
+              <td>BHD ${((overviewData?.pendingPayments || 0) / 1000).toFixed(3)}</td>
+            </tr>
+          </table>
         </div>
-      </div>
+      `;
 
-      <div class="card">
-        <h2>📊 Club Performance</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Metric</th>
-              <th>This Month</th>
-              <th>Last Month</th>
-              <th>Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>New Members</td>
-              <td>12</td>
-              <td>8</td>
-              <td><span class="badge badge-success">+50%</span></td>
-            </tr>
-            <tr>
-              <td>Revenue</td>
-              <td>15,600 BHD</td>
-              <td>14,200 BHD</td>
-              <td><span class="badge badge-success">+9.9%</span></td>
-            </tr>
-            <tr>
-              <td>Attendance Rate</td>
-              <td>82%</td>
-              <td>78%</td>
-              <td><span class="badge badge-success">+5.1%</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
+      return html;
+
+    } catch (error) {
+      console.error('❌ Error loading overview:', error);
+      return `<div class="error-message">❌ Error loading overview: ${error.message}</div>`;
+    }
   },
 
-  // ===== OVERVIEW PAGE =====
-  overview: function() {
-    return `
-      <div class="page-header">
-        <h1>📊 Club Overview</h1>
-        <p>Complete club statistics and analytics</p>
-      </div>
+  // ===== ACTIVITIES, FLIGHTS & MEMBERS =====
+  flights: async function() {
+    try {
+      const flightsData = await window.api.getFlights();
+      const flights = flightsData?.flights || [];
 
-      <div class="level-selector">
-        <label>Select Flight Level:</label>
-        <select id="overviewLevelFilter" onchange="window.filterByLevel()">
-          <option value="">All Levels</option>
-          <option value="premier">Premier</option>
-          <option value="flight1">Flight 1</option>
-          <option value="flight2">Flight 2</option>
-          <option value="flight3">Flight 3</option>
-          <option value="flight4">Flight 4</option>
-          <option value="flight4a">Flight 4A</option>
-          <option value="flight4b">Flight 4B</option>
-        </select>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #667eea;">👥</div>
-          <div class="stat-content">
-            <h3>156</h3>
-            <p>Total Members</p>
-          </div>
+      let html = `
+        <div class="page-header">
+          <h1>✈️ Activities, Flights & Members</h1>
+          <p>Create sports, flights, and manage member pre-registration</p>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #2ed573;">✓</div>
-          <div class="stat-content">
-            <h3>142</h3>
-            <p>Active Members</p>
-          </div>
+
+        ${getLevelDropdown()}
+
+        <div class="card">
+          <h2>Create New Activity</h2>
+          <form id="createActivityForm" onsubmit="window.createActivity(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Activity Name *</label>
+                <input type="text" id="createActivity" placeholder="e.g., Badminton, Cricket, Tennis" required>
+              </div>
+              <button type="submit" class="btn btn-primary" style="align-self: flex-end;">Create Activity</button>
+            </div>
+          </form>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ffa502;">⏸</div>
-          <div class="stat-content">
-            <h3>14</h3>
-            <p>Inactive Members</p>
-          </div>
+
+        <div class="card">
+          <h2>Add Flight Level</h2>
+          <form id="createFlightForm" onsubmit="window.createFlight(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Activity *</label>
+                <select id="flightActivity" required>
+                  <option value="">Select activity</option>
+                  <option value="Badminton">Badminton</option>
+                  <option value="Cricket">Cricket</option>
+                  <option value="Tennis">Tennis</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Flight Name *</label>
+                <input type="text" id="flightName" placeholder="e.g., Premier, Flight 1" required>
+              </div>
+              <button type="submit" class="btn btn-primary" style="align-self: flex-end;">Add Flight</button>
+            </div>
+          </form>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ff6b6b;">🚫</div>
-          <div class="stat-content">
-            <h3>0</h3>
-            <p>Suspended</p>
-          </div>
+
+        <div class="card">
+          <h2>Pre-Register Member</h2>
+          <form id="createMemberForm" onsubmit="window.createMember(event)">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Registered Name *</label>
+                <input type="text" id="createMember" placeholder="Full name" required>
+              </div>
+              <div class="form-group">
+                <label>Phone Number *</label>
+                <input type="tel" id="memberPhone" placeholder="+973 XXXX XXXX" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Role *</label>
+                <select id="memberRole" required>
+                  <option value="">Select role</option>
+                  <option value="PLAYER">Player</option>
+                  <option value="LEVEL_ADMIN">Flight Admin</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Assigned Flight Level *</label>
+                <select id="memberFlight" required>
+                  <option value="">Select flight</option>
+                  <option value="Premier">Premier</option>
+                  <option value="Flight 1">Flight 1</option>
+                  <option value="Flight 2">Flight 2</option>
+                  <option value="Flight 3">Flight 3</option>
+                  <option value="Flight 4">Flight 4</option>
+                  <option value="Flight 4A">Flight 4A</option>
+                  <option value="Flight 4B">Flight 4B</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Pre-Register Member</button>
+          </form>
         </div>
-      </div>
 
-      <div class="card">
-        <h2>📈 Member Distribution by Activity</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Activity</th>
-              <th>Total Members</th>
-              <th>Active</th>
-              <th>Inactive</th>
-              <th>Percentage</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Badminton</td>
-              <td>68</td>
-              <td>62</td>
-              <td>6</td>
-              <td>43.6%</td>
-            </tr>
-            <tr>
-              <td>Cricket</td>
-              <td>52</td>
-              <td>48</td>
-              <td>4</td>
-              <td>33.3%</td>
-            </tr>
-            <tr>
-              <td>Tennis</td>
-              <td>36</td>
-              <td>32</td>
-              <td>4</td>
-              <td>23.1%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <div class="card">
+          <h2>Pre-Registered Members</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Flight</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
 
-      <div class="card">
-        <h2>💰 Financial Summary</h2>
-        <table class="data-table">
-          <thead>
+      if (flights.length === 0) {
+        html += '<tr><td colspan="7" style="text-align: center; color: #999;">No members registered</td></tr>';
+      } else {
+        flights.forEach((member, idx) => {
+          html += `
             <tr>
-              <th>Category</th>
-              <th>Amount</th>
-              <th>Percentage</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Total Revenue</td>
-              <td>15,600 BHD</td>
-              <td>100%</td>
-            </tr>
-            <tr>
-              <td>Total Expenses</td>
-              <td>4,200 BHD</td>
-              <td>26.9%</td>
-            </tr>
-            <tr>
-              <td>Net Profit</td>
-              <td>11,400 BHD</td>
-              <td>73.1%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
-  },
-
-  // ===== ACTIVITIES & FLIGHTS PAGE =====
-  flights: function() {
-    return `
-      <div class="page-header">
-        <h1>✈️ Activities, Flights & Members</h1>
-        <p>Create and manage club activities, flights, and members</p>
-      </div>
-
-      <div class="level-selector">
-        <label>Select Flight Level:</label>
-        <select id="flightsLevelFilter" onchange="window.filterByLevel()">
-          <option value="">All Levels</option>
-          <option value="premier">Premier</option>
-          <option value="flight1">Flight 1</option>
-          <option value="flight2">Flight 2</option>
-          <option value="flight3">Flight 3</option>
-          <option value="flight4">Flight 4</option>
-          <option value="flight4a">Flight 4A</option>
-          <option value="flight4b">Flight 4B</option>
-        </select>
-      </div>
-
-      <div class="card">
-        <h2>➕ Create New Activity</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Activity Name *</label>
-            <input type="text" id="createActivityName" placeholder="e.g., Badminton, Cricket">
-          </div>
-          <div class="form-group">
-            <label>Status *</label>
-            <select id="createActivityStatus">
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="window.createActivity()">Create Activity</button>
-      </div>
-
-      <div class="card">
-        <h2>📋 Activities List</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Activity</th>
-              <th>Flights</th>
-              <th>Members</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Badminton</td>
-              <td>3</td>
-              <td>68</td>
-              <td><span class="badge badge-success">Active</span></td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
-            </tr>
-            <tr>
-              <td>Cricket</td>
-              <td>2</td>
-              <td>52</td>
-              <td><span class="badge badge-success">Active</span></td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
-            </tr>
-            <tr>
-              <td>Tennis</td>
-              <td>2</td>
-              <td>36</td>
-              <td><span class="badge badge-success">Active</span></td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Manage</button></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>➕ Create New Flight</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Activity *</label>
-            <select id="createFlightActivity">
-              <option value="">Select activity</option>
-              <option value="badminton">Badminton</option>
-              <option value="cricket">Cricket</option>
-              <option value="tennis">Tennis</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Flight Name *</label>
-            <input type="text" id="createFlightName" placeholder="e.g., Premier, Flight 1">
-          </div>
-          <div class="form-group">
-            <label>Display Order *</label>
-            <input type="number" id="createFlightOrder" placeholder="1" min="1">
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="window.createFlight()">Create Flight</button>
-      </div>
-
-      <div class="card">
-        <h2>✈️ Flights List</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Activity</th>
-              <th>Flight</th>
-              <th>Members</th>
-              <th>Admin</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Badminton</td>
-              <td>Premier</td>
-              <td>24</td>
-              <td>Ahmed Al-Mansouri</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
-            </tr>
-            <tr>
-              <td>Badminton</td>
-              <td>Flight 1</td>
-              <td>22</td>
-              <td>Mohammed Al-Khalifa</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
-            </tr>
-            <tr>
-              <td>Cricket</td>
-              <td>Premier</td>
-              <td>26</td>
-              <td>Fatima Hassan</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>➕ Pre-Register Member</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Registered Full Name *</label>
-            <input type="text" id="createMemberName" placeholder="Member's full name">
-          </div>
-          <div class="form-group">
-            <label>Phone Number *</label>
-            <input type="tel" id="createMemberPhone" placeholder="Mobile/WhatsApp number">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Role *</label>
-            <select id="createMemberRole">
-              <option value="">Select role</option>
-              <option value="PLAYER">Player</option>
-              <option value="LEVEL_ADMIN">Flight Admin</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Assigned Flight Level *</label>
-            <select id="createMemberFlight">
-              <option value="">-- Select flight --</option>
-              <option value="premier">Premier</option>
-              <option value="flight1">Flight 1</option>
-              <option value="flight2">Flight 2</option>
-              <option value="flight3">Flight 3</option>
-              <option value="flight4">Flight 4</option>
-              <option value="flight4a">Flight 4A</option>
-              <option value="flight4b">Flight 4B</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn btn-primary" id="createMember" onclick="window.createMember()">Pre-Register Member</button>
-      </div>
-
-      <div class="card">
-        <h2>👥 Pre-Registered Members</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Role</th>
-              <th>Flight</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Ahmed Al-Mansouri</td>
-              <td>+973 3366 1234</td>
-              <td>Flight Admin</td>
-              <td>Premier</td>
-              <td><span class="badge badge-success">Active</span></td>
+              <td>${idx + 1}</td>
+              <td><strong>${member.name}</strong></td>
+              <td>${member.phone}</td>
+              <td>${member.role}</td>
+              <td>${member.flight}</td>
+              <td><span class="badge badge-warning">PENDING</span></td>
               <td>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" data-save-member onclick="window.saveMember('ahmed_001')">Save</button>
-                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" data-delete-member-perm onclick="window.deleteMemberPerm('ahmed_001')">Delete</button>
+                <button class="btn btn-secondary" onclick="window.sendWhatsAppLink('${member.phone}')" data-whatsapp-onboarding-phone style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">
+                  WhatsApp
+                </button>
+                <button class="btn btn-danger" onclick="window.deleteMember('${member.id}')" data-delete-member-perm style="padding: 6px 12px; font-size: 12px;">
+                  Delete
+                </button>
               </td>
             </tr>
-            <tr>
-              <td>Fatima Hassan</td>
-              <td>+973 3366 5678</td>
-              <td>Player</td>
-              <td>Flight 1</td>
-              <td><span class="badge badge-success">Active</span></td>
-              <td>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" data-save-member onclick="window.saveMember('fatima_001')">Save</button>
-                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" data-delete-member-perm onclick="window.deleteMemberPerm('fatima_001')">Delete</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          `;
+        });
+      }
 
-      <div class="card">
-        <h2>📱 WhatsApp Onboarding</h2>
-        <p>Send onboarding instructions via WhatsApp to pre-registered members</p>
-        <div class="form-group">
-          <label>Member Phone Number *</label>
-          <input type="tel" id="whatsappPhone" placeholder="+973 XXXX XXXX">
+      html += `
+            </tbody>
+          </table>
         </div>
-        <button class="btn btn-primary" data-whatsapp-onboarding-phone onclick="window.sendWhatsAppOnboarding()">Send WhatsApp Link</button>
-      </div>
-    `;
+      `;
+
+      return html;
+
+    } catch (error) {
+      console.error('❌ Error loading flights:', error);
+      return `<div class="error-message">❌ Error loading flights: ${error.message}</div>`;
+    }
   },
 
-  // ===== MASTER TIMETABLE PAGE =====
-  master: function() {
-    return `
+  // ===== MASTER TIMETABLE =====
+  master: async function() {
+    let html = `
       <div class="page-header">
         <h1>📅 Master Timetable</h1>
         <p>Club-wide weekly schedule management</p>
       </div>
 
-      <div class="level-selector">
-        <label>Select Flight Level:</label>
-        <select id="masterLevelFilter" onchange="window.filterByLevel()">
-          <option value="">All Levels</option>
-          <option value="premier">Premier</option>
-          <option value="flight1">Flight 1</option>
-          <option value="flight2">Flight 2</option>
-          <option value="flight3">Flight 3</option>
-          <option value="flight4">Flight 4</option>
-          <option value="flight4a">Flight 4A</option>
-          <option value="flight4b">Flight 4B</option>
-        </select>
-      </div>
+      ${getLevelDropdown()}
 
       <div class="card">
-        <h2>📅 Month Selector</h2>
+        <h2>Month Management</h2>
         <div class="form-row">
           <div class="form-group">
             <label>Select Month *</label>
-            <input type="month" id="masterMonth" value="2026-09">
+            <input type="month" id="masterMonth" required>
           </div>
-          <div class="form-group">
-            <label>&nbsp;</label>
-            <button class="btn btn-primary" onclick="window.publishMasterMonth()">Publish Month</button>
-          </div>
+          <button class="btn btn-danger" onclick="window.deleteEntireMonth()" id="deleteEntireMonthTimetable" style="align-self: flex-end;">
+            🗑️ Clear Entire Month
+          </button>
+          <button class="btn btn-success" onclick="window.publishMonth()" id="publishMasterMonth" style="align-self: flex-end;">
+            📤 Publish Month
+          </button>
         </div>
       </div>
 
       <div class="card">
-        <h2>⚠️ Danger Zone</h2>
-        <p style="color: #ff6b6b; margin-bottom: 15px;"><strong>⚠️ WARNING:</strong> This action will delete ALL timetable entries for the selected month!</p>
-        <button class="btn btn-danger" id="deleteEntireMonthTimetable" onclick="window.deleteEntireMonth()">Clear Entire Month Timetable</button>
+        <h2>Bulk CSV Import</h2>
+        <div style="background: #f0f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="font-size: 12px; color: #666;">
+            <strong>CSV Format:</strong> weekday,flight,startTime,endTime<br>
+            <strong>Example:</strong><br>
+            Monday,Premier,06:00,07:00<br>
+            Wednesday,Flight 1,18:00,19:00<br>
+            <strong>Note:</strong> Header line will be automatically removed. Each data line must have exactly 4 comma-separated values.
+          </p>
+        </div>
+        <form id="importBulkTimetable" onsubmit="window.importBulkTimetable(event)">
+          <div class="form-group">
+            <label>Paste CSV Data *</label>
+            <textarea id="csvData" placeholder="Paste your CSV data here..." style="min-height: 200px;" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Import Timetable</button>
+        </form>
       </div>
 
       <div class="card">
-        <h2>➕ Add Session to Master Timetable</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Day *</label>
-            <select id="masterDay">
-              <option value="">Select day</option>
-              <option value="MONDAY">Monday</option>
-              <option value="TUESDAY">Tuesday</option>
-              <option value="WEDNESDAY">Wednesday</option>
-              <option value="THURSDAY">Thursday</option>
-              <option value="FRIDAY">Friday</option>
-              <option value="SATURDAY">Saturday</option>
-              <option value="SUNDAY">Sunday</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Start Time *</label>
-            <input type="time" id="masterStartTime">
-          </div>
-          <div class="form-group">
-            <label>End Time *</label>
-            <input type="time" id="masterEndTime">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Activity *</label>
-            <select id="masterActivity">
-              <option value="">Select activity</option>
-              <option value="badminton">Badminton</option>
-              <option value="cricket">Cricket</option>
-              <option value="tennis">Tennis</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Flight *</label>
-            <select id="masterFlight">
-              <option value="">Select flight</option>
-              <option value="premier">Premier</option>
-              <option value="flight1">Flight 1</option>
-              <option value="flight2">Flight 2</option>
-              <option value="flight3">Flight 3</option>
-              <option value="flight4">Flight 4</option>
-              <option value="flight4a">Flight 4A</option>
-              <option value="flight4b">Flight 4B</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="window.addMasterSession()">Add to Timetable</button>
-      </div>
-
-      <div class="card">
-        <h2>📋 Weekly Schedule</h2>
+        <h2>Current Timetable</h2>
         <table class="data-table">
           <thead>
             <tr>
               <th>Day</th>
-              <th>Time</th>
-              <th>Activity</th>
               <th>Flight</th>
-              <th>Venue</th>
-              <th>Action</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Activity</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>Monday</td>
-              <td>6:00 - 7:30 AM</td>
-              <td>Badminton</td>
               <td>Premier</td>
-              <td>Court 1</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
+              <td>06:00</td>
+              <td>07:00</td>
+              <td>Badminton</td>
             </tr>
             <tr>
               <td>Wednesday</td>
-              <td>6:00 - 7:30 AM</td>
+              <td>Flight 1</td>
+              <td>18:00</td>
+              <td>19:00</td>
               <td>Badminton</td>
-              <td>Premier</td>
-              <td>Court 1</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
-            </tr>
-            <tr>
-              <td>Friday</td>
-              <td>6:00 - 7:30 AM</td>
-              <td>Badminton</td>
-              <td>Premier</td>
-              <td>Court 1</td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>📤 Bulk CSV Import</h2>
-        <p style="margin-bottom: 15px;"><strong>Format:</strong> weekday,flight,startTime,endTime (one per line)</p>
-        <p style="margin-bottom: 15px; color: #999; font-size: 12px;">Example:<br>MONDAY,Premier,06:00,07:30<br>WEDNESDAY,Premier,06:00,07:30</p>
-        <div class="form-group">
-          <label>Paste CSV Data *</label>
-          <textarea id="importBulkTimetable" placeholder="MONDAY,Premier,06:00,07:30&#10;WEDNESDAY,Premier,06:00,07:30" rows="6"></textarea>
-        </div>
-        <button class="btn btn-primary" onclick="window.importBulkTimetable()">Import CSV</button>
-      </div>
-    `;
-  },
-
-  // ===== EXECUTIVE FINANCE PAGE =====
-  'admin-finance': function() {
-    return `
-      <div class="page-header">
-        <h1>💰 Executive Finance</h1>
-        <p>Club-wide financial management</p>
-      </div>
-
-      <div class="level-selector">
-        <label>Select Flight Level:</label>
-        <select id="financeLevelFilter" onchange="window.filterByLevel()">
-          <option value="">All Levels</option>
-          <option value="premier">Premier</option>
-          <option value="flight1">Flight 1</option>
-          <option value="flight2">Flight 2</option>
-          <option value="flight3">Flight 3</option>
-          <option value="flight4">Flight 4</option>
-          <option value="flight4a">Flight 4A</option>
-          <option value="flight4b">Flight 4B</option>
-        </select>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #2ed573;">💵</div>
-          <div class="stat-content">
-            <h3>15,600 BHD</h3>
-            <p>Total Revenue</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ff6b6b;">💸</div>
-          <div class="stat-content">
-            <h3>4,200 BHD</h3>
-            <p>Total Expenses</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #667eea;">📊</div>
-          <div class="stat-content">
-            <h3>11,400 BHD</h3>
-            <p>Net Profit</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ffa502;">⏳</div>
-          <div class="stat-content">
-            <h3>1,200 BHD</h3>
-            <p>Pending</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>💳 Member Wallet Credit Controls</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Select Member *</label>
-            <select id="financeCreditMember" onchange="window.enableFinanceButtons()">
-              <option value="">-- Select member --</option>
-              <option value="ahmed_001">Ahmed Al-Mansouri</option>
-              <option value="fatima_001">Fatima Hassan</option>
-              <option value="mohammed_001">Mohammed Ali</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Amount (BHD) *</label>
-            <input type="number" id="financeAmount" placeholder="0.000" min="0" step="0.001">
-          </div>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <button class="btn btn-success" id="addFinanceCredit" disabled onclick="window.addFinanceCredit()">Add Verified Credit</button>
-          <button class="btn btn-danger" id="deductFinanceCredit" disabled onclick="window.deductFinanceCredit()">Deduct Wallet Credit</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>📈 Revenue by Activity</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Activity</th>
-              <th>Revenue</th>
-              <th>Members</th>
-              <th>Per Member</th>
-              <th>Percentage</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Badminton</td>
-              <td>6,800 BHD</td>
-              <td>68</td>
-              <td>100 BHD</td>
-              <td>43.6%</td>
-            </tr>
-            <tr>
-              <td>Cricket</td>
-              <td>5,200 BHD</td>
-              <td>52</td>
-              <td>100 BHD</td>
-              <td>33.3%</td>
-            </tr>
-            <tr>
-              <td>Tennis</td>
-              <td>3,600 BHD</td>
-              <td>36</td>
-              <td>100 BHD</td>
-              <td>23.1%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>⏳ Pending Payments for Verification</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Member</th>
-              <th>Amount</th>
-              <th>Method</th>
-              <th>Reference</th>
-              <th>Date</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Ahmed Al-Mansouri</td>
-              <td>100 BHD</td>
-              <td>BenefitPay</td>
-              <td>BP123456</td>
-              <td>Sep 12, 2026</td>
-              <td><button class="btn btn-success" style="padding: 6px 12px; font-size: 12px;" data-verify-payment onclick="window.verifyPayment('ahmed_001')">Verify</button></td>
-            </tr>
-            <tr>
-              <td>Fatima Hassan</td>
-              <td>75 BHD</td>
-              <td>Cash</td>
-              <td>CASH-001</td>
-              <td>Sep 11, 2026</td>
-              <td><button class="btn btn-success" style="padding: 6px 12px; font-size: 12px;" data-verify-payment onclick="window.verifyPayment('fatima_001')">Verify</button></td>
             </tr>
           </tbody>
         </table>
       </div>
     `;
+
+    return html;
   },
 
-  // ===== ADS & NOTICE CONTROL PAGE =====
-  ads: function() {
-    return `
-      <div class="page-header">
-        <h1>📢 Ads & Notice Control</h1>
-        <p>Manage carousel ads and club notices</p>
-      </div>
+  // ===== EXECUTIVE FINANCE =====
+  finance: async function() {
+    try {
+      const financeData = await window.api.getFinance();
 
-      <div class="level-selector">
-        <label>Select Flight Level:</label>
-        <select id="adsLevelFilter" onchange="window.filterByLevel()">
-          <option value="">All Levels</option>
-          <option value="premier">Premier</option>
-          <option value="flight1">Flight 1</option>
-          <option value="flight2">Flight 2</option>
-          <option value="flight3">Flight 3</option>
-          <option value="flight4">Flight 4</option>
-          <option value="flight4a">Flight 4A</option>
-          <option value="flight4b">Flight 4B</option>
-        </select>
-      </div>
+      let html = `
+        <div class="page-header">
+          <h1>💰 Executive Finance</h1>
+          <p>Club-wide financial management</p>
+        </div>
 
-      <div class="card">
-        <h2>🎠 Carousel Advertisement Limit</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Max Active Featured Ads (Max 10) *</label>
-            <input type="number" id="carouselAdCount" placeholder="10" min="1" max="10" value="6">
-          </div>
-          <div class="form-group">
-            <label>&nbsp;</label>
-            <button class="btn btn-primary" onclick="window.saveCarouselLimit()">Save Limit</button>
+        ${getLevelDropdown()}
+
+        <div class="card">
+          <h2>Filter Scope</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Activity</label>
+              <select id="financeActivity" onchange="window.updateFinanceMembers()">
+                <option value="">All Activities</option>
+                <option value="Badminton">Badminton</option>
+                <option value="Cricket">Cricket</option>
+                <option value="Tennis">Tennis</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Flight Level</label>
+              <select id="financeFlightLevel" onchange="window.updateFinanceMembers()">
+                <option value="">All Levels</option>
+                <option value="Premier">Premier</option>
+                <option value="Flight 1">Flight 1</option>
+                <option value="Flight 2">Flight 2</option>
+                <option value="Flight 3">Flight 3</option>
+                <option value="Flight 4">Flight 4</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <h2>📸 Club Announcements Banner</h2>
-        <p style="margin-bottom: 15px;">Upload image for celebrations, updates, or obituary announcements</p>
-        <div class="form-group">
-          <label>Upload Notice Image (PNG/JPEG/WebP, max 2MB) *</label>
-          <input type="file" id="uploadNoticeImage" accept="image/png,image/jpeg,image/webp" onchange="window.validateNoticeImage()">
-        </div>
-        <button class="btn btn-primary" onclick="window.uploadNoticeImage()">Upload Banner</button>
-      </div>
-
-      <div class="card">
-        <h2>📅 Feature Window for Ads</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Feature Start Date *</label>
-            <input type="date" id="adFeatureStart">
+        <div class="card">
+          <h2>Member Wallet Credit Controls</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Select Member *</label>
+              <select id="financeCreditMember" required>
+                <option value="">Select member</option>
+                <option value="member_001">Ahmed Al-Mansouri</option>
+                <option value="member_002">Fatima Hassan</option>
+                <option value="member_003">Mohammed Ali</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Amount (BHD) *</label>
+              <input type="number" id="financeAmount" placeholder="0.000" step="0.001" min="0" required>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Feature End Date *</label>
-            <input type="date" id="adFeatureEnd">
+
+          <div class="form-row">
+            <button class="btn btn-success" id="addFinanceCredit" onclick="window.addCredit()" style="flex: 1;">
+              ➕ Add Verified Credit
+            </button>
+            <button class="btn btn-danger" id="deductFinanceCredit" onclick="window.deductCredit()" style="flex: 1;">
+              ➖ Deduct Credit
+            </button>
           </div>
         </div>
-        <p style="color: #999; font-size: 12px; margin-top: 10px;">Ads automatically leave carousel when system date exceeds end date</p>
-      </div>
 
-      <div class="card">
-        <h2>📋 Active Advertisements</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Business</th>
-              <th>Category</th>
-              <th>Offer</th>
-              <th>Featured Until</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Al-Noor Restaurant</td>
-              <td>Food & Dining</td>
-              <td>20% Discount</td>
-              <td>Sep 30, 2026</td>
-              <td><span class="badge badge-success">Active</span></td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
-            </tr>
-            <tr>
-              <td>Fitness Plus Gym</td>
-              <td>Health & Fitness</td>
-              <td>Free Trial</td>
-              <td>Sep 25, 2026</td>
-              <td><span class="badge badge-success">Active</span></td>
-              <td><button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <div class="card">
+          <h2>Pending Payments</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Member</th>
+                <th>Amount (BHD)</th>
+                <th>Method</th>
+                <th>Reference</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td><strong>Sara Ahmed</strong></td>
+                <td>5.000</td>
+                <td>BenefitPay</td>
+                <td>BP123456</td>
+                <td><span class="badge badge-warning">PENDING</span></td>
+                <td>
+                  <button class="btn btn-success" onclick="window.verifyPayment('payment_001')" data-verify-payment style="padding: 6px 12px; font-size: 12px;">
+                    Verify
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td><strong>Hassan Ibrahim</strong></td>
+                <td>3.000</td>
+                <td>Cash</td>
+                <td>CASH001</td>
+                <td><span class="badge badge-warning">PENDING</span></td>
+                <td>
+                  <button class="btn btn-success" onclick="window.verifyPayment('payment_002')" data-verify-payment style="padding: 6px 12px; font-size: 12px;">
+                    Verify
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
 
-      <div class="card">
-        <h2>⏳ Pending Ad Approvals</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Business</th>
-              <th>Category</th>
-              <th>Submitted</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Tech Solutions</td>
-              <td>Technology</td>
-              <td>Sep 12, 2026</td>
-              <td><span class="badge badge-warning">Pending</span></td>
-              <td>
-                <button class="btn btn-success" style="padding: 6px 12px; font-size: 12px;">Approve</button>
-                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">Reject</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
+      return html;
+
+    } catch (error) {
+      console.error('❌ Error loading finance:', error);
+      return `<div class="error-message">❌ Error loading finance: ${error.message}</div>`;
+    }
   },
 
-  // ===== SYSTEM AUDIT LOG PAGE =====
-  audit: function() {
-    return `
-      <div class="page-header">
-        <h1>🔍 System Audit Log</h1>
-        <p>Track all system activities and changes</p>
-      </div>
+  // ===== AD & NOTICE CONTROL =====
+  ads: async function() {
+    try {
+      const adsData = await window.api.getAds();
 
-      <div class="level-selector">
-        <label>Select Flight Level:</label>
-        <select id="auditLevelFilter" onchange="window.filterByLevel()">
-          <option value="">All Levels</option>
-          <option value="premier">Premier</option>
-          <option value="flight1">Flight 1</option>
-          <option value="flight2">Flight 2</option>
-          <option value="flight3">Flight 3</option>
-          <option value="flight4">Flight 4</option>
-          <option value="flight4a">Flight 4A</option>
-          <option value="flight4b">Flight 4B</option>
-        </select>
-      </div>
-
-      <div class="card">
-        <h2>🔎 Multi-Filter Audit Logs</h2>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Category</label>
-            <select id="auditCategory">
-              <option value="">All Categories</option>
-              <option value="MEMBER">Member Management</option>
-              <option value="ATTENDANCE">Attendance</option>
-              <option value="WALLET">Wallet & Payment</option>
-              <option value="SESSION">Session Control</option>
-              <option value="SHUTTLE">Shuttle Stock</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Activity</label>
-            <select id="auditActivity">
-              <option value="">All Activities</option>
-              <option value="badminton">Badminton</option>
-              <option value="cricket">Cricket</option>
-              <option value="tennis">Tennis</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="auditDate">
-          </div>
+      let html = `
+        <div class="page-header">
+          <h1>📢 Ad & Notice Control</h1>
+          <p>Manage carousel ads and club notices</p>
         </div>
-        <div class="form-row">
+
+        ${getLevelDropdown()}
+
+        <div class="card">
+          <h2>Carousel Advertisement Settings</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Maximum Active Ads (Max 10) *</label>
+              <input type="number" id="carouselAdCount" min="1" max="10" value="6" required>
+            </div>
+            <button class="btn btn-primary" onclick="window.saveCarouselLimit()" style="align-self: flex-end;">Save Limit</button>
+          </div>
+          <p style="font-size: 12px; color: #999; margin-top: 10px;">Current active ads: ${adsData?.activeAds || 0} / 10</p>
+        </div>
+
+        <div class="card">
+          <h2>Upload Club Notice Image</h2>
+          <form id="uploadNoticeForm" onsubmit="window.uploadNoticeImage(event)">
+            <div class="form-group">
+              <label>Select Image (PNG, JPEG, WebP - Max 2MB) *</label>
+              <input type="file" id="uploadNoticeImage" accept="image/png,image/jpeg,image/webp" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Upload Notice</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>Featured Advertisements</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Business Name</th>
+                <th>Offer</th>
+                <th>Feature Start</th>
+                <th>Feature End</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td><strong>Al-Noor Restaurant</strong></td>
+                <td>20% Discount</td>
+                <td>2026-09-01</td>
+                <td>2026-09-30</td>
+                <td><span class="badge badge-success">ACTIVE</span></td>
+                <td>
+                  <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td><strong>Fitness Plus Gym</strong></td>
+                <td>Free Trial</td>
+                <td>2026-09-10</td>
+                <td>2026-09-25</td>
+                <td><span class="badge badge-success">ACTIVE</span></td>
+                <td>
+                  <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      return html;
+
+    } catch (error) {
+      console.error('❌ Error loading ads:', error);
+      return `<div class="error-message">❌ Error loading ads: ${error.message}</div>`;
+    }
+  },
+
+  // ===== SYSTEM AUDIT LOG =====
+  audit: async function() {
+    try {
+      const auditData = await window.api.getAuditLogs();
+
+      let html = `
+        <div class="page-header">
+          <h1>🔍 System Audit Log</h1>
+          <p>Read-only tracking log for all system events</p>
+        </div>
+
+        ${getLevelDropdown()}
+
+        <div class="card">
+          <h2>Multi-Filter Conditions</h2>
+          <p style="font-size: 12px; color: #999; margin-bottom: 15px;">Displays entries only when ALL selected filters match concurrently</p>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category</label>
+              <select id="auditCategory" onchange="window.applyAuditFilters()">
+                <option value="">All Categories</option>
+                <option value="MEMBER">Member</option>
+                <option value="ATTENDANCE">Attendance</option>
+                <option value="WALLET">Wallet/Payment</option>
+                <option value="SESSION">Session Control</option>
+                <option value="SHUTTLE">Shuttle Stock</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Activity</label>
+              <select id="auditActivity" onchange="window.applyAuditFilters()">
+                <option value="">All Activities</option>
+                <option value="Badminton">Badminton</option>
+                <option value="Cricket">Cricket</option>
+                <option value="Tennis">Tennis</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Flight Level</label>
+              <select id="auditLevel" onchange="window.applyAuditFilters()">
+                <option value="">All Levels</option>
+                <option value="Premier">Premier</option>
+                <option value="Flight 1">Flight 1</option>
+                <option value="Flight 2">Flight 2</option>
+                <option value="Flight 3">Flight 3</option>
+                <option value="Flight 4">Flight 4</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="auditDate" onchange="window.applyAuditFilters()">
+            </div>
+          </div>
+
           <div class="form-group">
             <label>Member/Actor Name</label>
-            <input type="text" id="auditMember" placeholder="Search member...">
+            <input type="text" id="auditMember" placeholder="Search by name..." onchange="window.applyAuditFilters()">
           </div>
         </div>
-        <button class="btn btn-primary" onclick="window.filterAuditLogs()">Filter Logs</button>
-      </div>
 
-      <div class="card">
-        <h2>📋 Audit Trail</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Date & Time</th>
-              <th>User/Actor</th>
-              <th>Category</th>
-              <th>Action</th>
-              <th>Details</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Sep 13, 2026 - 5:20 PM</td>
-              <td>Fathima Al-Dosari</td>
-              <td>Login</td>
-              <td>User Login</td>
-              <td>Logged in to admin panel</td>
-              <td><span class="badge badge-success">Success</span></td>
-            </tr>
-            <tr>
-              <td>Sep 13, 2026 - 3:45 PM</td>
-              <td>Mohammed Al-Khalifa</td>
-              <td>Member</td>
-              <td>Member Added</td>
-              <td>New member registered</td>
-              <td><span class="badge badge-success">Success</span></td>
-            </tr>
-            <tr>
-              <td>Sep 12, 2026 - 10:30 AM</td>
-              <td>Fathima Al-Dosari</td>
-              <td>Wallet</td>
-              <td>Payment Processed</td>
-              <td>Monthly fees collected</td>
-              <td><span class="badge badge-success">Success</span></td>
-            </tr>
-            <tr>
-              <td>Sep 11, 2026 - 2:15 PM</td>
-              <td>Ahmed Al-Mansouri</td>
-              <td>Session</td>
-              <td>Session Completed</td>
-              <td>Game session finalized</td>
-              <td><span class="badge badge-success">Success</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <div class="card">
+          <h2>Audit Log Entries</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Category</th>
+                <th>Event</th>
+                <th>Activity</th>
+                <th>Level</th>
+                <th>Member/Actor</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2026-09-14 11:30:00</td>
+                <td><span class="badge badge-info">MEMBER</span></td>
+                <td>Login</td>
+                <td>Badminton</td>
+                <td>Premier</td>
+                <td>Ahmed Al-Mansouri</td>
+                <td>Successful login</td>
+              </tr>
+              <tr>
+                <td>2026-09-14 06:15:00</td>
+                <td><span class="badge badge-success">ATTENDANCE</span></td>
+                <td>Session Completed</td>
+                <td>Badminton</td>
+                <td>Premier</td>
+                <td>Admin User</td>
+                <td>3 players, BHD 0.167 per player</td>
+              </tr>
+              <tr>
+                <td>2026-09-13 15:30:00</td>
+                <td><span class="badge badge-warning">WALLET</span></td>
+                <td>Credit Added</td>
+                <td>Badminton</td>
+                <td>Flight 1</td>
+                <td>Super Admin</td>
+                <td>BHD 10.000 added</td>
+              </tr>
+              <tr>
+                <td>2026-09-13 10:00:00</td>
+                <td><span class="badge badge-danger">SHUTTLE</span></td>
+                <td>Stock Updated</td>
+                <td>Badminton</td>
+                <td>Premier</td>
+                <td>Flight Admin</td>
+                <td>+5 tubes, Price: BHD 3.000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-      <div class="card">
-        <h2>🖨️ Print Audit Log</h2>
-        <button class="btn btn-primary" onclick="window.printAuditLog()">Print Current Log</button>
-      </div>
-    `;
+        <div style="margin-top: 20px;">
+          <button class="btn btn-primary" onclick="window.printAuditLog()" style="width: 100%; padding: 12px;">
+            🖨️ Print Audit Log
+          </button>
+        </div>
+      `;
+
+      return html;
+
+    } catch (error) {
+      console.error('❌ Error loading audit:', error);
+      return `<div class="error-message">❌ Error loading audit: ${error.message}</div>`;
+    }
   }
 };
 
-// ===== HELPER FUNCTIONS =====
-window.filterByLevel = function() {
-  console.log('Filtering by level...');
-  if (window.showToast) {
-    window.showToast('✅ Level filter applied');
-  }
+// ===== GLOBAL FUNCTIONS =====
+
+window.onLevelChange = function() {
+  const level = document.getElementById('levelFilter')?.value;
+  console.log('Level changed to:', level);
+  // Reload current page with new level filter
+  window.navigateTo(window.appState?.currentPage || 'home');
 };
 
-window.createActivity = function() {
-  const name = document.getElementById('createActivityName')?.value?.trim();
-  if (!name) {
-    if (window.showToast) window.showToast('❌ Please enter activity name');
+window.createActivity = async function(event) {
+  event.preventDefault();
+  const activityName = document.getElementById('createActivity')?.value?.trim();
+
+  if (!activityName) {
+    alert('❌ Please enter activity name');
     return;
   }
-  console.log(`Creating activity: ${name}`);
-  if (window.showToast) window.showToast(`✅ Activity "${name}" created successfully!`);
+
+  try {
+    const response = await window.api.createActivity(activityName);
+    if (response.success) {
+      alert('✅ Activity created successfully');
+      document.getElementById('createActivityForm').reset();
+      window.navigateTo('flights');
+    } else {
+      alert(`❌ ${response.message}`);
+    }
+  } catch (error) {
+    alert(`❌ Error: ${error.message}`);
+  }
 };
 
-window.createFlight = function() {
-  const activity = document.getElementById('createFlightActivity')?.value;
-  const name = document.getElementById('createFlightName')?.value?.trim();
-  if (!activity || !name) {
-    if (window.showToast) window.showToast('❌ Please fill all fields');
+window.createFlight = async function(event) {
+  event.preventDefault();
+  const activity = document.getElementById('flightActivity')?.value;
+  const flightName = document.getElementById('flightName')?.value?.trim();
+
+  if (!activity || !flightName) {
+    alert('❌ Please select activity and enter flight name');
     return;
   }
-  console.log(`Creating flight: ${name} for ${activity}`);
-  if (window.showToast) window.showToast(`✅ Flight "${name}" created successfully!`);
+
+  try {
+    const response = await window.api.createFlight(activity, flightName);
+    if (response.success) {
+      alert('✅ Flight created successfully');
+      document.getElementById('createFlightForm').reset();
+      window.navigateTo('flights');
+    } else {
+      alert(`❌ ${response.message}`);
+    }
+  } catch (error) {
+    alert(`❌ Error: ${error.message}`);
+  }
 };
 
-window.createMember = function() {
-  const name = document.getElementById('createMemberName')?.value?.trim();
-  const phone = document.getElementById('createMemberPhone')?.value?.trim();
-  const role = document.getElementById('createMemberRole')?.value;
-  const flight = document.getElementById('createMemberFlight')?.value;
+window.createMember = async function(event) {
+  event.preventDefault();
+  const name = document.getElementById('createMember')?.value?.trim();
+  const phone = document.getElementById('memberPhone')?.value?.trim();
+  const role = document.getElementById('memberRole')?.value;
+  const flight = document.getElementById('memberFlight')?.value;
 
   if (!name || !phone || !role || !flight) {
-    if (window.showToast) window.showToast('❌ All fields are required');
+    alert('❌ All fields are required');
     return;
   }
 
-  console.log(`Pre-registering member: ${name}, ${phone}, ${role}, ${flight}`);
-  if (window.showToast) window.showToast(`✅ Member "${name}" pre-registered successfully!`);
+  try {
+    const response = await window.api.createMember({
+      name: name,
+      phone: phone,
+      role: role,
+      flight: flight
+    });
+
+    if (response.success) {
+      alert('✅ Member pre-registered successfully');
+      document.getElementById('createMemberForm').reset();
+      window.navigateTo('flights');
+    } else {
+      alert(`❌ ${response.message}`);
+    }
+  } catch (error) {
+    alert(`❌ Error: ${error.message}`);
+  }
 };
 
-window.sendWhatsAppOnboarding = function() {
-  const phone = document.getElementById('whatsappPhone')?.value?.trim();
-  if (!phone) {
-    if (window.showToast) window.showToast('❌ Please enter phone number');
-    return;
-  }
+window.sendWhatsAppLink = function(phone) {
   const cleanPhone = phone.replace(/\D/g, '');
-  const waLink = `https://wa.me/${cleanPhone}?text=Welcome%20to%20Indian%20Club%20Bahrain!%20Please%20activate%20your%20account...`;
+  const message = encodeURIComponent('Welcome to Indian Club Bahrain! Please activate your account to get started.');
+  const waLink = `https://wa.me/${cleanPhone}?text=${message}`;
   window.open(waLink, '_blank');
-  console.log(`WhatsApp link opened for: ${cleanPhone}`);
 };
 
-window.saveMember = function(memberId) {
-  console.log(`Saving member: ${memberId}`);
-  if (window.showToast) window.showToast('✅ Member updated successfully!');
-};
-
-window.deleteMemberPerm = function(memberId) {
-  if (confirm('⚠️ Are you sure you want to permanently delete this member? This action cannot be undone.')) {
-    console.log(`Deleting member: ${memberId}`);
-    if (window.showToast) window.showToast('✅ Member deleted permanently!');
+window.deleteMember = async function(memberId) {
+  if (confirm('Are you sure you want to permanently delete this member?')) {
+    try {
+      const response = await window.api.deleteMember(memberId);
+      if (response.success) {
+        alert('✅ Member deleted successfully');
+        window.navigateTo('flights');
+      } else {
+        alert(`❌ ${response.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Error: ${error.message}`);
+    }
   }
 };
 
-window.publishMasterMonth = function() {
+window.deleteEntireMonth = async function() {
   const month = document.getElementById('masterMonth')?.value;
-  console.log(`Publishing month: ${month}`);
-  if (window.showToast) window.showToast(`✅ Month ${month} published successfully!`);
-};
 
-window.deleteEntireMonth = function() {
-  const month = document.getElementById('masterMonth')?.value;
-  if (confirm(`⚠️ Are you sure you want to delete ALL timetable entries for ${month}? This cannot be undone!`)) {
-    console.log(`Deleting entire month: ${month}`);
-    if (window.showToast) window.showToast(`✅ All entries for ${month} deleted!`);
-  }
-};
-
-window.addMasterSession = function() {
-  const day = document.getElementById('masterDay')?.value;
-  const startTime = document.getElementById('masterStartTime')?.value;
-  const endTime = document.getElementById('masterEndTime')?.value;
-  const activity = document.getElementById('masterActivity')?.value;
-  const flight = document.getElementById('masterFlight')?.value;
-
-  if (!day || !startTime || !endTime || !activity || !flight) {
-    if (window.showToast) window.showToast('❌ All fields are required');
+  if (!month) {
+    alert('❌ Please select a month');
     return;
   }
 
-  console.log(`Adding session: ${day} ${startTime}-${endTime} ${activity} ${flight}`);
-  if (window.showToast) window.showToast('✅ Session added to timetable!');
+  if (confirm(`Are you sure you want to clear the entire timetable for ${month}? This cannot be undone.`)) {
+    try {
+      const response = await window.api.deleteMonthTimetable(month);
+      if (response.success) {
+        alert('✅ Month timetable cleared');
+        window.navigateTo('master');
+      } else {
+        alert(`❌ ${response.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Error: ${error.message}`);
+    }
+  }
 };
 
-window.importBulkTimetable = function() {
-  const csvData = document.getElementById('importBulkTimetable')?.value?.trim();
+window.publishMonth = async function() {
+  const month = document.getElementById('masterMonth')?.value;
+
+  if (!month) {
+    alert('❌ Please select a month');
+    return;
+  }
+
+  try {
+    const response = await window.api.publishMonth(month);
+    if (response.success) {
+      alert('✅ Month published successfully');
+      window.navigateTo('master');
+    } else {
+      alert(`❌ ${response.message}`);
+    }
+  } catch (error) {
+    alert(`❌ Error: ${error.message}`);
+  }
+};
+
+window.importBulkTimetable = async function(event) {
+  event.preventDefault();
+  const csvData = document.getElementById('csvData')?.value?.trim();
+
   if (!csvData) {
-    if (window.showToast) window.showToast('❌ Please paste CSV data');
+    alert('❌ Please paste CSV data');
     return;
   }
 
-  const lines = csvData.split('\n').filter(line => line.trim());
-  let validCount = 0;
-  let errorRow = null;
+  try {
+    const lines = csvData.split('\n').filter(line => line.trim());
+    const dataLines = lines.slice(1); // Remove header
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (i === 0 && (line.toLowerCase().includes('weekday') || line.toLowerCase().includes('day'))) {
-      continue; // Skip header
+    const timetable = [];
+    for (let i = 0; i < dataLines.length; i++) {
+      const parts = dataLines[i].split(',').map(p => p.trim());
+      
+      if (parts.length !== 4) {
+        alert(`❌ Row ${i + 2} invalid: Expected 4 comma-separated values`);
+        return;
+      }
+
+      timetable.push({
+        weekday: parts[0],
+        flight: parts[1],
+        startTime: parts[2],
+        endTime: parts[3]
+      });
     }
-    const parts = line.split(',');
-    if (parts.length !== 4) {
-      errorRow = i + 1;
-      break;
+
+    const response = await window.api.importTimetable(timetable);
+    if (response.success) {
+      alert(`✅ ${timetable.length} sessions imported successfully`);
+      document.getElementById('importBulkTimetable').reset();
+      window.navigateTo('master');
+    } else {
+      alert(`❌ ${response.message}`);
     }
-    validCount++;
+  } catch (error) {
+    alert(`❌ Error: ${error.message}`);
   }
+};
 
-  if (errorRow) {
-    if (window.showToast) window.showToast(`❌ Row ${errorRow} invalid. Expected 4 comma-separated values.`);
+window.updateFinanceMembers = async function() {
+  const activity = document.getElementById('financeActivity')?.value;
+  const flight = document.getElementById('financeFlightLevel')?.value;
+  console.log('Filtering by activity:', activity, 'flight:', flight);
+};
+
+window.addCredit = async function() {
+  const memberId = document.getElementById('financeCreditMember')?.value;
+  const amountBHD = parseFloat(document.getElementById('financeAmount')?.value);
+
+  if (!memberId || !amountBHD || amountBHD <= 0) {
+    alert('❌ Please select member and enter valid amount');
     return;
   }
 
-  console.log(`Imported ${validCount} timetable entries`);
-  if (window.showToast) window.showToast(`✅ Successfully imported ${validCount} entries!`);
-};
-
-window.enableFinanceButtons = function() {
-  const member = document.getElementById('financeCreditMember')?.value;
-  document.getElementById('addFinanceCredit').disabled = !member;
-  document.getElementById('deductFinanceCredit').disabled = !member;
-};
-
-window.addFinanceCredit = function() {
-  const member = document.getElementById('financeCreditMember')?.value;
-  const amount = parseFloat(document.getElementById('financeAmount')?.value || 0);
-
-  if (!member || amount <= 0) {
-    if (window.showToast) window.showToast('❌ Please select member and enter amount');
-    return;
-  }
-
-  const amountFils = Math.round(amount * 1000);
-  console.log(`Adding credit: ${amountFils} Fils to ${member}`);
-  if (window.showToast) window.showToast(`✅ Added ${amount.toFixed(3)} BHD to member wallet!`);
-};
-
-window.deductFinanceCredit = function() {
-  const member = document.getElementById('financeCreditMember')?.value;
-  const amount = parseFloat(document.getElementById('financeAmount')?.value || 0);
-
-  if (!member || amount <= 0) {
-    if (window.showToast) window.showToast('❌ Please select member and enter amount');
-    return;
-  }
-
-  const amountFils = -Math.round(amount * 1000);
-  console.log(`Deducting credit: ${Math.abs(amountFils)} Fils from ${member}`);
-  if (window.showToast) window.showToast(`✅ Deducted ${amount.toFixed(3)} BHD from member wallet!`);
-};
-
-window.verifyPayment = function(memberId) {
-  console.log(`Verifying payment for: ${memberId}`);
-  if (window.showToast) window.showToast('✅ Payment verified and added to wallet!');
-};
-
-window.saveCarouselLimit = function() {
-  const limit = parseInt(document.getElementById('carouselAdCount')?.value || 10);
-  if (limit < 1 || limit > 10) {
-    if (window.showToast) window.showToast('❌ Limit must be between 1 and 10');
-    return;
-  }
-  console.log(`Carousel limit set to: ${limit}`);
-  if (window.showToast) window.showToast(`✅ Carousel limit set to ${limit} ads!`);
-};
-
-window.validateNoticeImage = function() {
-  const file = document.getElementById('uploadNoticeImage')?.files?.[0];
-  if (!file) return;
-
-  const validTypes = ['image/png', 'image/jpeg', 'image/webp'];
-  const maxSize = 2 * 1024 * 1024; // 2MB
-
-  if (!validTypes.includes(file.type)) {
-    if (window.showToast) window.showToast('❌ Only PNG, JPEG, or WebP images allowed');
-    document.getElementById('uploadNoticeImage').value = '';
-    return;
-  }
-
-  if (file.size > maxSize) {
-    if (window.showToast) window.showToast('❌ File size must be 2MB or less');
-    document.getElementById('uploadNoticeImage').value = '';
-    return;
+  try {
+    const amountFils = Math.round(amountBHD * 1000);
+    const response = await window.api.addCredit(memberId, amountFils);
+    if (response.success) {
+      alert('✅ Credit added successfully');
+      document.getElementById('financeAmount').value = '';
+      window.navigateTo('finance');
+    } else {
+      alert(`❌ ${response.message}`);
+    }
+  } catch (error) {
+    alert(`❌ Error: ${error.message}`);
   }
 };
 
-window.uploadNoticeImage = function() {
-  const file = document.getElementById('uploadNoticeImage')?.files?.[0];
+window.deductCredit = async function() {
+  const memberId = document.getElementById('financeCreditMember')?.value;
+  const amountBHD = parseFloat(document.getElementById('financeAmount')?.value);
+
+  if (!memberId || !amountBHD || amountBHD <= 0) {
+    alert('❌ Please select member and enter valid amount');
+    return;
+  }
+
+  try {
+    const amountFils = Math.round(amountBHD * 1000);
+    const response = await window.api.deductCredit(memberId, amountFils);
+    if (response.success) {
+      alert('✅ Credit deducted successfully');
+      document.getElementById('financeAmount').value = '';
+      window.navigateTo('finance');
+    } else {
+      alert(`❌ ${response.message}`);
+    }
+  } catch (error) {
+    alert(`❌ Error: ${error.message}`);
+  }
+};
+
+window.verifyPayment = async function(paymentId) {
+  if (confirm('Verify this payment?')) {
+    try {
+      const response = await window.api.verifyPayment(paymentId);
+      if (response.success) {
+        alert('✅ Payment verified and credit added');
+        window.navigateTo('finance');
+      } else {
+        alert(`❌ ${response.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Error: ${error.message}`);
+    }
+  }
+};
+
+window.saveCarouselLimit = async function() {
+  const limit = parseInt(document.getElementById('carouselAdCount')?.value);
+
+  if (!limit || limit < 1 || limit > 10) {
+    alert('❌ Limit must be between 1 and 10');
+    return;
+  }
+
+  try {
+    const response = await window.api.setCarouselLimit(limit);
+    if (response.success) {
+      alert('✅ Carousel limit saved');
+      window.navigateTo('ads');
+    } else {
+      alert(`❌ ${response.message}`);
+    }
+  } catch (error) {
+    alert(`❌ Error: ${error.message}`);
+  }
+};
+
+window.uploadNoticeImage = async function(event) {
+  event.preventDefault();
+  const fileInput = document.getElementById('uploadNoticeImage');
+  const file = fileInput?.files?.[0];
+
   if (!file) {
-    if (window.showToast) window.showToast('❌ Please select an image');
+    alert('❌ Please select a file');
     return;
   }
-  console.log(`Uploading notice image: ${file.name}`);
-  if (window.showToast) window.showToast('✅ Notice image uploaded successfully!');
+
+  // Validate file type
+  const validTypes = ['image/png', 'image/jpeg', 'image/webp'];
+  if (!validTypes.includes(file.type)) {
+    alert('❌ Only PNG, JPEG, and WebP files are allowed');
+    return;
+  }
+
+  // Validate file size (2MB = 2 * 1024 * 1024 bytes)
+  if (file.size > 2 * 1024 * 1024) {
+    alert('❌ File size must be 2MB or less');
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await window.api.uploadNoticeImage(formData);
+    if (response.success) {
+      alert('✅ Notice image uploaded successfully');
+      document.getElementById('uploadNoticeForm').reset();
+      window.navigateTo('ads');
+    } else {
+      alert(`❌ ${response.message}`);
+    }
+  } catch (error) {
+    alert(`❌ Error: ${error.message}`);
+  }
 };
 
-window.filterAuditLogs = function() {
+window.applyAuditFilters = async function() {
   const category = document.getElementById('auditCategory')?.value;
   const activity = document.getElementById('auditActivity')?.value;
+  const level = document.getElementById('auditLevel')?.value;
   const date = document.getElementById('auditDate')?.value;
-  const member = document.getElementById('auditMember')?.value;
+  const member = document.getElementById('auditMember')?.value?.trim();
 
-  console.log(`Filtering audit logs: Category=${category}, Activity=${activity}, Date=${date}, Member=${member}`);
-  if (window.showToast) window.showToast('✅ Audit logs filtered!');
+  console.log('Applying filters:', { category, activity, level, date, member });
+
+  try {
+    const response = await window.api.getAuditLogs({
+      category: category,
+      activity: activity,
+      level: level,
+      date: date,
+      member: member
+    });
+
+    if (response.success) {
+      console.log('✅ Filters applied, results:', response.logs?.length);
+    }
+  } catch (error) {
+    console.error('❌ Error applying filters:', error);
+  }
 };
 
 window.printAuditLog = function() {
-  console.log('Printing audit log...');
   window.print();
 };
 
