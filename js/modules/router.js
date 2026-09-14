@@ -1,8 +1,8 @@
 
+import { login, logout, observeAuth, api } from "./modules/auth.js";
 import { views } from "./modules/views.js";
 import { flightAdminViews } from "./modules/flightAdminViews.js";
 import { adminViews } from "./modules/adminViews.js";
-import { api } from "./modules/auth.js";
 
 // ===== GLOBAL STATE =====
 export const state = {
@@ -53,166 +53,114 @@ const TAB_CONFIG = {
   ]
 };
 
-// ===== MOCK ADS DATA =====
-const MOCK_ADS = [
-  {
-    id: "ad1",
-    businessName: "Al-Noor Restaurant",
-    category: "Food & Beverage",
-    description: "Authentic Bahraini cuisine with modern ambiance",
-    phone: "+973 1234 5678"
-  },
-  {
-    id: "ad2",
-    businessName: "Fitness Plus Gym",
-    category: "Health & Fitness",
-    description: "State-of-the-art gym with professional trainers",
-    phone: "+973 3344 5566"
-  },
-  {
-    id: "ad3",
-    businessName: "Travel Bahrain Tours",
-    category: "Travel & Tourism",
-    description: "Explore Bahrain with our guided tours",
-    phone: "+973 5566 7788"
-  },
-  {
-    id: "ad4",
-    businessName: "Tech Solutions Ltd",
-    category: "Technology",
-    description: "IT services and software development",
-    phone: "+973 7788 9900"
-  },
-  {
-    id: "ad5",
-    businessName: "Beauty & Spa Center",
-    category: "Beauty & Wellness",
-    description: "Premium beauty and spa treatments",
-    phone: "+973 9900 1122"
-  },
-  {
-    id: "ad6",
-    businessName: "Real Estate Bahrain",
-    category: "Real Estate",
-    description: "Premium properties and investment opportunities",
-    phone: "+973 1122 3344"
-  }
-];
-
-// ===== MOCK ANNOUNCEMENTS DATA =====
-const MOCK_ANNOUNCEMENTS = [
-  {
-    id: "ann1",
-    title: "🏆 Annual Badminton Championship",
-    message: "Join us for the biggest badminton tournament of the year! Registration opens next week.",
-    publishedAt: new Date("2026-09-10")
-  },
-  {
-    id: "ann2",
-    title: "🎉 Club Anniversary Celebration",
-    message: "Celebrate 25 years of Indian Club Bahrain with us! Special events and prizes await.",
-    publishedAt: new Date("2026-09-05")
-  },
-  {
-    id: "ann3",
-    title: "📢 New Membership Drive",
-    message: "Invite your friends to join our vibrant community. Special discounts for new members!",
-    publishedAt: new Date("2026-09-01")
-  }
-];
-
 // ===== RENDER LOGIN PAGE =====
-function renderLoginPage() {
+async function renderLoginPage() {
   const container = document.getElementById("app-content");
   if (!container) return;
 
-  const adsHtml = MOCK_ADS.map((ad, index) => `
-    <div class="carousel-ad ${index === 0 ? "active" : ""}">
-      <div class="ad-title">🏢 ${ad.businessName}</div>
-      <div class="ad-description">${ad.description}</div>
-      <small style="color: #6b7280; display: block; margin-bottom: 1rem;">📞 ${ad.phone}</small>
-      <div class="ad-contact">
-        <button onclick="window.open('tel:${ad.phone.replace(/\s/g, '')}')">📞 Call</button>
-        <button onclick="window.open('https://wa.me/${ad.phone.replace(/\D/g, '')}')">💬 WhatsApp</button>
-      </div>
-    </div>
-  `).join("");
+  try {
+    const announcements = await api("/announcements");
+    const ads = await api("/ads");
 
-  const announcementsHtml = MOCK_ANNOUNCEMENTS.map(ann => `
-    <div class="announcement-item">
-      <h4>${ann.title}</h4>
-      <p>${ann.message}</p>
-      <small>${new Date(ann.publishedAt).toLocaleDateString("en-BH")}</small>
-    </div>
-  `).join("");
-
-  container.innerHTML = `
-    <div class="login-page">
-      <!-- LOGIN BOX -->
-      <div class="login-box">
-        <div class="login-header">
-          <div class="logo">🏏</div>
-          <h1>Indian Club Bahrain</h1>
-          <p>Member Portal</p>
+    const adsHtml = ads.slice(0, 6).map((ad, index) => `
+      <div class="carousel-ad ${index === 0 ? "active" : ""}">
+        <div class="ad-title">🏢 ${ad.businessName}</div>
+        <div class="ad-description">${ad.description}</div>
+        <small style="color: #6b7280; display: block; margin-bottom: 1rem;">📞 ${ad.phone}</small>
+        <div class="ad-contact">
+          <button onclick="window.open('tel:${ad.phone.replace(/\s/g, '')}')">📞 Call</button>
+          <button onclick="window.open('https://wa.me/${ad.phone.replace(/\D/g, '')}')">💬 WhatsApp</button>
         </div>
-        <form class="login-form" onsubmit="window.handleLogin(event)">
-          <div class="field">
-            <label>Email *</label>
-            <input type="email" id="loginEmail" placeholder="your@email.com" required>
+      </div>
+    `).join("");
+
+    const announcementsHtml = announcements.map(ann => `
+      <div class="announcement-item">
+        <h4>${ann.title}</h4>
+        <p>${ann.message}</p>
+        <small>${new Date(ann.publishedAt).toLocaleDateString("en-BH")}</small>
+      </div>
+    `).join("");
+
+    container.innerHTML = `
+      <div class="login-page">
+        <!-- LOGIN BOX -->
+        <div class="login-box">
+          <div class="login-header">
+            <div class="logo">🏏</div>
+            <h1>Indian Club Bahrain</h1>
+            <p>Member Portal</p>
           </div>
-          <div class="field">
-            <label>Password *</label>
-            <input type="password" id="loginPassword" placeholder="••••••••" required>
+          <form class="login-form" onsubmit="window.handleLogin(event)">
+            <div class="field">
+              <label>Email *</label>
+              <input type="email" id="loginEmail" placeholder="your@email.com" required>
+            </div>
+            <div class="field">
+              <label>Password *</label>
+              <input type="password" id="loginPassword" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="primary">🔓 Login</button>
+          </form>
+          <div style="background: #eff6ff; border-left: 4px solid #1e40af; padding: 1rem; border-radius: 4px; margin-top: 1.5rem; font-size: 0.85rem; color: #1e40af;">
+            <strong>📝 New Member?</strong>
+            <p style="margin-top: 0.5rem;">Contact your Flight Admin or Super Admin to register</p>
           </div>
-          <div class="field">
-            <label>Role *</label>
-            <select id="loginRole" required>
-              <option value="">Select role...</option>
-              <option value="PLAYER">Player</option>
-              <option value="LEVEL_ADMIN">Flight Admin</option>
-              <option value="SUPER_ADMIN">Super Admin</option>
-            </select>
+        </div>
+
+        <!-- CLUB ANNOUNCEMENTS SECTION -->
+        <div class="announcements-section">
+          <div class="announcements-header">
+            <h2>📢 Club Announcements</h2>
+            <p>Latest updates and celebrations</p>
           </div>
-          <button type="submit" class="primary">🔓 Login</button>
-        </form>
-        <div style="background: #eff6ff; border-left: 4px solid #1e40af; padding: 1rem; border-radius: 4px; margin-top: 1.5rem; font-size: 0.85rem; color: #1e40af;">
-          <strong>📝 Test Credentials:</strong>
-          <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-            <li><strong>Player:</strong> player@example.com / password123</li>
-            <li><strong>Flight Admin:</strong> leveladmin@example.com / password123</li>
-            <li><strong>Super Admin:</strong> superadmin@example.com / password123</li>
-          </ul>
+          ${announcementsHtml || '<p class="note">No announcements yet</p>'}
         </div>
-      </div>
 
-      <!-- CLUB ANNOUNCEMENTS SECTION -->
-      <div class="announcements-section">
-        <div class="announcements-header">
-          <h2>📢 Club Announcements</h2>
-          <p>Latest updates and celebrations</p>
-        </div>
-        ${announcementsHtml}
-      </div>
-
-      <!-- BUSINESS ADS CAROUSEL SECTION -->
-      <div class="ads-carousel-section">
-        <div class="carousel-header">
-          <h2>🏪 Featured Business Directory</h2>
-          <p>Explore our partner businesses</p>
-        </div>
-        <div class="carousel-tabs">
-          ${MOCK_ADS.map((ad, index) => `
-            <button class="carousel-tab ${index === 0 ? "active" : ""}" onclick="window.switchCarouselTab(${index})">
-              ${ad.businessName}
-            </button>
-          `).join("")}
-        </div>
-        <div class="carousel-content">
-          ${adsHtml}
+        <!-- BUSINESS ADS CAROUSEL SECTION -->
+        <div class="ads-carousel-section">
+          <div class="carousel-header">
+            <h2>🏪 Featured Business Directory</h2>
+            <p>Explore our partner businesses</p>
+          </div>
+          <div class="carousel-tabs">
+            ${ads.slice(0, 6).map((ad, index) => `
+              <button class="carousel-tab ${index === 0 ? "active" : ""}" onclick="window.switchCarouselTab(${index})">
+                ${ad.businessName}
+              </button>
+            `).join("")}
+          </div>
+          <div class="carousel-content">
+            ${adsHtml || '<p class="note">No businesses available</p>'}
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+  } catch (error) {
+    console.error("❌ Error loading login page:", error);
+    container.innerHTML = `
+      <div class="login-page">
+        <div class="login-box">
+          <div class="login-header">
+            <div class="logo">🏏</div>
+            <h1>Indian Club Bahrain</h1>
+            <p>Member Portal</p>
+          </div>
+          <form class="login-form" onsubmit="window.handleLogin(event)">
+            <div class="field">
+              <label>Email *</label>
+              <input type="email" id="loginEmail" placeholder="your@email.com" required>
+            </div>
+            <div class="field">
+              <label>Password *</label>
+              <input type="password" id="loginPassword" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="primary">🔓 Login</button>
+          </form>
+        </div>
+      </div>
+    `;
+  }
 }
 
 // ===== NAVIGATION FUNCTIONS =====
@@ -300,26 +248,16 @@ export function renderNavigation() {
 }
 
 // ===== AUTHENTICATION FUNCTIONS =====
-export async function login(email, password, role) {
+export async function handleLogin(email, password) {
   try {
-    const response = await api("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password, role })
-    });
+    const member = await login(email, password);
 
-    if (!response.member) {
-      throw new Error("Invalid credentials");
-    }
-
-    state.member = response.member;
-    state.role = response.member.role;
-    state.flightId = response.member.flightId;
-    state.flightName = response.member.flightName;
+    state.member = member;
+    state.role = member.role;
+    state.flightId = member.flightId || null;
+    state.flightName = member.flightName || null;
     state.currentTab = "home";
     state.currentPage = "dashboard";
-
-    localStorage.setItem("authToken", response.token);
-    localStorage.setItem("memberRole", state.role);
 
     console.log(`✅ Login successful: ${state.member.fullName} (${state.role})`);
     
@@ -329,60 +267,56 @@ export async function login(email, password, role) {
     return true;
   } catch (error) {
     console.error("❌ Login failed:", error);
-    showNotification(`❌ Login failed: ${error.message}`);
+    showNotification(`❌ ${error.message}`);
     return false;
   }
 }
 
-export async function logout() {
+export async function handleLogout() {
   if (confirm("Are you sure you want to logout?")) {
-    state.member = null;
-    state.role = null;
-    state.flightId = null;
-    state.flightName = null;
-    state.currentTab = "home";
-    state.currentPage = "login";
+    try {
+      await logout();
+      state.member = null;
+      state.role = null;
+      state.flightId = null;
+      state.flightName = null;
+      state.currentTab = "home";
+      state.currentPage = "login";
 
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("memberRole");
-
-    console.log("✅ Logged out successfully");
-    location.reload();
+      console.log("✅ Logged out successfully");
+      location.reload();
+    } catch (error) {
+      console.error("❌ Logout failed:", error);
+      showNotification(`❌ Logout failed: ${error.message}`);
+    }
   }
 }
 
 export async function checkAuth() {
-  const token = localStorage.getItem("authToken");
-  const role = localStorage.getItem("memberRole");
+  return new Promise((resolve) => {
+    observeAuth(async (user) => {
+      if (user) {
+        try {
+          const member = await api("/members/me");
+          state.member = member;
+          state.role = member.role;
+          state.flightId = member.flightId || null;
+          state.flightName = member.flightName || null;
+          state.currentPage = "dashboard";
+          state.currentTab = "home";
 
-  if (!token || !role) {
-    state.currentPage = "login";
-    return false;
-  }
-
-  try {
-    const response = await api("/auth/verify", {
-      method: "POST",
-      body: JSON.stringify({ token })
+          console.log(`✅ Auth verified: ${state.member.fullName}`);
+          resolve(true);
+        } catch (error) {
+          console.error("❌ Auth verification failed:", error);
+          resolve(false);
+        }
+      } else {
+        state.currentPage = "login";
+        resolve(false);
+      }
     });
-
-    if (response.member) {
-      state.member = response.member;
-      state.role = response.member.role;
-      state.flightId = response.member.flightId;
-      state.flightName = response.member.flightName;
-      state.currentPage = "dashboard";
-      state.currentTab = "home";
-
-      console.log(`✅ Auth verified: ${state.member.fullName}`);
-      return true;
-    }
-  } catch (error) {
-    console.error("❌ Auth verification failed:", error);
-  }
-
-  state.currentPage = "login";
-  return false;
+  });
 }
 
 // ===== NOTIFICATION SYSTEM =====
@@ -392,7 +326,7 @@ export function showNotification(message) {
 
 // ===== GLOBAL WINDOW FUNCTIONS =====
 window.navigate = navigate;
-window.logout = logout;
+window.logout = handleLogout;
 window.showNotification = showNotification;
 
 // ===== INITIALIZATION =====
@@ -405,7 +339,7 @@ export async function initializeApp() {
     renderNavigation();
     await navigate("home");
   } else {
-    renderLoginPage();
+    await renderLoginPage();
   }
 }
 
@@ -413,9 +347,8 @@ window.handleLogin = async function(event) {
   event.preventDefault();
   const email = document.getElementById("loginEmail").value;
   const password = document.getElementById("loginPassword").value;
-  const role = document.getElementById("loginRole").value;
 
-  const success = await login(email, password, role);
+  const success = await handleLogin(email, password);
   if (!success) {
     document.getElementById("loginPassword").value = "";
   }
@@ -428,5 +361,5 @@ if (document.readyState === "loading") {
   initializeApp();
 }
 
-export default { navigate, renderPage, login, logout, checkAuth, state };
+export default { navigate, renderPage, handleLogin, handleLogout, checkAuth, state };
 
