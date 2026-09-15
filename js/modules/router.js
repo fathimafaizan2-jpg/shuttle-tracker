@@ -1,397 +1,371 @@
 
-import { views } from "./views.js";
-import { flightAdminViews } from "./flightAdminViews.js";
-import { adminViews } from "./adminViews.js";
+import { api, observeAuth } from "./modules/auth.js";
 
-// ===== GLOBAL STATE =====
-export const state = {
-  member: null,
-  role: null,
-  flightId: null,
-  flightName: null,
-  currentTab: "home",
-  currentPage: "login"
-};
+/* ─────────────── state ─────────────── */
+export const state = { member: null, page: "home", language: "en" };
+const memberCacheKey = "indian_club_verified_member";
 
-// ===== ROLE-BASED TAB DEFINITIONS =====
-const TAB_CONFIG = {
-  PLAYER: [
-    { id: "home", label: "🏠 Home", view: views.home },
-    { id: "timetable", label: "📅 Timetable", view: views.timetable },
-    { id: "attendance", label: "📊 Attendance", view: views.attendance },
-    { id: "wallet", label: "💰 Wallet", view: views.wallet },
-    { id: "bazaar", label: "🏪 Bazaar", view: views.bazaar },
-    { id: "profile", label: "👤 Profile", view: views.profile },
-    { id: "logs", label: "📜 Logs", view: views.logs }
-  ],
-  LEVEL_ADMIN: [
-    { id: "home", label: "🏠 Home", view: flightAdminViews.home },
-    { id: "timetable", label: "📅 Timetable", view: flightAdminViews.timetable },
-    { id: "attendance", label: "📊 Attendance", view: flightAdminViews.attendance },
-    { id: "wallet", label: "💰 Wallet", view: flightAdminViews.wallet },
-    { id: "bazaar", label: "🏪 Bazaar", view: flightAdminViews.bazaar },
-    { id: "profile", label: "👤 Profile", view: flightAdminViews.profile },
-    { id: "logs", label: "📜 Logs", view: flightAdminViews.logs },
-    { id: "sessionControl", label: "🎮 Session Control", view: flightAdminViews.sessionControl },
-    { id: "stock", label: "📦 Stock", view: flightAdminViews.stock },
-    { id: "finance", label: "💳 Finance", view: flightAdminViews.finance }
-  ],
-  SUPER_ADMIN: [
-    { id: "home", label: "🏠 Home", view: adminViews.home },
-    { id: "timetable", label: "📅 Timetable", view: adminViews.timetable },
-    { id: "attendance", label: "📊 Attendance", view: adminViews.attendance },
-    { id: "wallet", label: "💰 Wallet", view: adminViews.wallet },
-    { id: "bazaar", label: "🏪 Bazaar", view: adminViews.bazaar },
-    { id: "profile", label: "👤 Profile", view: adminViews.profile },
-    { id: "logs", label: "📜 Logs", view: adminViews.logs },
-    { id: "activities", label: "🎮 Activities & Flights", view: adminViews.activities },
-    { id: "masterTimetable", label: "📅 Master Timetable", view: adminViews.timetable },
-    { id: "finance", label: "💳 Finance", view: adminViews.finance },
-    { id: "auditLogs", label: "📜 Audit Logs", view: adminViews.auditLogs },
-    { id: "ads", label: "📢 Ads & Notices", view: adminViews.ads }
-  ]
-};
+/* ─────────────── page access sets (ORIGINAL + COMPLETE) ─────────────── */
 
-// ===== RENDER LOGIN PAGE =====
-async function renderLoginPage() {
-  const container = document.getElementById("app-content");
-  if (!container) return;
+// PLAYER → 7 tabs (all from views.js)
+const playerPages = new Set([
+  "home",        // Home dashboard with upcoming game, wallet balance
+  "timetable",   // View-only timetable with activity/month filters
+  "attendance",  // Own attendance log with activity/month filters
+  "logs",        // Own activity logs (attendance, payment, wallet)
+  "wallet",      // Wallet balance, pay by credit/cash/benefit/WhatsApp
+  "bazaar",      // Browse community directory, submit business
+  "profile"      // Update credentials, photo, password
+]);
 
-  try {
-    let announcements = [];
-    let ads = [];
+// FLIGHT ADMIN (LEVEL_ADMIN) → 10 tabs (7 player + 3 flight-admin specific)
+const flightAdminPages = new Set([
+  ...playerPages,   // All 7 player tabs
+  "sessions",       // Session Control: attendance, shuttles, game completion, charges
+  "stock",          // Shuttle Stock: manage own flight stock, refill log
+  "finance"         // Finance: payment tracking for own flight
+]);
 
-    try {
-      const annResponse = await fetch("https://indian-club-api.onrender.com/api/announcements");
-      if (annResponse.ok) {
-        announcements = await annResponse.json();
-      }
-    } catch (e) {
-      console.warn("⚠️ Could not fetch announcements");
-    }
+// SUPER ADMIN → 12+ tabs (player + flight-admin + super-admin specific)
+const superAdminPages = new Set([
+  "home",        // Club-wide dashboard with all flights stats
+  "master",      // Members management: add/edit/activate/deactivate/delete
+  "flights",     // Timetable management: full CRUD + CSV import
+  "finance",     // Finance: all members payments + add credit/deduction per member
+  "logs",        // System audit logs with multi-filter (category, activity, level, date, member)
+  "wallet",      // View all members wallet status
+  "sessions",    // Session Control: view all flights (with level dropdown)
+  "stock",       // Shuttle Stock: view all flights stock (with level dropdown)
+  "ads",         // Ads & Notices: carousel (max 10), club announcements, approval workflow
+  "audit",       // Activities management
+  "bazaar",      // Browse + approve/reject businesses
+  "profile"      // Update own credentials
+]);
 
-    try {
-      const adsResponse = await fetch("https://indian-club-api.onrender.com/api/ads");
-      if (adsResponse.ok) {
-        ads = await adsResponse.json();
-      }
-    } catch (e) {
-      console.warn("⚠️ Could not fetch ads");
-    }
+/* ─────────────── helper functions ─────────────── */
 
-    const adsHtml = ads.slice(0, 6).map((ad, index) => `
-      <div class="carousel-ad ${index === 0 ? "active" : ""}">
-        <div class="ad-title">🏢 ${ad.businessName || "Business"}</div>
-        <div class="ad-description">${ad.description || "No description"}</div>
-        <small style="color: #6b7280; display: block; margin-bottom: 1rem;">📞 ${ad.phone || "N/A"}</small>
-        <div class="ad-contact">
-          <button onclick="window.open('tel:${(ad.phone || "").replace(/\s/g, '')}')">📞 Call</button>
-          <button onclick="window.open('https://wa.me/${(ad.phone || "").replace(/\D/g, '')}')">💬 WhatsApp</button>
-        </div>
-      </div>
-    `).join("");
-
-    const announcementsHtml = announcements.map(ann => `
-      <div class="announcement-item">
-        <h4>${ann.title || "Announcement"}</h4>
-        <p>${ann.message || ann.description || "No details"}</p>
-        <small>${ann.publishedAt ? new Date(ann.publishedAt).toLocaleDateString("en-BH") : "N/A"}</small>
-      </div>
-    `).join("");
-
-    container.innerHTML = `
-      <div class="login-page">
-        <div class="login-box">
-          <div class="login-header">
-            <div class="logo">🏏</div>
-            <h1>Indian Club Bahrain</h1>
-            <p>Member Portal</p>
-          </div>
-          <form class="login-form" onsubmit="window.handleLogin(event)">
-            <div class="field">
-              <label>Email *</label>
-              <input type="email" id="loginEmail" placeholder="your@email.com" required>
-            </div>
-            <div class="field">
-              <label>Password *</label>
-              <input type="password" id="loginPassword" placeholder="••••••••" required>
-            </div>
-            <button type="submit" class="primary">🔓 Login</button>
-          </form>
-          <div style="background: #eff6ff; border-left: 4px solid #1e40af; padding: 1rem; border-radius: 4px; margin-top: 1.5rem; font-size: 0.85rem; color: #1e40af;">
-            <strong>📝 New Member?</strong>
-            <p style="margin-top: 0.5rem;">Contact your Flight Admin or Super Admin to register</p>
-          </div>
-        </div>
-
-        <div class="announcements-section">
-          <div class="announcements-header">
-            <h2>📢 Club Announcements</h2>
-            <p>Latest updates and celebrations</p>
-          </div>
-          ${announcementsHtml || '<p class="note">No announcements yet</p>'}
-        </div>
-
-        <div class="ads-carousel-section">
-          <div class="carousel-header">
-            <h2>🏪 Featured Business Directory</h2>
-            <p>Explore our partner businesses</p>
-          </div>
-          <div class="carousel-tabs">
-            ${ads.slice(0, 6).map((ad, index) => `
-              <button class="carousel-tab ${index === 0 ? "active" : ""}" onclick="window.switchCarouselTab(${index})">
-                ${ad.businessName || "Business"}
-              </button>
-            `).join("")}
-          </div>
-          <div class="carousel-content">
-            ${adsHtml || '<p class="note">No businesses available</p>'}
-          </div>
-        </div>
-      </div>
-    `;
-  } catch (error) {
-    console.error("❌ Error loading login page:", error);
-    container.innerHTML = `
-      <div class="login-page">
-        <div class="login-box">
-          <div class="login-header">
-            <div class="logo">🏏</div>
-            <h1>Indian Club Bahrain</h1>
-            <p>Member Portal</p>
-          </div>
-          <form class="login-form" onsubmit="window.handleLogin(event)">
-            <div class="field">
-              <label>Email *</label>
-              <input type="email" id="loginEmail" placeholder="your@email.com" required>
-            </div>
-            <div class="field">
-              <label>Password *</label>
-              <input type="password" id="loginPassword" placeholder="••••••••" required>
-            </div>
-            <button type="submit" class="primary">🔓 Login</button>
-          </form>
-        </div>
-      </div>
-    `;
-  }
+function approvedMember(member) {
+  return member && ["PLAYER", "LEVEL_ADMIN", "SUPER_ADMIN"].includes(member.role);
 }
 
-// ===== NAVIGATION FUNCTIONS =====
-export async function navigate(tabId) {
-  if (!state.member) {
-    console.error("❌ Not authenticated");
-    return;
-  }
-
-  const tabs = TAB_CONFIG[state.role];
-  const tab = tabs.find(t => t.id === tabId);
-
-  if (!tab) {
-    console.error(`❌ Tab not found: ${tabId}`);
-    return;
-  }
-
-  state.currentTab = tabId;
-  await renderPage();
+function allowedPagesForRole(role) {
+  if (role === "SUPER_ADMIN") return superAdminPages;
+  if (role === "LEVEL_ADMIN") return flightAdminPages;
+  return playerPages;
 }
 
-export async function renderPage() {
-  const container = document.getElementById("app-content");
-  if (!container) {
-    console.error("❌ App container not found");
-    return;
-  }
+function cacheMember(member) {
+  try { localStorage.setItem(memberCacheKey, JSON.stringify(member)); } catch {}
+}
 
+function clearCachedMember() {
+  try { localStorage.removeItem(memberCacheKey); } catch {}
+}
+
+function cachedMemberFor(uid) {
   try {
-    const tabs = TAB_CONFIG[state.role];
-    const currentTab = tabs.find(t => t.id === state.currentTab);
+    const value = JSON.parse(localStorage.getItem(memberCacheKey) || "null");
+    return value?.uid === uid && approvedMember(value) ? value : null;
+  } catch { return null; }
+}
 
-    if (!currentTab) {
-      container.innerHTML = `<p class="note">❌ Page not found: ${state.currentTab}</p>`;
+const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+/* ─────────────── navigation ─────────────── */
+
+export function canOpenPage(page) {
+  return allowedPagesForRole(state.member?.role).has(page);
+}
+
+export function navigate(page) {
+  if (!canOpenPage(page)) {
+    window.dispatchEvent(new CustomEvent("indianclub:toast", {
+      detail: "You do not have permission to open this page."
+    }));
+    return false;
+  }
+  state.page = page;
+  window.scrollTo(0, 0);
+  window.dispatchEvent(new CustomEvent("indianclub:render"));
+  return true;
+}
+
+/* ─────────────── authentication ─────────────── */
+
+export async function startSignedInApp() {
+  let member;
+  try {
+    member = await api("/members/me", { loadingLabel: "Restoring your account…" });
+  } catch (firstError) {
+    await delay(650);
+    member = await api("/members/me", { forceRefresh: true, loadingLabel: "Restoring your account…" });
+  }
+  if (!approvedMember(member)) {
+    throw new Error("This account is not approved for Indian Club access.");
+  }
+  state.member = member;
+  state.page = state.page || "home";
+  state.language = localStorage.getItem("indian_club_language") || "en";
+  cacheMember(member);
+  return member;
+}
+
+export function watchAuthentication({ onSignedIn, onSignedOut, onError }) {
+  return observeAuth(async user => {
+    if (!user) {
+      clearCachedMember();
+      state.member = null;
+      state.page = "home";
+      onSignedOut?.();
       return;
     }
-
-    container.innerHTML = `<div class="card"><p class="note">⏳ Loading...</p></div>`;
-    const html = await currentTab.view();
-    container.innerHTML = html;
-    updateActiveTab();
-
-    console.log(`✅ Rendered tab: ${state.currentTab}`);
-  } catch (error) {
-    console.error("❌ Error rendering page:", error);
-    container.innerHTML = `<div class="card"><p class="note">❌ Error: ${error.message}</p></div>`;
-  }
-}
-
-function updateActiveTab() {
-  const tabs = document.querySelectorAll(".nav-tab");
-  tabs.forEach(tab => {
-    if (tab.dataset.tab === state.currentTab) {
-      tab.classList.add("active");
-    } else {
-      tab.classList.remove("active");
+    try {
+      await startSignedInApp();
+      onSignedIn?.(state.member);
+    } catch (error) {
+      const cached = cachedMemberFor(user.uid);
+      if (cached) {
+        state.member = cached;
+        state.page = "home";
+        onSignedIn?.(cached);
+        return;
+      }
+      onError?.(error);
     }
   });
 }
 
-export function renderNavigation() {
-  const navContainer = document.getElementById("app-nav");
-  if (!navContainer) return;
+/* ─────────────── language ─────────────── */
 
-  const tabs = TAB_CONFIG[state.role];
+export function setLanguage(language) {
+  state.language = language;
+  localStorage.setItem("indian_club_language", language);
+  window.dispatchEvent(new CustomEvent("indianclub:render"));
+}
 
-  navContainer.innerHTML = `
-    <div class="nav-header">
-      <h3>${state.flightName || state.member.fullName}</h3>
-      <small>${state.role === "SUPER_ADMIN" ? "🏢 Super Admin" : state.role === "LEVEL_ADMIN" ? "👨‍💼 Flight Admin" : "👤 Player"}</small>
-    </div>
-    <nav class="nav-tabs">
-      ${tabs.map(tab => `
-        <button class="nav-tab ${tab.id === state.currentTab ? "active" : ""}" 
-                data-tab="${tab.id}" 
-                onclick="window.navigate('${tab.id}')">
-          ${tab.label}
-        </button>
-      `).join("")}
-    </nav>
-    <div class="nav-footer">
-      <button class="nav-btn" onclick="window.logout()">🚪 Logout</button>
+export function getLanguage() {
+  return state.language;
+}
+
+/* ─────────────── sidebar menu (role-based) ─────────────── */
+
+export function getSidebarMenu() {
+  const role = state.member?.role;
+
+  // PLAYER → 7 tabs
+  if (role === "PLAYER") {
+    return [
+      { label: "Home",       page: "home",       icon: "fas fa-home" },
+      { label: "Timetable",  page: "timetable",  icon: "fas fa-calendar-alt" },
+      { label: "Attendance", page: "attendance",  icon: "fas fa-clipboard-check" },
+      { label: "Wallet",     page: "wallet",      icon: "fas fa-wallet" },
+      { label: "BaZaar",     page: "bazaar",      icon: "fas fa-store" },
+      { label: "Profile",    page: "profile",     icon: "fas fa-user-circle" },
+      { label: "Logs",       page: "logs",        icon: "fas fa-history" }
+    ];
+  }
+
+  // FLIGHT ADMIN (LEVEL_ADMIN) → 10 tabs
+  if (role === "LEVEL_ADMIN") {
+    return [
+      { label: "Home",            page: "home",       icon: "fas fa-home" },
+      { label: "Timetable",       page: "timetable",  icon: "fas fa-calendar-alt" },
+      { label: "Attendance",      page: "attendance",  icon: "fas fa-clipboard-check" },
+      { label: "Session Control", page: "sessions",    icon: "fas fa-gamepad" },
+      { label: "Shuttle Stock",   page: "stock",       icon: "fas fa-shuttlecock" },
+      { label: "Finance",         page: "finance",     icon: "fas fa-money-bill-wave" },
+      { label: "Wallet",          page: "wallet",      icon: "fas fa-wallet" },
+      { label: "BaZaar",          page: "bazaar",      icon: "fas fa-store" },
+      { label: "Profile",         page: "profile",     icon: "fas fa-user-circle" },
+      { label: "Logs",            page: "logs",        icon: "fas fa-history" }
+    ];
+  }
+
+  // SUPER ADMIN → 12 tabs (with level dropdown on ALL)
+  if (role === "SUPER_ADMIN") {
+    return [
+      { label: "Home",            page: "home",     icon: "fas fa-tachometer-alt" },
+      { label: "Members",         page: "master",   icon: "fas fa-users" },
+      { label: "Timetable",       page: "flights",  icon: "fas fa-calendar-alt" },
+      { label: "Session Control", page: "sessions", icon: "fas fa-gamepad" },
+      { label: "Shuttle Stock",   page: "stock",    icon: "fas fa-shuttlecock" },
+      { label: "Finance",         page: "finance",  icon: "fas fa-money-bill-wave" },
+      { label: "Wallet",          page: "wallet",   icon: "fas fa-wallet" },
+      { label: "Ads & Notices",   page: "ads",      icon: "fas fa-bullhorn" },
+      { label: "Activities",      page: "audit",    icon: "fas fa-running" },
+      { label: "BaZaar",          page: "bazaar",   icon: "fas fa-store" },
+      { label: "Profile",         page: "profile",  icon: "fas fa-user-circle" },
+      { label: "Logs",            page: "logs",     icon: "fas fa-clipboard-list" }
+    ];
+  }
+
+  return [];
+}
+
+/* ─────────────── render page (maps page → correct view file) ─────────────── */
+
+export function renderPage(viewModules) {
+  const { views, flightAdminViews, adminViews } = viewModules;
+  const role = state.member?.role;
+  const page = state.page;
+
+  // ─── PLAYER pages (from views.js) ───
+  if (role === "PLAYER") {
+    switch (page) {
+      case "home":       return views.home();
+      case "timetable":  return views.timetable();
+      case "attendance": return views.attendance();
+      case "logs":       return views.logs();
+      case "wallet":     return views.wallet();
+      case "bazaar":     return views.bazaar();
+      case "profile":    return views.profile();
+      default:           return notFound(page);
+    }
+  }
+
+  // ─── FLIGHT ADMIN pages (7 player tabs from views.js + 3 from flightAdminViews.js) ───
+  if (role === "LEVEL_ADMIN") {
+    switch (page) {
+      // 7 Player tabs (from views.js)
+      case "home":       return views.home();
+      case "timetable":  return views.timetable();
+      case "attendance": return views.attendance();
+      case "logs":       return views.logs();
+      case "wallet":     return views.wallet();
+      case "bazaar":     return views.bazaar();
+      case "profile":    return views.profile();
+      // 3 Flight Admin-specific tabs (from flightAdminViews.js)
+      case "sessions":   return flightAdminViews.sessionControl();
+      case "stock":      return flightAdminViews.shuttleStock();
+      case "finance":    return flightAdminViews.finance();
+      default:           return notFound(page);
+    }
+  }
+
+  // ─── SUPER ADMIN pages (all views + flightAdmin with level dropdown + adminViews) ───
+  if (role === "SUPER_ADMIN") {
+    switch (page) {
+      // Super Admin dashboard (from adminViews.js)
+      case "home":       return adminViews.home();
+      // Members management (from adminViews.js)
+      case "master":     return adminViews.members();
+      // Timetable with full CRUD + CSV import (from adminViews.js)
+      case "flights":    return adminViews.timetable();
+      // Session Control with level dropdown (from adminViews.js wrapping flightAdminViews)
+      case "sessions":   return adminViews.sessions ? adminViews.sessions() : flightAdminViews.sessionControl();
+      // Shuttle Stock with level dropdown (from adminViews.js wrapping flightAdminViews)
+      case "stock":      return adminViews.stock ? adminViews.stock() : flightAdminViews.shuttleStock();
+      // Finance with add credit/deduction (from adminViews.js)
+      case "finance":    return adminViews.finance();
+      // Wallet (from adminViews.js)
+      case "wallet":     return adminViews.wallet ? adminViews.wallet() : views.wallet();
+      // Ads & Notices carousel + announcements (from adminViews.js)
+      case "ads":        return adminViews.ads();
+      // Activities management (from adminViews.js)
+      case "audit":      return adminViews.activities ? adminViews.activities() : adminViews.audit();
+      // BaZaar with approve/reject (from adminViews.js)
+      case "bazaar":     return adminViews.bazaar ? adminViews.bazaar() : views.bazaar();
+      // Profile (from views.js)
+      case "profile":    return views.profile();
+      // Logs with multi-filter (from adminViews.js)
+      case "logs":       return adminViews.logs ? adminViews.logs() : views.logs();
+      default:           return notFound(page);
+    }
+  }
+
+  return "<p>Loading...</p>";
+}
+
+function notFound(page) {
+  console.warn("Page not found:", page);
+  return `<section class="card"><p class="note">Page "${page}" was not found. Use the navigation menu.</p></section>`;
+}
+
+/* ─────────────── bind page events (calls correct bind function after render) ─────────────── */
+
+export function bindPageEvents(viewModules) {
+  const { views, flightAdminViews, adminViews } = viewModules;
+  const role = state.member?.role;
+  const page = state.page;
+
+  // PLAYER binding
+  if (role === "PLAYER") {
+    if (typeof views.bindPlayerViews === "function") views.bindPlayerViews();
+    return;
+  }
+
+  // FLIGHT ADMIN binding
+  if (role === "LEVEL_ADMIN") {
+    // Player tab bindings
+    if (["home", "timetable", "attendance", "logs", "wallet", "bazaar", "profile"].includes(page)) {
+      if (typeof views.bindPlayerViews === "function") views.bindPlayerViews();
+    }
+    // Flight Admin specific tab bindings
+    if (["sessions", "stock", "finance"].includes(page)) {
+      if (typeof flightAdminViews.bindFlightAdminViews === "function") flightAdminViews.bindFlightAdminViews();
+    }
+    return;
+  }
+
+  // SUPER ADMIN binding
+  if (role === "SUPER_ADMIN") {
+    // Profile uses player bindings
+    if (page === "profile") {
+      if (typeof views.bindPlayerViews === "function") views.bindPlayerViews();
+    }
+    // Admin-specific bindings
+    if (typeof adminViews.bindAdminViews === "function") adminViews.bindAdminViews();
+    return;
+  }
+}
+
+/* ─────────────── utility exports ─────────────── */
+
+export function getMember() { return state.member; }
+export function getCurrentPage() { return state.page; }
+export function getCurrentRole() { return state.member?.role || null; }
+export function isSuperAdmin() { return state.member?.role === "SUPER_ADMIN"; }
+export function isLevelAdmin() { return state.member?.role === "LEVEL_ADMIN"; }
+export function isPlayer() { return state.member?.role === "PLAYER"; }
+export function getUserFlightId() { return state.member?.flightId || null; }
+export function getUserName() { return state.member?.fullName || null; }
+export function getUserEmail() { return state.member?.email || null; }
+export function getUserUid() { return state.member?.uid || null; }
+export function getAccessiblePages() { return Array.from(allowedPagesForRole(state.member?.role)); }
+
+export async function signOut() {
+  clearCachedMember();
+  state.member = null;
+  state.page = "home";
+  window.dispatchEvent(new CustomEvent("indianclub:signout"));
+}
+
+/* ─────────────── level dropdown (for Super Admin tabs) ─────────────── */
+
+export const CLUB_LEVELS = [
+  { id: "premier",   label: "Premier" },
+  { id: "flight1",   label: "Flight 1" },
+  { id: "flight2",   label: "Flight 2" },
+  { id: "flight3",   label: "Flight 3" },
+  { id: "flight4",   label: "Flight 4" },
+  { id: "flight4a",  label: "Flight 4A" },
+  { id: "flight4b",  label: "Flight 4B" }
+];
+
+export function renderLevelDropdown(selectedLevel = "") {
+  if (state.member?.role !== "SUPER_ADMIN") return "";
+  return `
+    <div class="level-dropdown-container">
+      <label for="levelDropdown"><strong>Select Level:</strong></label>
+      <select id="levelDropdown" class="level-dropdown">
+        <option value="">All Levels</option>
+        ${CLUB_LEVELS.map(level =>
+          `<option value="${level.id}" ${level.id === selectedLevel ? "selected" : ""}>${level.label}</option>`
+        ).join("")}
+      </select>
     </div>
   `;
 }
 
-// ===== AUTHENTICATION FUNCTIONS =====
-export async function handleLogin(email, password) {
-  try {
-    const response = await fetch("https://indian-club-api.onrender.com/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
-
-    if (!response.ok) {
-      throw new Error("Invalid email or password");
-    }
-
-    const data = await response.json();
-    const member = data.member || data;
-
-    state.member = member;
-    state.role = member.role;
-    state.flightId = member.flightId || null;
-    state.flightName = member.flightName || null;
-    state.currentTab = "home";
-    state.currentPage = "dashboard";
-
-    localStorage.setItem("authToken", data.token || "");
-    localStorage.setItem("memberRole", state.role);
-
-    console.log(`✅ Login successful: ${state.member.fullName} (${state.role})`);
-    
-    renderNavigation();
-    await navigate("home");
-
-    return true;
-  } catch (error) {
-    console.error("❌ Login failed:", error);
-    showNotification(`❌ ${error.message}`);
-    return false;
-  }
-}
-
-export async function handleLogout() {
-  if (confirm("Are you sure you want to logout?")) {
-    state.member = null;
-    state.role = null;
-    state.flightId = null;
-    state.flightName = null;
-    state.currentTab = "home";
-    state.currentPage = "login";
-
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("memberRole");
-
-    console.log("✅ Logged out successfully");
-    location.reload();
-  }
-}
-
-export async function checkAuth() {
-  const token = localStorage.getItem("authToken");
-  const role = localStorage.getItem("memberRole");
-
-  if (!token || !role) {
-    state.currentPage = "login";
-    return false;
-  }
-
-  try {
-    const response = await fetch("https://indian-club-api.onrender.com/api/members/me", {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-
-    if (response.ok) {
-      const member = await response.json();
-      state.member = member;
-      state.role = member.role;
-      state.flightId = member.flightId || null;
-      state.flightName = member.flightName || null;
-      state.currentPage = "dashboard";
-      state.currentTab = "home";
-
-      console.log(`✅ Auth verified: ${state.member.fullName}`);
-      return true;
-    }
-  } catch (error) {
-    console.error("❌ Auth verification failed:", error);
-  }
-
-  state.currentPage = "login";
-  return false;
-}
-
-// ===== NOTIFICATION SYSTEM =====
-export function showNotification(message) {
-  window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: message }));
-}
-
-// ===== GLOBAL WINDOW FUNCTIONS =====
-window.navigate = navigate;
-window.logout = handleLogout;
-window.showNotification = showNotification;
-
-// ===== INITIALIZATION =====
-export async function initializeApp() {
-  console.log("🚀 Initializing Indian Club App...");
-
-  const isAuthenticated = await checkAuth();
-
-  if (isAuthenticated) {
-    renderNavigation();
-    await navigate("home");
-  } else {
-    await renderLoginPage();
-  }
-}
-
-window.handleLogin = async function(event) {
-  event.preventDefault();
-  const email = document.getElementById("loginEmail").value;
-  const password = document.getElementById("loginPassword").value;
-
-  const success = await handleLogin(email, password);
-  if (!success) {
-    document.getElementById("loginPassword").value = "";
-  }
-};
-
-// Auto-initialize on page load
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializeApp);
-} else {
-  initializeApp();
-}
-
-export default { navigate, renderPage, handleLogin, handleLogout, checkAuth, state };
+console.log("✅ router.js loaded successfully");
 
