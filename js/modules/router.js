@@ -3,9 +3,6 @@ import { views } from "./views.js";
 import { flightAdminViews } from "./flightAdminViews.js";
 import { adminViews } from "./adminViews.js";
 
-// Import from your existing auth.js
-import * as authModule from "./auth.js";
-
 // ===== GLOBAL STATE =====
 export const state = {
   member: null,
@@ -61,7 +58,6 @@ async function renderLoginPage() {
   if (!container) return;
 
   try {
-    // Try to fetch announcements and ads from your API
     let announcements = [];
     let ads = [];
 
@@ -105,7 +101,6 @@ async function renderLoginPage() {
 
     container.innerHTML = `
       <div class="login-page">
-        <!-- LOGIN BOX -->
         <div class="login-box">
           <div class="login-header">
             <div class="logo">🏏</div>
@@ -129,7 +124,6 @@ async function renderLoginPage() {
           </div>
         </div>
 
-        <!-- CLUB ANNOUNCEMENTS SECTION -->
         <div class="announcements-section">
           <div class="announcements-header">
             <h2>📢 Club Announcements</h2>
@@ -138,7 +132,6 @@ async function renderLoginPage() {
           ${announcementsHtml || '<p class="note">No announcements yet</p>'}
         </div>
 
-        <!-- BUSINESS ADS CAROUSEL SECTION -->
         <div class="ads-carousel-section">
           <div class="carousel-header">
             <h2>🏪 Featured Business Directory</h2>
@@ -271,8 +264,18 @@ export function renderNavigation() {
 // ===== AUTHENTICATION FUNCTIONS =====
 export async function handleLogin(email, password) {
   try {
-    // Call your existing auth.js login function
-    const member = await authModule.login(email, password);
+    const response = await fetch("https://indian-club-api.onrender.com/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+
+    if (!response.ok) {
+      throw new Error("Invalid email or password");
+    }
+
+    const data = await response.json();
+    const member = data.member || data;
 
     state.member = member;
     state.role = member.role;
@@ -280,6 +283,9 @@ export async function handleLogin(email, password) {
     state.flightName = member.flightName || null;
     state.currentTab = "home";
     state.currentPage = "dashboard";
+
+    localStorage.setItem("authToken", data.token || "");
+    localStorage.setItem("memberRole", state.role);
 
     console.log(`✅ Login successful: ${state.member.fullName} (${state.role})`);
     
@@ -296,66 +302,53 @@ export async function handleLogin(email, password) {
 
 export async function handleLogout() {
   if (confirm("Are you sure you want to logout?")) {
-    try {
-      // Call your existing auth.js logout function
-      await authModule.logout();
-      state.member = null;
-      state.role = null;
-      state.flightId = null;
-      state.flightName = null;
-      state.currentTab = "home";
-      state.currentPage = "login";
+    state.member = null;
+    state.role = null;
+    state.flightId = null;
+    state.flightName = null;
+    state.currentTab = "home";
+    state.currentPage = "login";
 
-      console.log("✅ Logged out successfully");
-      location.reload();
-    } catch (error) {
-      console.error("❌ Logout failed:", error);
-      showNotification(`❌ Logout failed: ${error.message}`);
-    }
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("memberRole");
+
+    console.log("✅ Logged out successfully");
+    location.reload();
   }
 }
 
 export async function checkAuth() {
-  return new Promise((resolve) => {
-    try {
-      // Call your existing auth.js observeAuth function
-      authModule.observeAuth(async (user) => {
-        if (user) {
-          try {
-            const response = await fetch("https://indian-club-api.onrender.com/api/members/me", {
-              headers: {
-                "Authorization": `Bearer ${await user.getIdToken()}`
-              }
-            });
-            
-            if (response.ok) {
-              const member = await response.json();
-              state.member = member;
-              state.role = member.role;
-              state.flightId = member.flightId || null;
-              state.flightName = member.flightName || null;
-              state.currentPage = "dashboard";
-              state.currentTab = "home";
+  const token = localStorage.getItem("authToken");
+  const role = localStorage.getItem("memberRole");
 
-              console.log(`✅ Auth verified: ${state.member.fullName}`);
-              resolve(true);
-            } else {
-              resolve(false);
-            }
-          } catch (error) {
-            console.error("❌ Auth verification failed:", error);
-            resolve(false);
-          }
-        } else {
-          state.currentPage = "login";
-          resolve(false);
-        }
-      });
-    } catch (error) {
-      console.error("❌ Auth check failed:", error);
-      resolve(false);
+  if (!token || !role) {
+    state.currentPage = "login";
+    return false;
+  }
+
+  try {
+    const response = await fetch("https://indian-club-api.onrender.com/api/members/me", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      const member = await response.json();
+      state.member = member;
+      state.role = member.role;
+      state.flightId = member.flightId || null;
+      state.flightName = member.flightName || null;
+      state.currentPage = "dashboard";
+      state.currentTab = "home";
+
+      console.log(`✅ Auth verified: ${state.member.fullName}`);
+      return true;
     }
-  });
+  } catch (error) {
+    console.error("❌ Auth verification failed:", error);
+  }
+
+  state.currentPage = "login";
+  return false;
 }
 
 // ===== NOTIFICATION SYSTEM =====
@@ -401,3 +394,4 @@ if (document.readyState === "loading") {
 }
 
 export default { navigate, renderPage, handleLogin, handleLogout, checkAuth, state };
+
