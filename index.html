@@ -826,6 +826,60 @@
     import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { firebaseAuth } from "./js/config.js";
 
+    
+    // ===== FIX: Override startSignedInApp to fetch from Firestore directly =====
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const db = getFirestore();
+    const auth = getAuth();
+
+    // Override watchAuthentication to use Firestore directly
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        state.member = null;
+        state.page = "home";
+        console.log("🚪 Signed out");
+        renderApp();
+        return;
+      }
+
+      try {
+        // Fetch member directly from Firestore
+        const memberDoc = await getDoc(doc(db, "members", user.uid));
+        if (memberDoc.exists()) {
+          const memberData = memberDoc.data();
+          state.member = {
+            uid: user.uid,
+            email: user.email,
+            fullName: memberData.fullName || memberData.fullname || "Member",
+            role: memberData.role || "PLAYER",
+            memberId: memberData.memberId || "",
+            flightId: memberData.flightId || "",
+            flightName: memberData.flightName || "",
+            phone: memberData.phone || "",
+            status: memberData.status || "ACTIVE"
+          };
+          state.page = "home";
+          console.log("✅ Signed in:", state.member.fullName, "Role:", state.member.role);
+          renderApp();
+        } else {
+          console.error("❌ No member document found for UID:", user.uid);
+          window.dispatchEvent(new CustomEvent("indianclub:toast", {
+            detail: "❌ Member record not found. Contact your admin."
+          }));
+          renderApp();
+        }
+      } catch (error) {
+        console.error("❌ Error fetching member:", error);
+        window.dispatchEvent(new CustomEvent("indianclub:toast", {
+          detail: "❌ Failed to load member details: " + error.message
+        }));
+        renderApp();
+      }
+    });
+
+
     // ===== TOAST NOTIFICATION SYSTEM =====
     window.addEventListener("indianclub:toast", (event) => {
       const message = typeof event.detail === "string" ? event.detail : "Notification";
@@ -840,56 +894,58 @@
     });
 
     // ===== RENDER PAGE BASED ON ROLE =====
+    
+    // ===== RENDER PAGE BASED ON ROLE =====
     function localRenderPage() {
       const role = state.member?.role;
       const page = state.page;
 
+      // ─── SUPER ADMIN (12 tabs) ───
       if (role === "SUPER_ADMIN") {
-    switch (page) {
-      // SUPER_ADMIN
-      case "home": return adminViews.home();
-      case "activities": return adminViews.activities();
-      case "timetable": return adminViews.timetable();
-      case "finance": return adminViews.finance();
-      case "ads": return adminViews.ads();
-      case "auditLogs": return adminViews.auditLogs();
-      case "activityLog": return adminViews.activityLog();
-      case "walletLog": return adminViews.walletLog();
-      case "sessionLog": return adminViews.sessionLog();
-      case "stockLog": return adminViews.stockLog();
-      case "bazaar": return views.bazaar();
-      case "profile": return views.profile();
-      default: return "<p>Page not found</p>";
-    }
-    
-      } else if (role === "LEVEL_ADMIN") {
-      switch (page) {
-      // LEVEL_ADMIN (7 player tabs + 3 flight admin tabs)
-      case "home": return views.home();
-      case "timetable": return views.timetable();
-      case "attendance": return views.attendance();
-      case "logs": return views.logs();
-      case "wallet": return views.wallet();
-      case "bazaar": return views.bazaar();
-      case "profile": return views.profile();
-      case "sessionControl": return flightAdminViews.sessionControl();
-      case "shuttle": return flightAdminViews.shuttle();
-      case "reports": return flightAdminViews.reports();
-      default: return "<p>Page not found</p>";
-    }
-        
-    }
-     else {
         switch (page) {
-          case "home": return views.home ? views.home() : "<p>Home</p>";
-          case "timetable": return views.timetable ? views.timetable() : "<p>Timetable</p>";
-          case "attendance": return views.attendance ? views.attendance() : "<p>Attendance</p>";
-          case "logs": return views.logs ? views.logs() : "<p>Logs</p>";
-          case "wallet": return views.wallet ? views.wallet() : "<p>Wallet</p>";
-          case "bazaar": return views.bazaar ? views.bazaar() : "<p>BaZaar</p>";
-          case "profile": return views.profile ? views.profile() : "<p>Profile</p>";
-          default: return "<p>Page not found</p>";
+          case "home":     return adminViews.home ? adminViews.home() : "<p>Loading Dashboard...</p>";
+          case "master":   return adminViews.members ? adminViews.members() : "<p>Loading Members...</p>";
+          case "flights":  return adminViews.timetable ? adminViews.timetable() : "<p>Loading Timetable...</p>";
+          case "sessions": return adminViews.sessions ? adminViews.sessions() : (flightAdminViews.sessionControl ? flightAdminViews.sessionControl() : "<p>Loading Sessions...</p>");
+          case "stock":    return adminViews.stock ? adminViews.stock() : (flightAdminViews.shuttle ? flightAdminViews.shuttle() : "<p>Loading Stock...</p>");
+          case "finance":  return adminViews.finance ? adminViews.finance() : "<p>Loading Finance...</p>";
+          case "wallet":   return adminViews.wallet ? adminViews.wallet() : (views.wallet ? views.wallet() : "<p>Loading Wallet...</p>");
+          case "ads":      return adminViews.ads ? adminViews.ads() : "<p>Loading Ads...</p>";
+          case "audit":    return adminViews.activities ? adminViews.activities() : "<p>Loading Activities...</p>";
+          case "bazaar":   return adminViews.bazaar ? adminViews.bazaar() : (views.bazaar ? views.bazaar() : "<p>Loading BaZaar...</p>");
+          case "profile":  return views.profile ? views.profile() : "<p>Loading Profile...</p>";
+          case "logs":     return adminViews.auditLogs ? adminViews.auditLogs() : (views.logs ? views.logs() : "<p>Loading Logs...</p>");
+          default:         return "<p>Page not found</p>";
         }
+      }
+
+      // ─── LEVEL ADMIN / FLIGHT ADMIN (10 tabs) ───
+      if (role === "LEVEL_ADMIN") {
+        switch (page) {
+          case "home":       return views.home ? views.home() : "<p>Loading Home...</p>";
+          case "timetable":  return views.timetable ? views.timetable() : "<p>Loading Timetable...</p>";
+          case "attendance": return views.attendance ? views.attendance() : "<p>Loading Attendance...</p>";
+          case "sessions":   return flightAdminViews.sessionControl ? flightAdminViews.sessionControl() : "<p>Loading Sessions...</p>";
+          case "stock":      return flightAdminViews.shuttle ? flightAdminViews.shuttle() : "<p>Loading Stock...</p>";
+          case "finance":    return flightAdminViews.finance ? flightAdminViews.finance() : "<p>Loading Finance...</p>";
+          case "wallet":     return views.wallet ? views.wallet() : "<p>Loading Wallet...</p>";
+          case "bazaar":     return views.bazaar ? views.bazaar() : "<p>Loading BaZaar...</p>";
+          case "profile":    return views.profile ? views.profile() : "<p>Loading Profile...</p>";
+          case "logs":       return views.logs ? views.logs() : "<p>Loading Logs...</p>";
+          default:           return "<p>Page not found</p>";
+        }
+      }
+
+      // ─── PLAYER (7 tabs) ───
+      switch (page) {
+        case "home":       return views.home ? views.home() : "<p>Loading Home...</p>";
+        case "timetable":  return views.timetable ? views.timetable() : "<p>Loading Timetable...</p>";
+        case "attendance": return views.attendance ? views.attendance() : "<p>Loading Attendance...</p>";
+        case "logs":       return views.logs ? views.logs() : "<p>Loading Logs...</p>";
+        case "wallet":     return views.wallet ? views.wallet() : "<p>Loading Wallet...</p>";
+        case "bazaar":     return views.bazaar ? views.bazaar() : "<p>Loading BaZaar...</p>";
+        case "profile":    return views.profile ? views.profile() : "<p>Loading Profile...</p>";
+        default:           return "<p>Page not found</p>";
       }
     }
 
