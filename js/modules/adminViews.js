@@ -11,1199 +11,1462 @@ const escapeHtml = value => String(value ?? "")
 
 const bhd = fils => `BHD ${(Number(fils || 0) / 1000).toFixed(3)}`;
 
-function clubDate(value) {
-  if (!value) return null;
+const recordDate = value => {
+  if (!value) return "—";
   const date = value?._seconds ? new Date(Number(value._seconds) * 1000) : new Date(value);
-  return Number.isFinite(date.getTime()) ? date : null;
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("en-BH", { dateStyle: "medium" });
+};
+
+const inputDate = value => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bahrain", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(date);
+  const part = type => parts.find(item => item.type === type)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
+
+const imageUrl = value => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    const id = url.hostname.endsWith("drive.google.com")
+      ? (url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || url.searchParams.get("id"))
+      : null;
+    return id ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1600` : url.toString();
+  } catch { return ""; }
+};
+
+async function uploadAdminImage(file) {
+  if (!file) throw new Error("Choose a PNG, JPEG, or WebP image first.");
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type))
+    throw new Error("Only PNG, JPEG, or WebP images are allowed.");
+  if (file.size > 2 * 1024 * 1024) throw new Error("Image must be 2 MB or smaller.");
+  const result = await api("/business/admin/upload-image", {
+    method: "POST", body: file, confirm: false,
+    loadingLabel: "Uploading image…",
+    headers: { "Content-Type": file.type, "X-File-Name": file.name }
+  });
+  return result.imageUrl;
 }
 
-function dateLabel(value) {
-  const date = clubDate(value);
-  return date ? date.toLocaleDateString("en-BH", { dateStyle: "medium", timeZone: "Asia/Bahrain" }) : "—";
-}
+// ===== STATE VARIABLES =====
+let selectedMasterMonth = new Date().toISOString().slice(0, 7);
+let selectedMasterActivityId = "";
+let selectedFinanceActivityId = "";
+let selectedFinanceFlightId = "";
+let selectedFinanceTab = "credits";
+let selectedFinanceCreditMemberId = "";
+let selectedRosterActivityId = "";
+let selectedRosterFlightId = "";
+let latestInvitation = null;
+let selectedAuditCategory = "ALL";
+let selectedAuditActivityId = "";
+let selectedAuditFlightId = "";
+let selectedAuditDate = "";
+let selectedAuditMember = "";
 
-function dateTime(value) {
-  const date = clubDate(value);
-  return date ? date.toLocaleString("en-BH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bahrain" }) : "—";
-}
-
-function notify(message) {
-  window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: message }));
+// ===== HELPER FUNCTIONS =====
+function requireSuperAdmin() {
+  if (state.member?.role !== "SUPER_ADMIN") throw new Error("Only Super Admin can access this module.");
 }
 
 function refresh() {
   window.dispatchEvent(new CustomEvent("indianclub:render"));
 }
 
-const LEVELS = ["Premier", "Flight 1", "Flight 2", "Flight 3", "Flight 4", "Flight 4A", "Flight 4B"];
-const CATEGORIES = ["ALL", "MEMBER", "ATTENDANCE", "WALLET/PAYMENT", "SESSION CONTROL", "SHUTTLE STOCK"];
-
-// ===== SUPER ADMIN HOME PAGE =====
-export async function superAdminHomeView() {
-  const [allMembers, allSessions, allAttendance, allAuditLogs] = await Promise.all([
-    api("/members"),
-    api("/timetable"),
-    api("/attendance"),
-    api("/audit/logs")
-  ]);
-
-  const recentLogs = allAuditLogs.slice(0, 5);
-  const memberActionsCount = allAuditLogs.filter(l => l.category === "MEMBER").length;
-  const walletActionsCount = allAuditLogs.filter(l => l.category === "WALLET/PAYMENT").length;
-  const completedSessions = allSessions.filter(s => s.status === "COMPLETED").length;
-  const stockActionsCount = allAuditLogs.filter(l => l.category === "SHUTTLE STOCK").length;
-
-  return `
-    <section class="card">
-      <h2>🏢 Club Dashboard</h2>
-      <p class="note">Complete club oversight and management</p>
-    </section>
-
-    <div class="grid two">
-      <section class="card">
-        <h3>👥 Total Members</h3>
-        <div class="session"><b>${allMembers.length}</b></div>
-        <small>Active members</small>
-      </section>
-
-      <section class="card">
-        <h3>📅 Total Sessions</h3>
-        <div class="session"><b>${allSessions.length}</b></div>
-        <small>All activities</small>
-      </section>
-
-      <section class="card">
-        <h3>✅ Completed Sessions</h3>
-        <div class="session"><b>${completedSessions}</b></div>
-        <small>Finished games</small>
-      </section>
-
-      <section class="card">
-        <h3>📊 Member Actions</h3>
-        <div class="session"><b>${memberActionsCount}</b></div>
-        <small>Total actions</small>
-      </section>
-
-      <section class="card">
-        <h3>💰 Wallet Actions</h3>
-        <div class="session"><b>${walletActionsCount}</b></div>
-        <small>Payments & credits</small>
-      </section>
-
-      <section class="card">
-        <h3>📦 Stock Actions</h3>
-        <div class="session"><b>${stockActionsCount}</b></div>
-        <small>Inventory movements</small>
-      </section>
-    </div>
-
-    <section class="card">
-      <h3>📜 Recent Club Actions</h3>
-      ${recentLogs.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Date</th><th>Category</th><th>Action</th><th>Member/Flight</th><th>Details</th></tr></thead>
-            <tbody>
-              ${recentLogs.map(log => `
-                <tr>
-                  <td>${escapeHtml(dateTime(log.createdAt))}</td>
-                  <td><span class="tag amber">${escapeHtml(log.category)}</span></td>
-                  <td>${escapeHtml(log.action)}</td>
-                  <td>${escapeHtml(log.memberName || log.flightName || "—")}</td>
-                  <td>${escapeHtml(log.detail || "—")}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No recent actions.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>🔗 Quick Access</h3>
-      <div class="actions">
-        <button class="pill" onclick="window.navigate('auditLogs')">📋 View All Audit Logs</button>
-        <button class="pill" onclick="window.navigate('finance')">💰 Finance Management</button>
-        <button class="pill" onclick="window.navigate('activities')">🎮 Activities & Flights</button>
-        <button class="pill" onclick="window.navigate('timetable')">📅 Master Timetable</button>
-      </div>
-    </section>
-  `;
+function notify(message) {
+  window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: message }));
 }
 
-// ===== SUPER ADMIN ACTIVITIES & FLIGHTS PAGE =====
-export async function superAdminActivitiesView() {
-  const [activities, flights, members] = await Promise.all([
-    api("/activities"),
-    api("/flights"),
-    api("/members")
-  ]);
+function flattenFlights(activities) {
+  return activities.flatMap(activity =>
+    (activity.flights || []).map(flight => ({
+      ...flight, activityId: activity.id, activityName: activity.name
+    }))
+  );
+}
 
+function flightOptions(activities, selectedFlightId = "") {
+  return activities.map(activity => `
+    <optgroup label="${escapeHtml(activity.name)}">
+      ${(activity.flights || []).map(flight => `
+        <option value="${escapeHtml(flight.id)}" ${flight.id === selectedFlightId ? "selected" : ""}>
+          ${escapeHtml(flight.name)}
+        </option>
+      `).join("")}
+    </optgroup>
+  `).join("");
+}
+
+function financeRows(rows, emptyText, options = {}) {
+  if (!rows?.length) return `<p class="note">${escapeHtml(emptyText)}</p>`;
+  const due = Boolean(options.showAmountDue);
+  const reminders = Boolean(options.showReminder);
+  const dates = Boolean(options.showDate);
   return `
-    <section class="card">
-      <h2>🎮 Activities & Flights Management</h2>
-      <p class="note">Create and manage activities, flights, and member assignments</p>
-    </section>
-
-    <section class="card">
-      <h3>➕ Create New Activity</h3>
-      <form onsubmit="window.createActivity(event)">
-        <div class="grid two">
-          <div class="field">
-            <label>Activity Name *</label>
-            <input type="text" id="activityName" placeholder="e.g., Badminton, Cricket" required>
-          </div>
-          <div class="field">
-            <label>Status</label>
-            <select id="activityStatus">
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
-          </div>
-        </div>
-        <button type="submit" class="primary">✅ Create Activity</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h3>📋 All Activities</h3>
-      ${activities.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Activity</th><th>Flights</th><th>Members</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              ${activities.map(act => {
-                const actFlights = flights.filter(f => f.activityId === act.id);
-                const actMembers = members.filter(m => actFlights.some(f => f.id === m.flightId));
-                return `
-                  <tr>
-                    <td><b>${escapeHtml(act.name)}</b></td>
-                    <td>${actFlights.length} flights</td>
-                    <td>${actMembers.length} members</td>
-                    <td><span class="tag ${act.status === "ACTIVE" ? "blue" : "red"}">${escapeHtml(act.status)}</span></td>
-                    <td>
-                      <button class="pill" onclick="window.toggleActivityStatus('${escapeHtml(act.id)}')">🔄 Toggle</button>
-                      <button class="pill" onclick="window.editActivity('${escapeHtml(act.id)}')">✏️ Edit</button>
-                    </td>
-                  </tr>
-                `;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No activities created yet.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>➕ Create New Flight</h3>
-      <form onsubmit="window.createFlight(event)">
-        <div class="grid two">
-          <div class="field">
-            <label>Activity *</label>
-            <select id="flightActivityId" required>
-              <option value="">Select activity...</option>
-              ${activities.map(act => `<option value="${escapeHtml(act.id)}">${escapeHtml(act.name)}</option>`).join("")}
-            </select>
-          </div>
-          <div class="field">
-            <label>Flight Name *</label>
-            <select id="flightName" required>
-              <option value="">Select level...</option>
-              ${LEVELS.map(level => `<option value="${escapeHtml(level)}">${escapeHtml(level)}</option>`).join("")}
-            </select>
-          </div>
-          <div class="field">
-            <label>Display Order</label>
-            <input type="number" id="displayOrder" min="1" placeholder="1" value="1">
-          </div>
-          <div class="field">
-            <label>Status</label>
-            <select id="flightStatus">
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
-          </div>
-        </div>
-        <button type="submit" class="primary">✅ Create Flight</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h3>📋 All Flights</h3>
-      ${flights.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Activity</th><th>Flight</th><th>Members</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              ${flights.map(flight => {
-                const flightMembers = members.filter(m => m.flightId === flight.id);
-                const activity = activities.find(a => a.id === flight.activityId);
-                return `
-                  <tr>
-                    <td>${escapeHtml(activity?.name || "—")}</td>
-                    <td><b>${escapeHtml(flight.name)}</b></td>
-                    <td>${flightMembers.length} members</td>
-                    <td><span class="tag ${flight.status === "ACTIVE" ? "blue" : "red"}">${escapeHtml(flight.status)}</span></td>
-                    <td>
-                      <button class="pill" onclick="window.toggleFlightStatus('${escapeHtml(flight.id)}')">🔄 Toggle</button>
-                      <button class="pill" onclick="window.editFlight('${escapeHtml(flight.id)}')">✏️ Edit</button>
-                    </td>
-                  </tr>
-                `;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No flights created yet.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>👤 Pre-Register Player or Flight Admin</h3>
-      <form onsubmit="window.preRegisterMember(event)">
-        <div class="grid two">
-          <div class="field">
-            <label>Full Name *</label>
-            <input type="text" id="preName" placeholder="Member name" required>
-          </div>
-          <div class="field">
-            <label>Phone/WhatsApp *</label>
-            <input type="tel" id="prePhone" placeholder="+973 XXXX XXXX" required>
-          </div>
-          <div class="field">
-            <label>Role *</label>
-            <select id="preRole" required>
-              <option value="">Select role...</option>
-              <option value="PLAYER">Player</option>
-              <option value="LEVEL_ADMIN">Flight Admin</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Assign to Flight *</label>
-            <select id="preFlightId" required>
-              <option value="">Select flight...</option>
-              ${flights.map(f => {
-                const activity = activities.find(a => a.id === f.activityId);
-                return `<option value="${escapeHtml(f.id)}">${escapeHtml(activity?.name)} - ${escapeHtml(f.name)}</option>`;
-              }).join("")}
-            </select>
-          </div>
-        </div>
-        <button type="submit" class="primary">📱 Generate WhatsApp Link</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h3>📋 All Members Roster</h3>
-      <div class="grid two">
-        <div class="field">
-          <label>Filter by Activity</label>
-          <select id="rosterActivityFilter" onchange="window.filterRoster()">
-            <option value="">All Activities</option>
-            ${activities.map(act => `<option value="${escapeHtml(act.id)}">${escapeHtml(act.name)}</option>`).join("")}
-          </select>
-        </div>
-        <div class="field">
-          <label>Filter by Flight/Level</label>
-          <select id="rosterFlightFilter" onchange="window.filterRoster()">
-            <option value="">All Flights</option>
-            ${flights.map(f => {
-              const activity = activities.find(a => a.id === f.activityId);
-              return `<option value="${escapeHtml(f.id)}">${escapeHtml(activity?.name)} - ${escapeHtml(f.name)}</option>`;
-            }).join("")}
-          </select>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table class="schedule" id="rosterTable">
-          <thead><tr><th>Name</th><th>Role</th><th>Flight</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            ${members.map(member => {
-              const flight = flights.find(f => f.id === member.flightId);
-              const activity = activities.find(a => a.id === flight?.activityId);
-              return `
-                <tr>
-                  <td>${escapeHtml(member.fullName)}</td>
-                  <td><span class="tag ${member.role === "LEVEL_ADMIN" ? "purple" : "blue"}">${escapeHtml(member.role)}</span></td>
-                  <td>${escapeHtml(activity?.name)} - ${escapeHtml(flight?.name)}</td>
-                  <td><span class="tag ${member.status === "ACTIVE" ? "blue" : "red"}">${escapeHtml(member.status)}</span></td>
-                  <td>
-                    <button class="pill" onclick="window.toggleMemberStatus('${escapeHtml(member.id)}')">🔄 Toggle</button>
-                    <button class="pill" onclick="window.editMember('${escapeHtml(member.id)}')">✏️ Edit</button>
-                  </td>
-                </tr>
-              `;
-            }).join("")}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card">
-      <h3>🗑️ Deleted Members</h3>
-      <div class="table-wrap">
-        <table class="schedule">
-          <thead><tr><th>Name</th><th>Deleted Date</th><th>Actions</th></tr></thead>
-          <tbody>
-            ${members.filter(m => m.status === "DELETED").map(member => `
+    <div class="table-wrap">
+      <table class="schedule">
+        <thead><tr>
+          <th>Player</th>
+          ${dates ? "<th>Date</th>" : ""}
+          <th>Flight</th>
+          <th>Amount</th>
+          <th>Status</th>
+          ${reminders ? "<th>Action</th>" : ""}
+        </tr></thead>
+        <tbody>
+          ${rows.map(row => {
+            const amountFils = due ? row.amountDueFils : (row.balanceFils ?? row.totalChargeFils ?? row.amountFils ?? 0);
+            const status = row.status || (Number(row.balanceFils || 0) < 1000 ? "DUE" : "CREDIT AVAILABLE");
+            return `
               <tr>
-                <td>${escapeHtml(member.fullName)}</td>
-                <td>${escapeHtml(dateLabel(member.deletedAt))}</td>
-                <td>
-                  <button class="pill" onclick="window.printRegister('${escapeHtml(member.id)}')">🖨️ Print Register</button>
-                </td>
+                <td>${escapeHtml(row.memberName || row.memberId || row.memberUid)}<br><small>${escapeHtml(row.memberId || "")}</small></td>
+                ${dates ? `<td>${escapeHtml(recordDate(row.updatedAt || row.paidAt || row.createdAt || row.dueAt))}</td>` : ""}
+                <td>${escapeHtml(row.flightName || "—")}</td>
+                <td>${bhd(amountFils)}</td>
+                <td><span class="tag">${escapeHtml(status)}</span></td>
+                ${reminders ? `<td><button class="pill" data-whatsapp-reminder="${escapeHtml(row.phone || "")}" data-whatsapp-name="${escapeHtml(row.memberName || "")}" data-whatsapp-amount="${bhd(row.amountDueFils || 0)}">WhatsApp reminder</button></td>` : ""}
               </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  `;
-}
-
-// ===== SUPER ADMIN MASTER TIMETABLE PAGE =====
-export async function superAdminTimetableView() {
-  const [activities, flights, timetable] = await Promise.all([
-    api("/activities"),
-    api("/flights"),
-    api("/timetable")
-  ]);
-
-  const currentMonth = new Date().toISOString().slice(0, 7);
-
-  return `
-    <section class="card">
-      <h2>📅 Master Timetable Management</h2>
-      <p class="note">Create and manage weekly game schedules for all activities</p>
-    </section>
-
-    <section class="card">
-      <h3>🔍 Select Month & Activity</h3>
-      <div class="grid two">
-        <div class="field">
-          <label>Month (YYYY-MM) *</label>
-          <input type="month" id="timetableMonth" value="${currentMonth}" required>
-        </div>
-        <div class="field">
-          <label>Activity *</label>
-          <select id="timetableActivity" required>
-            <option value="">Select activity...</option>
-            ${activities.map(act => `<option value="${escapeHtml(act.id)}">${escapeHtml(act.name)}</option>`).join("")}
-          </select>
-        </div>
-      </div>
-      <button class="primary" onclick="window.loadTimetable()">📂 Load Timetable</button>
-    </section>
-
-    <section class="card">
-      <h3>📋 Weekly Pattern</h3>
-      <div class="table-wrap">
-        <table class="schedule" id="weeklyPatternTable">
-          <thead><tr><th>Day</th><th>Flight</th><th>Start Time</th><th>End Time</th><th>Courts</th><th>Action</th></tr></thead>
-          <tbody id="weeklyPatternBody">
-            <tr><td colspan="6" class="note">Load timetable to view weekly pattern</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card">
-      <h3>📤 Bulk Import CSV</h3>
-      <p class="note">Format: weekday, flight, startTime, endTime (4 columns exactly)</p>
-      <form onsubmit="window.importCSV(event)">
-        <div class="field">
-          <label>Upload CSV File *</label>
-          <input type="file" id="csvFile" accept=".csv" required>
-        </div>
-        <button type="submit" class="primary">📥 Import CSV</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h3>➕ Add Weekly Slot</h3>
-      <form onsubmit="window.addWeeklySlot(event)">
-        <div class="grid two">
-          <div class="field">
-            <label>Day *</label>
-            <select id="slotDay" required>
-              <option value="">Select day...</option>
-              <option value="Monday">Monday</option>
-              <option value="Tuesday">Tuesday</option>
-              <option value="Wednesday">Wednesday</option>
-              <option value="Thursday">Thursday</option>
-              <option value="Friday">Friday</option>
-              <option value="Saturday">Saturday</option>
-              <option value="Sunday">Sunday</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Flight *</label>
-            <select id="slotFlight" required>
-              <option value="">Select flight...</option>
-              ${flights.map(f => {
-                const activity = activities.find(a => a.id === f.activityId);
-                return `<option value="${escapeHtml(f.id)}">${escapeHtml(activity?.name)} - ${escapeHtml(f.name)}</option>`;
-              }).join("")}
-            </select>
-          </div>
-          <div class="field">
-            <label>Start Time *</label>
-            <input type="time" id="slotStartTime" required>
-          </div>
-          <div class="field">
-            <label>End Time *</label>
-            <input type="time" id="slotEndTime" required>
-          </div>
-        </div>
-        <button type="submit" class="primary">✅ Add Slot</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h3>📤 Publish Month</h3>
-      <p class="note">Creates dated sessions matching the weekly pattern. Preserves COMPLETED sessions and removes stale SCHEDULED sessions.</p>
-      <button class="primary" onclick="window.publishMonth()">🚀 Publish Month</button>
-    </section>
-  `;
-}
-
-// ===== SUPER ADMIN FINANCE PAGE =====
-export async function superAdminFinanceView() {
-  const [activities, flights, attendance, members] = await Promise.all([
-    api("/activities"),
-    api("/flights"),
-    api("/attendance"),
-    api("/members")
-  ]);
-
-  const selectedLevel = window.currentLevelFilter || "ALL";
-  const filteredFlights = selectedLevel === "ALL" ? flights : flights.filter(f => f.name === selectedLevel);
-  const filteredAttendance = filteredFlights.length > 0 
-    ? attendance.filter(a => filteredFlights.some(f => f.id === a.flightId))
-    : attendance;
-
-  const creditedPlayers = filteredAttendance.filter(a => a.walletBalance > 0);
-  const pendingCash = filteredAttendance.filter(a => a.paymentStatus === "PENDING" && a.paymentMethod === "CASH");
-  const paidPlayers = filteredAttendance.filter(a => a.paymentStatus === "PAID");
-  const unpaidPlayers = filteredAttendance.filter(a => a.paymentStatus === "UNPAID");
-
-  return `
-    <section class="card">
-      <h2>💰 Finance Management</h2>
-      <p class="note">Payment tracking, credit management, and financial overview</p>
-    </section>
-
-    <section class="card">
-      <h3>🔍 Filter by Level</h3>
-      <div class="actions">
-        <button class="pill ${selectedLevel === "ALL" ? "active" : ""}" onclick="window.filterFinanceByLevel('ALL')">All Levels</button>
-        ${LEVELS.map(level => `
-          <button class="pill ${selectedLevel === level ? "active" : ""}" onclick="window.filterFinanceByLevel('${escapeHtml(level)}')">${escapeHtml(level)}</button>
-        `).join("")}
-      </div>
-    </section>
-
-    <div class="grid two">
-      <section class="card">
-        <h3>💳 Verified Credit</h3>
-        <div class="session"><b>${bhd(creditedPlayers.reduce((sum, a) => sum + (a.walletBalance || 0), 0))}</b></div>
-        <small>${creditedPlayers.length} players</small>
-      </section>
-
-      <section class="card">
-        <h3>⏳ Pending Payment</h3>
-        <div class="session"><b>${bhd(pendingCash.reduce((sum, a) => sum + (a.chargeAmount || 0), 0))}</b></div>
-        <small>${pendingCash.length} records</small>
-      </section>
-
-      <section class="card">
-        <h3>✅ Paid Amount</h3>
-        <div class="session"><b>${bhd(paidPlayers.reduce((sum, a) => sum + (a.chargeAmount || 0), 0))}</b></div>
-        <small>${paidPlayers.length} records</small>
-      </section>
-
-      <section class="card">
-        <h3>❌ Unpaid Amount</h3>
-        <div class="session"><b>${bhd(unpaidPlayers.reduce((sum, a) => sum + (a.chargeAmount || 0), 0))}</b></div>
-        <small>${unpaidPlayers.length} records</small>
-      </section>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
     </div>
-
-    <section class="card">
-      <h3>💳 Credited Players</h3>
-      ${creditedPlayers.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Member</th><th>Flight</th><th>Credit Balance</th><th>Actions</th></tr></thead>
-            <tbody>
-              ${creditedPlayers.slice(0, 20).map(a => {
-                const member = members.find(m => m.id === a.memberId);
-                const flight = flights.find(f => f.id === a.flightId);
-                return `
-                  <tr>
-                    <td>${escapeHtml(member?.fullName || "—")}</td>
-                    <td>${escapeHtml(flight?.name || "—")}</td>
-                    <td>${bhd(a.walletBalance || 0)}</td>
-                    <td>
-                      <button class="pill" onclick="window.addCredit('${escapeHtml(a.memberId)}')">➕ Add</button>
-                      <button class="pill" onclick="window.deductCredit('${escapeHtml(a.memberId)}')">➖ Deduct</button>
-                    </td>
-                  </tr>
-                `;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No credited players.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>💵 Pending Cash/Benefit Payments</h3>
-      ${pendingCash.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Member</th><th>Flight</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead>
-            <tbody>
-              ${pendingCash.slice(0, 20).map(a => {
-                const member = members.find(m => m.id === a.memberId);
-                const flight = flights.find(f => f.id === a.flightId);
-                return `
-                  <tr>
-                    <td>${escapeHtml(member?.fullName || "—")}</td>
-                    <td>${escapeHtml(flight?.name || "—")}</td>
-                    <td>${bhd(a.chargeAmount || 0)}</td>
-                    <td>${escapeHtml(dateLabel(a.sessionDate))}</td>
-                    <td>
-                      <button class="pill" onclick="window.confirmPayment('${escapeHtml(a.id)}')">✅ Confirm</button>
-                    </td>
-                  </tr>
-                `;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No pending cash payments.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>✅ Paid Players</h3>
-      ${paidPlayers.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Member</th><th>Flight</th><th>Amount</th><th>Date</th></tr></thead>
-            <tbody>
-              ${paidPlayers.slice(0, 20).map(a => {
-                const member = members.find(m => m.id === a.memberId);
-                const flight = flights.find(f => f.id === a.flightId);
-                return `
-                  <tr>
-                    <td>${escapeHtml(member?.fullName || "—")}</td>
-                    <td>${escapeHtml(flight?.name || "—")}</td>
-                    <td>${bhd(a.chargeAmount || 0)}</td>
-                    <td>${escapeHtml(dateLabel(a.sessionDate))}</td>
-                  </tr>
-                `;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No paid records.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>❌ Unpaid Players</h3>
-      ${unpaidPlayers.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Member</th><th>Flight</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead>
-            <tbody>
-              ${unpaidPlayers.slice(0, 20).map(a => {
-                const member = members.find(m => m.id === a.memberId);
-                const flight = flights.find(f => f.id === a.flightId);
-                return `
-                  <tr>
-                    <td>${escapeHtml(member?.fullName || "—")}</td>
-                    <td>${escapeHtml(flight?.name || "—")}</td>
-                    <td>${bhd(a.chargeAmount || 0)}</td>
-                    <td>${escapeHtml(dateLabel(a.sessionDate))}</td>
-                    <td>
-                      <button class="pill" onclick="window.sendPaymentReminder('${escapeHtml(a.id)}')">📧 Remind</button>
-                    </td>
-                  </tr>
-                `;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No unpaid records.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>➕ Add Member Credit</h3>
-      <form onsubmit="window.addMemberCredit(event)">
-        <div class="grid two">
-          <div class="field">
-            <label>Select Member *</label>
-            <select id="creditMemberId" required>
-              <option value="">Select member...</option>
-              ${members.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.fullName)}</option>`).join("")}
-            </select>
-          </div>
-          <div class="field">
-            <label>Credit Amount (BHD) *</label>
-            <input type="number" id="creditAmount" min="0" step="0.001" placeholder="0.000" required>
-          </div>
-        </div>
-        <div class="field">
-          <label>Verification Note *</label>
-          <textarea id="creditNote" placeholder="e.g., Monthly credit deposit" required></textarea>
-        </div>
-        <button type="submit" class="primary">✅ Add Credit</button>
-      </form>
-    </section>
   `;
 }
 
-// ===== SUPER ADMIN AUDIT LOGS PAGE =====
-export async function superAdminAuditLogsView() {
-  const [auditLogs, activities, flights, members] = await Promise.all([
-    api("/audit/logs"),
-    api("/activities"),
-    api("/flights"),
-    api("/members")
-  ]);
+function auditDateKey(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Asia/Bahrain", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(date);
+  const valueFor = type => parts.find(part => part.type === type)?.value || "";
+  return `${valueFor("year")}-${valueFor("month")}-${valueFor("day")}`;
+}
 
-  const selectedCategory = window.auditFilterCategory || "ALL";
-  const selectedActivity = window.auditFilterActivity || "ALL";
-  const selectedLevel = window.auditFilterLevel || "ALL";
-  const selectedDate = window.auditFilterDate || "ALL";
-  const selectedMember = window.auditFilterMember || "ALL";
+function auditPrint(sectionId, title) {
+  const section = document.getElementById(sectionId);
+  if (!section) return notify("The current log is not ready to print.");
+  const printWindow = window.open("", "_blank", "width=960,height=720");
+  if (!printWindow) return notify("Allow pop-ups to print this page.");
+  printWindow.opener = null;
+  printWindow.document.write(`<html><head><title>${title}</title><style>body{font-family:sans-serif;padding:24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px;text-align:left;font-size:12px}th{background:#f5f5f5}</style></head><body>${section.outerHTML}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
 
-  let filteredLogs = auditLogs;
+function auditScopeOptions(records) {
+  const activities = [...new Map(
+    records.filter(row => row.activityId).map(row => [row.activityId, row.activityName || row.activityId])
+  ).entries()];
+  const flights = records.filter(row => row.flightId && (!selectedAuditActivityId || row.activityId === selectedAuditActivityId));
+  const flightOpts = [...new Map(
+    flights.map(row => [row.flightId, row.flightName || row.flightId])
+  ).entries()];
+  const memberOptions = [...new Set(
+    records.flatMap(row => [row.subject, row.actor]).filter(Boolean)
+  )].sort((a, b) => String(a).localeCompare(String(b)));
+  return { activities, flightOptions: flightOpts, memberOptions };
+}
 
-  // Apply ALL filters concurrently (ALL must match)
-  if (selectedCategory !== "ALL") {
-    filteredLogs = filteredLogs.filter(log => log.category === selectedCategory);
-  }
-  if (selectedActivity !== "ALL") {
-    filteredLogs = filteredLogs.filter(log => log.activityId === selectedActivity);
-  }
-  if (selectedLevel !== "ALL") {
-    filteredLogs = filteredLogs.filter(log => log.flightName === selectedLevel);
-  }
-  if (selectedDate !== "ALL") {
-    filteredLogs = filteredLogs.filter(log => dateLabel(log.createdAt) === selectedDate);
-  }
-  if (selectedMember !== "ALL") {
-    filteredLogs = filteredLogs.filter(log => log.memberName === selectedMember || log.actorName === selectedMember);
-  }
+// ===== AUDIT LOG BASE FUNCTION =====
+async function superAdminAuditLogView(options = {}) {
+  requireSuperAdmin();
+  const records = await api("/members/audit");
+  const title = options.title || "Audit History";
+  const description = options.description || "Read-only club history of member, attendance, payment, game, and stock actions.";
+  const permittedCategories = options.categories || ["MEMBER", "ATTENDANCE", "WALLET / PAYMENT", "SESSION CONTROL", "SHUTTLE STOCK"];
+
+  if (!permittedCategories.includes(selectedAuditCategory) && selectedAuditCategory !== "ALL")
+    selectedAuditCategory = "ALL";
+
+  const { activities, flightOptions: flightOpts, memberOptions } = auditScopeOptions(records);
+  if (selectedAuditActivityId && !activities.some(([id]) => id === selectedAuditActivityId)) selectedAuditActivityId = "";
+  if (selectedAuditFlightId && !flightOpts.some(([id]) => id === selectedAuditFlightId)) selectedAuditFlightId = "";
+
+  const displayedRecords = records.filter(row => {
+    if (!permittedCategories.includes(row.category)) return false;
+    if (selectedAuditCategory !== "ALL" && row.category !== selectedAuditCategory) return false;
+    if (selectedAuditActivityId && row.activityId !== selectedAuditActivityId) return false;
+    if (selectedAuditFlightId && row.flightId !== selectedAuditFlightId) return false;
+    if (selectedAuditDate && auditDateKey(row.createdAt) !== selectedAuditDate && auditDateKey(row.sessionDate) !== selectedAuditDate) return false;
+    if (selectedAuditMember && row.subject !== selectedAuditMember && row.actor !== selectedAuditMember) return false;
+    return true;
+  });
+
+  const categoryButtons = ["ALL", ...permittedCategories].map(category =>
+    `<button class="pill ${selectedAuditCategory === category ? "active" : ""}" data-audit-category="${escapeHtml(category)}">${escapeHtml(category === "ALL" ? "All actions" : category)}</button>`
+  ).join("");
 
   return `
     <section class="card">
-      <h2>📜 System Audit Logs</h2>
-      <p class="note">Complete activity tracking with multi-filter system (ALL filters must match concurrently)</p>
+      <span class="tag blue">SUPER ADMIN · READ ONLY</span>
+      <h2>${escapeHtml(title)}</h2>
+      <p class="note">${escapeHtml(description)}</p>
+      <div class="actions">
+        <button class="pill" data-print-audit-log>🖨️ Print current log</button>
+      </div>
     </section>
 
     <section class="card">
-      <h3>🔍 Multi-Filter System</h3>
+      <h3>Filter this log</h3>
+      <div class="actions">${categoryButtons}</div>
       <div class="grid two">
-        <div class="field">
-          <label>Category</label>
-          <select id="auditCategory" onchange="window.applyAuditFilters()">
-            <option value="ALL">All Categories</option>
-            ${CATEGORIES.map(cat => `<option value="${escapeHtml(cat)}" ${selectedCategory === cat ? "selected" : ""}>${escapeHtml(cat)}</option>`).join("")}
-          </select>
-        </div>
         <div class="field">
           <label>Activity</label>
-          <select id="auditActivity" onchange="window.applyAuditFilters()">
-            <option value="ALL">All Activities</option>
-            ${activities.map(act => `<option value="${escapeHtml(act.id)}" ${selectedActivity === act.id ? "selected" : ""}>${escapeHtml(act.name)}</option>`).join("")}
+          <select id="auditActivityFilter">
+            <option value="">All activities</option>
+            ${activities.map(([id, name]) => `<option value="${escapeHtml(id)}" ${selectedAuditActivityId === id ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
           </select>
         </div>
         <div class="field">
-          <label>Flight/Level</label>
-          <select id="auditLevel" onchange="window.applyAuditFilters()">
-            <option value="ALL">All Levels</option>
-            ${LEVELS.map(level => `<option value="${escapeHtml(level)}" ${selectedLevel === level ? "selected" : ""}>${escapeHtml(level)}</option>`).join("")}
+          <label>Flight / Level</label>
+          <select id="auditFlightFilter">
+            <option value="">All levels</option>
+            ${flightOpts.map(([id, name]) => `<option value="${escapeHtml(id)}" ${selectedAuditFlightId === id ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
           </select>
         </div>
         <div class="field">
           <label>Date</label>
-          <input type="date" id="auditDate" onchange="window.applyAuditFilters()" ${selectedDate !== "ALL" ? `value="${selectedDate}"` : ""}>
+          <input type="date" id="auditDateFilter" value="${selectedAuditDate}">
         </div>
         <div class="field">
-          <label>Member/Actor Name</label>
-          <select id="auditMember" onchange="window.applyAuditFilters()">
-            <option value="ALL">All Members</option>
-            ${members.map(m => `<option value="${escapeHtml(m.fullName)}" ${selectedMember === m.fullName ? "selected" : ""}>${escapeHtml(m.fullName)}</option>`).join("")}
+          <label>Member name</label>
+          <select id="auditMemberFilter">
+            <option value="">All members and admins</option>
+            ${memberOptions.map(name => `<option value="${escapeHtml(name)}" ${selectedAuditMember === name ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
           </select>
         </div>
       </div>
-      <button class="primary" onclick="window.printAuditLog()">🖨️ Print Filtered Log</button>
     </section>
 
-    <section class="card">
-      <h3>📋 Audit Log Records (${filteredLogs.length})</h3>
-      ${filteredLogs.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Date</th><th>Category</th><th>Action</th><th>Member/Flight</th><th>Details</th><th>By (Actor)</th></tr></thead>
-            <tbody>
-              ${filteredLogs.slice(0, 100).map(log => `
-                <tr>
-                  <td>${escapeHtml(dateTime(log.createdAt))}</td>
-                  <td><span class="tag amber">${escapeHtml(log.category)}</span></td>
-                  <td>${escapeHtml(log.action)}</td>
-                  <td>${escapeHtml(log.memberName || log.flightName || "—")}</td>
-                  <td>${escapeHtml(log.detail || "—")}</td>
-                  <td>${escapeHtml(log.actorName || "System")}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No logs match the selected filters.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>🔗 Quick Views</h3>
-      <div class="actions">
-        <button class="pill" onclick="window.viewAuditCategory('MEMBER')">👥 Player & Admin Activity</button>
-        <button class="pill" onclick="window.viewAuditCategory('WALLET/PAYMENT')">💰 Wallet & Payment Log</button>
-        <button class="pill" onclick="window.viewAuditCategory('ATTENDANCE,SESSION CONTROL')">🎮 Session Control Log</button>
-        <button class="pill" onclick="window.viewAuditCategory('SHUTTLE STOCK')">📦 Shuttle Stock Log</button>
+    <section class="card" id="superAdminAuditPrint">
+      <h3>${displayedRecords.length} matching action${displayedRecords.length === 1 ? "" : "s"}</h3>
+      <p class="note">Player and Flight Admin activity retains the date, level, member, action, and actor.</p>
+      <div class="table-wrap">
+        <table class="schedule">
+          <thead><tr><th>Date</th><th>Category</th><th>Action</th><th>Member / Flight</th><th>Details</th><th>By</th></tr></thead>
+          <tbody>
+            ${displayedRecords.map(row => `
+              <tr>
+                <td>${escapeHtml(recordDate(row.createdAt))}${row.sessionDate ? `<br><small>Game: ${escapeHtml(recordDate(row.sessionDate))}</small>` : ""}</td>
+                <td><span class="tag amber">${escapeHtml(row.category || "—")}</span></td>
+                <td>${escapeHtml(row.action || "—")}</td>
+                <td>${escapeHtml(row.subject || "—")}<br><small>${escapeHtml(row.activityName || "Club")} · ${escapeHtml(row.flightName || "All levels")}</small></td>
+                <td>${escapeHtml(row.detail || "—")}</td>
+                <td>${escapeHtml(row.actor || "System")}</td>
+              </tr>
+            `).join("") || `<tr><td colspan="6" class="note">No actions match the selected filters.</td></tr>`}
+          </tbody>
+        </table>
       </div>
     </section>
   `;
 }
 
-// ===== SUPER ADMIN ADS & NOTICES PAGE =====
-export async function superAdminAdsView() {
-  const [ads, notices] = await Promise.all([
-    api("/ads"),
-    api("/notices")
-  ]);
-
-  const activeAds = ads.filter(a => a.status === "APPROVED" && new Date(a.expiryDate) > new Date());
-  const carouselAds = ads.filter(a => a.inCarousel === true);
+// ===== SUPER ADMIN HOME VIEW =====
+export async function superAdminHomeView() {
+  requireSuperAdmin();
+  const records = await api("/members/audit");
+  const latest = records.slice(0, 5);
+  const count = category => records.filter(row => row.category === category).length;
 
   return `
     <section class="card">
-      <h2>📢 Ads & Notices Management</h2>
-      <p class="note">Manage business directory, advertisements, and club announcements</p>
+      <span class="tag blue">SUPER ADMIN</span>
+      <h2>Club Oversight</h2>
+      <p class="note">Review Player and Flight Admin history by activity, level, date, member, and action without changing the personal Player dashboard.</p>
+    </section>
+
+    <div class="grid two">
+      <section class="card"><h3>👥 Member actions</h3><div class="session"><b>${count("MEMBER")}</b></div><small>Registration and profile records</small></section>
+      <section class="card"><h3>💰 Wallet actions</h3><div class="session"><b>${count("WALLET / PAYMENT")}</b></div><small>Credits and payment records</small></section>
+      <section class="card"><h3>🎮 Completed sessions</h3><div class="session"><b>${count("SESSION CONTROL")}</b></div><small>Final game records</small></section>
+      <section class="card"><h3>📦 Stock actions</h3><div class="session"><b>${count("SHUTTLE STOCK")}</b></div><small>Shuttle stock audit</small></section>
+    </div>
+
+    <section class="card">
+      <h3>🔗 Open a filtered club log</h3>
+      <div class="actions">
+        <button class="pill" onclick="window.navigate('activityLog')">👥 Player & Admin Activity</button>
+        <button class="pill" onclick="window.navigate('walletLog')">💰 Wallet & Payments</button>
+        <button class="pill" onclick="window.navigate('sessionLog')">🎮 Session Control Logs</button>
+        <button class="pill" onclick="window.navigate('stockLog')">📦 Shuttle Stock Logs</button>
+        <button class="pill" onclick="window.navigate('auditLogs')">📜 All Audit History</button>
+      </div>
     </section>
 
     <section class="card">
-      <h3>🎠 Carousel Control</h3>
+      <h3>📜 Most recent club actions</h3>
+      ${latest.map(row => `
+        <div class="session">
+          <b>${escapeHtml(row.action || "Club action")}</b>
+          <small>${escapeHtml(row.subject || "Club")} · ${escapeHtml(recordDate(row.createdAt))}</small>
+          <span class="tag amber">${escapeHtml(row.category || "AUDIT")}</span>
+        </div>
+      `).join("") || `<p class="note">No club actions have been recorded yet.</p>`}
+    </section>
+  `;
+}
+
+// ===== FILTERED AUDIT LOG VIEWS =====
+export async function superAdminActivityLogView() {
+  return superAdminAuditLogView({
+    title: "Player & Flight Admin Activity",
+    description: "Registration, profile, and attendance activity by Players and Flight Admins.",
+    categories: ["MEMBER", "ATTENDANCE"]
+  });
+}
+
+export async function superAdminWalletLogView() {
+  return superAdminAuditLogView({
+    title: "Player Wallet & Payment Log",
+    description: "Read-only Player credit, charge, and Cash / Benefit payment activity across all levels.",
+    categories: ["WALLET / PAYMENT"]
+  });
+}
+
+export async function superAdminSessionLogView() {
+  return superAdminAuditLogView({
+    title: "Flight Admin Session Control Log",
+    description: "Final attendance and completed-game records from every level.",
+    categories: ["ATTENDANCE", "SESSION CONTROL"]
+  });
+}
+
+export async function superAdminStockLogView() {
+  return superAdminAuditLogView({
+    title: "Flight Admin Shuttle Stock Log",
+    description: "Read-only stock and completed-game shuttle-usage history across all levels.",
+    categories: ["SHUTTLE STOCK"]
+  });
+}
+
+// ===== ACTIVITIES & FLIGHTS VIEW =====
+export async function activitiesAndFlightsView() {
+  requireSuperAdmin();
+  const [activities, allMembers, deletedUsers] = await Promise.all([
+    api("/activities"), api("/members"), api("/members/deleted")
+  ]);
+  const flights = flattenFlights(activities);
+  const accounts = allMembers.filter(member => ["PLAYER", "LEVEL_ADMIN"].includes(member.role));
+  const rosterFlights = selectedRosterActivityId
+    ? flights.filter(flight => flight.activityId === selectedRosterActivityId)
+    : flights;
+  if (selectedRosterFlightId && !rosterFlights.some(flight => flight.id === selectedRosterFlightId))
+    selectedRosterFlightId = "";
+  const roster = accounts.filter(member =>
+    selectedRosterFlightId ? member.flightId === selectedRosterFlightId
+    : selectedRosterActivityId ? rosterFlights.some(flight => flight.id === member.flightId)
+    : true
+  );
+
+  return `
+    <section class="card">
+      <span class="tag blue">SUPER ADMIN</span>
+      <h2>Activities, Flights & Members</h2>
+      <p class="note">Create activities, manage levels, view every roster, and assign delegated Flight Admins.</p>
+    </section>
+
+    <section class="card">
+      <h3>➕ Add sport / activity</h3>
+      <div class="field">
+        <label>Activity name</label>
+        <input type="text" id="newActivityName" placeholder="e.g. Badminton">
+      </div>
+      <button class="primary" id="createActivity">Create activity</button>
+    </section>
+
+    ${activities.map(activity => `
+      <section class="card">
+        <span class="tag ${activity.active ? "blue" : "red"}">${activity.active ? "ACTIVE" : "INACTIVE"}</span>
+        <h3>${escapeHtml(activity.name)}</h3>
+        <p class="note">${activity.flights?.length || 0} flight(s). Courts are always 1 and 2.</p>
+        <button class="pill" data-toggle-activity="${escapeHtml(activity.id)}" data-active="${activity.active}">
+          ${activity.active ? "Deactivate" : "Activate"}
+        </button>
+
+        ${(activity.flights || []).map(flight => `
+          <div class="session">
+            <span class="tag blue">2 courts</span>
+            <b>${escapeHtml(flight.name)}</b>
+            <small>Display order: ${Number(flight.sortOrder ?? 999)}</small>
+            <span class="tag ${flight.active ? "blue" : "red"}">${flight.active ? "ACTIVE" : "INACTIVE"}</span>
+            <button class="pill" data-toggle-flight="${escapeHtml(flight.id)}" data-activity-id="${escapeHtml(activity.id)}" data-active="${flight.active}">
+              ${flight.active ? "Deactivate" : "Activate"}
+            </button>
+          </div>
+        `).join("") || `<p class="note">No flights yet.</p>`}
+
+        <div class="grid two">
+          <div class="field">
+            <label>New flight name</label>
+            <input type="text" id="flightName-${escapeHtml(activity.id)}" placeholder="e.g. Flight 1">
+          </div>
+          <div class="field">
+            <label>Display order</label>
+            <input type="number" id="flightSort-${escapeHtml(activity.id)}" value="1" min="1">
+          </div>
+        </div>
+        <button class="pill" data-create-flight="${escapeHtml(activity.id)}">Add flight</button>
+      </section>
+    `).join("") || `<p class="note">Create Badminton first.</p>`}
+
+    <section class="card">
+      <h3>👤 PRE-REGISTER PLAYER OR FLIGHT ADMIN</h3>
+      <p class="note">Super Admin records the chosen name, phone number, role, and level. The member later matches the same name and phone number to create their own Member ID, email address, and password.</p>
       <div class="grid two">
+        <div class="field"><label>Registered name</label><input type="text" id="memberFullName" placeholder="Full name"></div>
+        <div class="field"><label>Phone / WhatsApp number</label><input type="tel" id="memberPhone" placeholder="+973 XXXX XXXX"></div>
         <div class="field">
-          <label>Featured Ads in Carousel</label>
-          <div class="session"><b>${carouselAds.length} / 10</b></div>
+          <label>Account role</label>
+          <select id="memberRole">
+            <option value="PLAYER">Player</option>
+            <option value="LEVEL_ADMIN">Flight Admin / Delegate</option>
+          </select>
         </div>
         <div class="field">
-          <label>Set Carousel Limit (Max 10)</label>
-          <input type="number" id="carouselLimit" min="1" max="10" value="10" onchange="window.setCarouselLimit(this.value)">
+          <label>Assigned flight</label>
+          <select id="memberFlight">
+            <option value="">Choose a flight</option>
+            ${flightOptions(activities)}
+          </select>
+        </div>
+      </div>
+      <button class="primary" id="createMember">Pre-register member</button>
+    </section>
+
+    ${latestInvitation ? `
+      <section class="card">
+        <span class="tag blue">MEMBER PRE-REGISTERED</span>
+        <h3>${escapeHtml(latestInvitation.fullName)}</h3>
+        <p class="note">The member can now open the app and use the same registered name and phone number to create their own email and password.</p>
+        <div class="actions">
+          <button class="pill" data-whatsapp-onboarding-name="${escapeHtml(latestInvitation.fullName)}" data-whatsapp-onboarding-phone="${escapeHtml(latestInvitation.phone || "")}">WhatsApp app link</button>
+          <button class="pill" id="hideLatestInvitation">Done</button>
+        </div>
+      </section>
+    ` : ""}
+
+    <section class="card">
+      <h3>📋 ALL LEVELS ROSTER</h3>
+      <p class="note">Players and Flight Admins. To promote an existing Player, choose Flight Admin / Delegate, select one flight, then save.</p>
+      <div class="grid two">
+        <div class="field">
+          <label>Activity</label>
+          <select id="rosterActivityFilter">
+            <option value="">All activities</option>
+            ${activities.map(activity => `<option value="${escapeHtml(activity.id)}" ${selectedRosterActivityId === activity.id ? "selected" : ""}>${escapeHtml(activity.name)}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label>Flight / Level</label>
+          <select id="rosterFlightFilter">
+            <option value="">All flights in this selection</option>
+            ${rosterFlights.map(flight => `<option value="${escapeHtml(flight.id)}" ${selectedRosterFlightId === flight.id ? "selected" : ""}>${escapeHtml(flight.activityName)} · ${escapeHtml(flight.name)}</option>`).join("")}
+          </select>
         </div>
       </div>
       <div class="table-wrap">
         <table class="schedule">
-          <thead><tr><th>Business</th><th>Category</th><th>In Carousel</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Member</th><th>Role</th><th>Assigned flight</th><th>Access</th><th>Save</th></tr></thead>
           <tbody>
-            ${activeAds.slice(0, 10).map(ad => `
+            ${roster.map(member => `
               <tr>
-                <td>${escapeHtml(ad.businessName)}</td>
-                <td>${escapeHtml(ad.category)}</td>
-                <td><input type="checkbox" ${ad.inCarousel ? "checked" : ""} onchange="window.toggleCarousel('${escapeHtml(ad.id)}')"></td>
+                <td>${escapeHtml(member.fullName)}<br><small>${escapeHtml(member.memberId || "")} · ${escapeHtml(member.email || "")}</small></td>
                 <td>
-                  <button class="pill" onclick="window.editAd('${escapeHtml(ad.id)}')">✏️ Edit</button>
-                  <button class="pill" onclick="window.removeAd('${escapeHtml(ad.id)}')">🗑️ Remove</button>
+                  <select id="memberRole-${escapeHtml(member.uid)}">
+                    <option value="PLAYER" ${member.role === "PLAYER" ? "selected" : ""}>Player</option>
+                    <option value="LEVEL_ADMIN" ${member.role === "LEVEL_ADMIN" ? "selected" : ""}>Flight Admin / Delegate</option>
+                  </select>
+                </td>
+                <td>
+                  <select id="memberFlight-${escapeHtml(member.uid)}">
+                    ${flightOptions(activities, member.flightId)}
+                  </select>
+                </td>
+                <td><span class="tag ${member.active ? "blue" : "red"}">${member.active ? "ACTIVE" : "INACTIVE"}</span></td>
+                <td>
+                  <div class="actions">
+                    <button class="pill" data-save-member="${escapeHtml(member.uid)}">Save role / flight</button>
+                    <button class="pill" data-toggle-member="${escapeHtml(member.uid)}" data-active="${member.active}">${member.active ? "Deactivate" : "Activate"}</button>
+                  </div>
                 </td>
               </tr>
-            `).join("")}
+            `).join("") || `<tr><td colspan="5" class="note">No account exists for this selection.</td></tr>`}
           </tbody>
         </table>
       </div>
     </section>
 
     <section class="card">
-      <h3>📸 Create Official Notice</h3>
-      <form onsubmit="window.createNotice(event)">
-        <div class="field">
-          <label>Notice Title *</label>
-          <input type="text" id="noticeTitle" placeholder="e.g., Annual Badminton Championship" required>
+      <h3>🗑️ DELETED USERS</h3>
+      <p class="note">Permanent deletions are recorded here. A phone number can only be registered again after permanent deletion.</p>
+      <button class="pill" data-print-deleted-users>🖨️ Print register</button>
+      ${deletedUsers.map(member => `
+        <div class="session">
+          <b>${escapeHtml(member.fullName || member.registeredName || "Deleted member")}</b>
+          <small>${escapeHtml(member.phone || "No phone")} · Deleted ${escapeHtml(recordDate(member.deletedAt))}</small>
+          <span class="tag red">PERMANENTLY DELETED</span>
         </div>
-        <div class="field">
-          <label>Message *</label>
-          <textarea id="noticeMessage" placeholder="Enter notice message..." required></textarea>
-        </div>
-        <div class="field">
-          <label>Upload Image (PNG, JPEG, WebP - Max 2MB)</label>
-          <input type="file" id="noticeImage" accept="image/png,image/jpeg,image/webp" onchange="window.validateImageSize(event)">
-          <small id="imageSizeError" style="color: red; display: none;">File size exceeds 2MB</small>
-        </div>
-        <button type="submit" class="primary">📤 Publish Notice</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h3>⏳ Pending Business Approvals</h3>
-      ${ads.filter(a => a.status === "PENDING").length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Business</th><th>Contact</th><th>Category</th><th>Actions</th></tr></thead>
-            <tbody>
-              ${ads.filter(a => a.status === "PENDING").map(ad => `
-                <tr>
-                  <td><b>${escapeHtml(ad.businessName)}</b></td>
-                  <td>${escapeHtml(ad.email)}</td>
-                  <td>${escapeHtml(ad.category)}</td>
-                  <td>
-                    <button class="pill" onclick="window.approveAd('${escapeHtml(ad.id)}')">✅ Approve</button>
-                    <button class="pill" onclick="window.rejectAd('${escapeHtml(ad.id)}')">❌ Reject</button>
-                  </td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No pending approvals.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>📋 Published Directory</h3>
-      ${activeAds.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Business</th><th>Category</th><th>Expiry</th><th>Actions</th></tr></thead>
-            <tbody>
-              ${activeAds.map(ad => `
-                <tr>
-                  <td><b>${escapeHtml(ad.businessName)}</b></td>
-                  <td>${escapeHtml(ad.category)}</td>
-                  <td>${escapeHtml(dateLabel(ad.expiryDate))}</td>
-                  <td>
-                    <button class="pill" onclick="window.editAd('${escapeHtml(ad.id)}')">✏️ Edit</button>
-                    <button class="pill" onclick="window.deleteAd('${escapeHtml(ad.id)}')">🗑️ Delete</button>
-                  </td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No published ads.</p>`}
-    </section>
-
-    <section class="card">
-      <h3>📢 Notice History</h3>
-      ${notices.length ? `
-        <div class="table-wrap">
-          <table class="schedule">
-            <thead><tr><th>Title</th><th>Published</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              ${notices.map(notice => `
-                <tr>
-                  <td>${escapeHtml(notice.title)}</td>
-                  <td>${escapeHtml(dateLabel(notice.publishedAt))}</td>
-                  <td><span class="tag ${notice.isPublished ? "blue" : "amber"}">${notice.isPublished ? "PUBLISHED" : "DRAFT"}</span></td>
-                  <td>
-                    <button class="pill" onclick="window.toggleNoticePublish('${escapeHtml(notice.id)}')">🔄 Toggle</button>
-                    <button class="pill" onclick="window.deleteNotice('${escapeHtml(notice.id)}')">🗑️ Delete</button>
-                  </td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      ` : `<p class="note">No notices created yet.</p>`}
+      `).join("") || `<p class="note">No permanently deleted users are recorded.</p>`}
     </section>
   `;
 }
 
-// ===== GLOBAL FUNCTIONS =====
-window.createActivity = function(event) {
-  event.preventDefault();
-  const name = document.getElementById('activityName').value;
-  console.log('🎮 Creating activity:', name);
-  notify("✅ Activity created successfully");
-  event.target.reset();
-  refresh();
-};
+// ===== SUPER ADMIN TIMETABLE VIEW =====
+export async function superAdminTimetableView() {
+  requireSuperAdmin();
+  const baseData = await api(`/timetable/master?${new URLSearchParams({ month: selectedMasterMonth }).toString()}`);
+  const activities = baseData.activities || [];
+  if (!activities.some(activity => activity.id === selectedMasterActivityId))
+    selectedMasterActivityId = baseData.activityId || activities[0]?.id || "";
 
-window.toggleActivityStatus = function(activityId) {
-  console.log('🔄 Toggling activity status:', activityId);
-  notify("✅ Activity status updated");
-  refresh();
-};
+  const query = new URLSearchParams({ month: selectedMasterMonth });
+  if (selectedMasterActivityId) query.set("activityId", selectedMasterActivityId);
+  const data = selectedMasterActivityId === baseData.activityId ? baseData : await api(`/timetable/master?${query.toString()}`);
+  const flights = data.flights || [];
 
-window.editActivity = function(activityId) {
-  console.log('✏️ Editing activity:', activityId);
-  notify("📝 Edit activity form opened");
-};
+  return `
+    <section class="card">
+      <span class="tag blue">SUPER ADMIN</span>
+      <h2>Master Timetable</h2>
+      <p class="note">Weekly pattern for the selected month. Courts always use 1 and 2.</p>
+    </section>
 
-window.createFlight = function(event) {
-  event.preventDefault();
-  const flightName = document.getElementById('flightName').value;
-  console.log('✈️ Creating flight:', flightName);
-  notify("✅ Flight created successfully");
-  event.target.reset();
-  refresh();
-};
+    <section class="card">
+      <div class="grid two">
+        <div class="field"><label>Month</label><input type="month" id="masterMonth" value="${selectedMasterMonth}"></div>
+        <div class="field">
+          <label>Activity</label>
+          <select id="masterActivity">
+            ${activities.map(activity => `<option value="${escapeHtml(activity.id)}" ${selectedMasterActivityId === activity.id ? "selected" : ""}>${escapeHtml(activity.name)}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="loadMasterMonth">Load timetable</button>
+        <button class="pill" id="publishMasterMonth">Publish this month</button>
+      </div>
+    </section>
 
-window.toggleFlightStatus = function(flightId) {
-  console.log('🔄 Toggling flight status:', flightId);
-  notify("✅ Flight status updated");
-  refresh();
-};
+    <section class="card">
+      <div class="table-wrap">
+        <table class="schedule">
+          <thead><tr><th>Day</th><th>Flight</th><th>Start</th><th>End</th><th>Courts</th><th>Action</th></tr></thead>
+          <tbody>
+            ${(data.weeklyPattern || []).map(slot => `
+              <tr>
+                <td>${escapeHtml(slot.weekday)}</td>
+                <td>${escapeHtml(slot.flightName)}</td>
+                <td>${escapeHtml(slot.startTime)}</td>
+                <td>${escapeHtml(slot.endTime)}</td>
+                <td>1 & 2</td>
+                <td><button class="pill" data-delete-slot="${escapeHtml(slot.id)}">Remove</button></td>
+              </tr>
+            `).join("") || `<tr><td colspan="6" class="note">No weekly slots yet.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-window.editFlight = function(flightId) {
-  console.log('✏️ Editing flight:', flightId);
-  notify("📝 Edit flight form opened");
-};
+    <section class="card">
+      <h3>📤 Bulk weekly grid</h3>
+      <p class="note">Paste one row per occupied cell. Format: weekday, flight, start time, end time. The app auto-removes header lines and rejects duplicates.</p>
+      <div class="field">
+        <label>CSV rows: weekday, flight, start time, end time</label>
+        <textarea id="bulkTimetableCsv" rows="6" placeholder="Saturday,Flight 2,18:35,19:35"></textarea>
+      </div>
+      <div class="actions">
+        <button class="primary" id="importBulkTimetable">Import weekly grid</button>
+        <button class="pill" id="downloadBulkTemplate">Download CSV template</button>
+      </div>
+    </section>
 
-window.preRegisterMember = function(event) {
-  event.preventDefault();
-  const name = document.getElementById('preName').value;
-  const phone = document.getElementById('prePhone').value;
-  const whatsappLink = `https://wa.me/${phone.replace(/\D/g, '')}?text=Welcome%20to%20Indian%20Club%20Bahrain!%20Click%20here%20to%20activate%20your%20account`;
-  console.log('📱 Pre-registering member:', name, 'WhatsApp:', whatsappLink);
-  notify("✅ WhatsApp link generated: " + whatsappLink);
-  event.target.reset();
-};
+    <section class="card">
+      <h3>➕ Add weekly flight slot</h3>
+      <div class="grid two">
+        <div class="field">
+          <label>Day</label>
+          <select id="slotDay">
+            <option value="Sunday">Sunday</option><option value="Monday">Monday</option><option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option><option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option><option value="Saturday">Saturday</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Flight</label>
+          <select id="slotFlight">
+            ${flights.map(flight => `<option value="${escapeHtml(flight.id)}">${escapeHtml(flight.name)}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field"><label>Start time</label><input type="time" id="slotStart"></div>
+        <div class="field"><label>End time</label><input type="time" id="slotEnd"></div>
+      </div>
+      <button class="primary" id="saveMasterSlot">Save weekly slot</button>
+    </section>
+  `;
+}
 
-window.filterRoster = function() {
-  console.log('🔍 Filtering roster');
-  refresh();
-};
+// ===== FINANCE ADMIN VIEW =====
+export async function financeAdminView() {
+  const isSuperAdmin = state.member?.role === "SUPER_ADMIN",
+        isFlightAdmin = state.member?.role === "LEVEL_ADMIN";
+  if (!isSuperAdmin && !isFlightAdmin) throw new Error("Only Flight Admin or Super Admin can access finance.");
 
-window.toggleMemberStatus = function(memberId) {
-  console.log('🔄 Toggling member status:', memberId);
-  notify("✅ Member status updated");
-  refresh();
-};
+  const [activities, members] = await Promise.all([
+    api("/activities"),
+    isSuperAdmin ? api("/members") : Promise.resolve([])
+  ]);
+  const flights = flattenFlights(activities);
 
-window.editMember = function(memberId) {
-  console.log('✏️ Editing member:', memberId);
-  notify("📝 Edit member form opened");
-};
+  if (selectedFinanceActivityId && !activities.some(activity => activity.id === selectedFinanceActivityId))
+    selectedFinanceActivityId = "";
+  const selectedFlights = selectedFinanceActivityId
+    ? flights.filter(flight => flight.activityId === selectedFinanceActivityId) : flights;
+  if (selectedFinanceFlightId && !selectedFlights.some(flight => flight.id === selectedFinanceFlightId))
+    selectedFinanceFlightId = "";
 
-window.printRegister = function(memberId) {
-  console.log('🖨️ Printing register for member:', memberId);
-  window.print();
-};
+  const query = new URLSearchParams();
+  if (isSuperAdmin && selectedFinanceFlightId) query.set("flightId", selectedFinanceFlightId);
+  else if (isSuperAdmin && selectedFinanceActivityId) query.set("activityId", selectedFinanceActivityId);
 
-window.loadTimetable = function() {
-  console.log('📂 Loading timetable');
-  notify("✅ Timetable loaded");
-  refresh();
-};
+  let data;
+  try {
+    data = await api(`/finance/overview${query.size ? `?${query.toString()}` : ""}`);
+  } catch (error) {
+    const message = String(error?.message || error || "");
+    if (!isSuperAdmin || (!message.toLowerCase().includes("selected flight") && !message.toLowerCase().includes("invalid option"))) throw error;
+    selectedFinanceActivityId = "";
+    selectedFinanceFlightId = "";
+    data = await api("/finance/overview");
+  }
 
-window.importCSV = function(event) {
-  event.preventDefault();
-  const file = document.getElementById('csvFile').files[0];
-  if (!file) return;
+  const allowedFlights = new Set(selectedFlights.map(flight => flight.id));
+  const players = members.filter(member =>
+    member.active && member.flightId &&
+    ["PLAYER", "LEVEL_ADMIN", "SUPER_ADMIN"].includes(member.role) &&
+    (!selectedFinanceFlightId || member.flightId === selectedFinanceFlightId) &&
+    (!selectedFinanceActivityId || allowedFlights.has(member.flightId))
+  );
+  const creditRecipients = players;
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const csv = e.target.result;
-    const lines = csv.split('\n').filter(line => line.trim());
-    
-    // Auto-remove header line
-    let dataLines = lines;
-    if (lines[0].toLowerCase().includes('weekday') || lines[0].toLowerCase().includes('day')) {
-      dataLines = lines.slice(1);
-    }
+  if (selectedFinanceCreditMemberId && !creditRecipients.some(member => member.uid === selectedFinanceCreditMemberId))
+    selectedFinanceCreditMemberId = "";
 
-    let hasError = false;
-    dataLines.forEach((line, index) => {
-      const parts = line.split(',').map(p => p.trim());
-      if (parts.length !== 4) {
-        notify(`❌ Row ${index + 1} invalid: Expected 4 columns, got ${parts.length}`);
-        hasError = true;
-      }
-    });
+  const selectedCreditBalanceFils = Number(
+    (data.credits || []).find(row => row.memberUid === selectedFinanceCreditMemberId)?.balanceFils || 0
+  );
 
-    if (!hasError) {
-      console.log('📥 Importing CSV with', dataLines.length, 'rows');
-      notify("✅ CSV imported successfully");
-      document.getElementById('csvFile').value = '';
+  const scope = isFlightAdmin
+    ? (data.scope?.flights?.[0]?.name || state.member?.flightName || "Your flight")
+    : selectedFinanceFlightId
+      ? (flights.find(flight => flight.id === selectedFinanceFlightId)?.name || "Selected flight")
+      : selectedFinanceActivityId
+        ? (activities.find(activity => activity.id === selectedFinanceActivityId)?.name || "Selected activity")
+        : "All activities and flights";
+
+  const tabs = {
+    credits: {
+      label: "Credited Players",
+      content: `
+        <section class="card">
+          <h3>Add or deduct member credit</h3>
+          <p class="note">First select Activity and Flight / Level above. The Member list below then shows only active members assigned to that selection. Changing a filter intentionally returns the Member field to \u201cChoose member\u201d; it never selects a recipient automatically.</p>
+
+          <div class="field">
+            <label>Member receiving credit</label>
+            <select id="financeCreditMember">
+              <option value="">Choose member${selectedFinanceFlightId ? " in selected level" : selectedFinanceActivityId ? " in selected activity" : ""}</option>
+              ${creditRecipients.map(member => `
+                <option value="${escapeHtml(member.uid)}" data-wallet-balance="${Number((data.credits || []).find(row => row.memberUid === member.uid)?.balanceFils || 0)}" ${selectedFinanceCreditMemberId === member.uid ? "selected" : ""}>
+                  ${escapeHtml(member.fullName)} &middot; ${escapeHtml(member.memberId || "No ID")} &middot; ${escapeHtml(member.flightName || flights.find(flight => flight.id === member.flightId)?.name || "Assigned flight")} &middot; ${escapeHtml(String(member.role || "PLAYER").replaceAll("_", " "))}
+                </option>
+              `).join("")}
+            </select>
+          </div>
+
+          <p class="note" id="financeSelectedMemberPreview">
+            ${selectedFinanceCreditMemberId
+              ? `<b>Selected member:</b> ${escapeHtml(creditRecipients.find(member => member.uid === selectedFinanceCreditMemberId)?.fullName || "selected member")}<br><b>Current wallet credit:</b> ${bhd(selectedCreditBalanceFils)}`
+              : creditRecipients.length
+                ? "Choose the exact member before adding or deducting credit."
+                : "No active member is assigned to this activity / level yet."}
+          </p>
+
+          <div class="grid two">
+            <div class="field">
+              <label>Credit to add in BHD</label>
+              <input type="number" id="financeCreditAmount" step="0.001" min="0.001" placeholder="0.000">
+            </div>
+            <div class="field">
+              <label>Add-credit verification note</label>
+              <input type="text" id="financeCreditNote" placeholder="e.g. Cash received">
+            </div>
+          </div>
+          <button class="primary" id="addFinanceCredit" ${!selectedFinanceCreditMemberId ? "disabled" : ""}>Add verified credit</button>
+
+          <h3>Deduct an incorrect credit</h3>
+          <p class="note">Enter the amount to deduct as a normal positive number. For example, enter 0.100 to reduce the wallet by BHD 0.100. The app will never make the balance negative, and every deduction stays in the audit history.</p>
+          <div class="grid two">
+            <div class="field">
+              <label>Credit to deduct in BHD</label>
+              <input type="number" id="financeCreditDeduction" step="0.001" min="0.001" placeholder="0.000">
+            </div>
+            <div class="field">
+              <label>Deduction reason</label>
+              <input type="text" id="financeCreditAdjustmentNote" placeholder="Reason is required">
+            </div>
+          </div>
+          <button class="primary" id="deductFinanceCredit" ${!selectedFinanceCreditMemberId ? "disabled" : ""}>Deduct selected wallet credit</button>
+
+          <h3>Current Wallet Credit by Member</h3>
+          <p class="note">This table shows one current wallet balance for each member. Additions and deductions remain in the private audit history; they do not create duplicate current-credit rows.</p>
+          ${financeRows(data.credits, "No member wallet balance exists for this selection.", { showDate: true })}
+        </section>
+      `
+    },
+    pending: {
+      label: "Pending Cash / Benefit",
+      content: `
+        <section class="card">
+          <h3>Pending Cash / Benefit confirmations</h3>
+          <p class="note">Confirm only after receiving the Player's Cash or Benefit payment.</p>
+          ${(data.pendingPayments || []).map(payment => `
+            <div class="session">
+              <b>${escapeHtml(payment.memberName || payment.memberUid)}</b>
+              <small>${escapeHtml(payment.flightName || "Flight")} &middot; ${escapeHtml(payment.method)} &middot; ${escapeHtml(payment.reference || "No reference")}</small>
+              <span class="tag amber">${bhd(payment.amountFils)}</span>
+              <button class="pill" data-verify-payment="${escapeHtml(payment.id)}">Verify</button>
+            </div>
+          `).join("") || `<p class="note">No settlement payment awaits confirmation for this flight.</p>`}
+        </section>
+      `
+    },
+    paid: {
+      label: "Paid Players",
+      content: `
+        <section class="card">
+          <h3>Paid Players</h3>
+          ${financeRows(data.paid, "No paid charges for this selection.", { showDate: true })}
+        </section>
+      `
+    },
+    unpaid: {
+      label: "Unpaid Players",
+      content: `
+        <section class="card">
+          <h3>Unpaid Players</h3>
+          ${financeRows(data.unpaid, "No unpaid charges for this selection.", { showAmountDue: true, showDate: true, showReminder: isFlightAdmin })}
+        </section>
+      `
     }
   };
-  reader.readAsText(file);
-};
 
-window.addWeeklySlot = function(event) {
-  event.preventDefault();
-  const day = document.getElementById('slotDay').value;
-  const startTime = document.getElementById('slotStartTime').value;
-  const endTime = document.getElementById('slotEndTime').value;
-  console.log('➕ Adding weekly slot:', day, startTime, '-', endTime);
-  notify("✅ Weekly slot added successfully");
-  event.target.reset();
-  refresh();
-};
+  const keys = isSuperAdmin ? ["credits", "paid", "unpaid"] : ["pending", "paid", "unpaid"];
+  if (!keys.includes(selectedFinanceTab)) selectedFinanceTab = keys[0];
+  const active = tabs[selectedFinanceTab];
 
-window.publishMonth = function() {
-  console.log('🚀 Publishing month');
-  notify("✅ Month published successfully");
-  refresh();
-};
+  return `
+    <section class="card">
+      <span class="tag blue">${isSuperAdmin ? "SUPER ADMIN FINANCE" : "FLIGHT ADMIN FINANCE"}</span>
+      <h2>Finance</h2>
+      <p class="note">${isSuperAdmin ? "View and print audit lists by selected activity and level." : "Manage only your assigned flight."}</p>
+    </section>
 
-window.filterFinanceByLevel = function(level) {
-  window.currentLevelFilter = level;
-  console.log('🔍 Filtering finance by level:', level);
-  refresh();
-};
+    <div class="grid two">
+      <section class="card"><h3>Verified credit</h3><div class="session"><b>${bhd(data.totalCreditFils)}</b></div><small>${escapeHtml(scope)}</small></section>
+      ${isFlightAdmin ? `<section class="card"><h3>Pending payment</h3><div class="session"><b>${bhd(data.pendingPaymentFils)}</b></div><small>Your flight</small></section>` : ""}
+      <section class="card"><h3>Unpaid amount</h3><div class="session"><b>${bhd((data.unpaid || []).reduce((sum, row) => sum + Number(row.amountDueFils || 0), 0))}</b></div><small>Selected level</small></section>
+      <section class="card"><h3>Session costs</h3><div class="session"><b>${bhd(data.monthCostFils)}</b></div><small>Current month</small></section>
+    </div>
 
-window.addCredit = function(memberId) {
-  console.log('➕ Adding credit for member:', memberId);
-  notify("💳 Add credit form opened");
-};
+    ${isSuperAdmin ? `
+      <section class="card">
+        <h3>Select activity and level</h3>
+        <div class="grid two">
+          <div class="field">
+            <label>Activity</label>
+            <select id="financeActivityFilter">
+              <option value="">All activities</option>
+              ${activities.map(activity => `<option value="${escapeHtml(activity.id)}" ${selectedFinanceActivityId === activity.id ? "selected" : ""}>${escapeHtml(activity.name)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field">
+            <label>Flight / Level</label>
+            <select id="financeFlightFilter">
+              <option value="">All flights in this selection</option>
+              ${selectedFlights.map(flight => `<option value="${escapeHtml(flight.id)}" ${selectedFinanceFlightId === flight.id ? "selected" : ""}>${escapeHtml(flight.activityName)} &middot; ${escapeHtml(flight.name)}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+      </section>
+    ` : ""}
 
-window.deductCredit = function(memberId) {
-  console.log('➖ Deducting credit for member:', memberId);
-  notify("💳 Deduct credit form opened");
-};
+    <section class="card">
+      <div class="actions">
+        ${keys.map(key => `<button class="pill ${selectedFinanceTab === key ? "active" : ""}" data-finance-tab="${key}">${tabs[key].label}</button>`).join("")}
+        <button class="pill" data-print-finance>Print current tab</button>
+      </div>
+    </section>
 
-window.confirmPayment = function(attendanceId) {
-  if (confirm("Confirm this payment has been received?")) {
-    console.log('✅ Confirming payment:', attendanceId);
-    notify("✅ Payment confirmed");
+    <section class="card" id="financePrintArea">
+      <h3>${escapeHtml(active.label)}</h3>
+      <p class="note">${escapeHtml(scope)}</p>
+      ${active.content}
+    </section>
+  `;
+}
+
+// ===== AUDIT HISTORY VIEW =====
+export async function auditHistoryView() {
+  return superAdminAuditLogView();
+}
+
+// ===== ADVERTISING & BAZAAR APPROVAL VIEW =====
+export async function advertisingApprovalView() {
+  requireSuperAdmin();
+  const data = await api("/business/admin/pending");
+  const businesses = data.businesses || [];
+  const pending = businesses.filter(row => row.status === "PENDING_APPROVAL");
+  const published = businesses.filter(row => row.status === "PUBLISHED");
+  const carouselAds = published.filter(row => row.featured);
+  const other = businesses.filter(row => !["PENDING_APPROVAL", "PUBLISHED"].includes(row.status));
+
+  const defaultFeatureStart = inputDate(new Date());
+  const defaultFeatureEnd = inputDate(new Date(Date.now() + (6 * 24 * 60 * 60 * 1000)));
+
+  const adCard = business => {
+    const image = imageUrl(business.flyerUrl);
+    const tone = business.status === "PUBLISHED" ? "blue" : business.status === "PENDING_APPROVAL" ? "amber" : "red";
+    return `
+      <div class="card">
+        <span class="tag ${tone}">${escapeHtml(String(business.status).replaceAll("_", " "))}</span>
+        <h3>${escapeHtml(business.businessName)}</h3>
+        <p class="note">BIZ reference: ${escapeHtml(business.referenceCode || "\u2014")} &middot; Submitted ${escapeHtml(recordDate(business.createdAt))}</p>
+
+        ${image
+          ? `<span class="tag blue">IMAGE STORED</span>`
+          : '<span class="tag red">NO IMAGE</span>'}
+        ${image
+          ? `<img src="${image}" alt="${escapeHtml(business.businessName)}" style="max-width:100%;border-radius:8px;margin:8px 0;">`
+          : `<p class="note">No Storage image uploaded</p>`}
+
+        <div class="grid two">
+          <div class="field">
+            <label>Category</label>
+            <input type="text" id="adCategory-${escapeHtml(business.id)}" value="${escapeHtml(business.category || "")}">
+          </div>
+          <div class="field">
+            <label>Featured offer text</label>
+            <input type="text" id="adOffer-${escapeHtml(business.id)}" value="${escapeHtml(business.discountText || "")}">
+          </div>
+          <div class="field">
+            <label>Flyer image from club Storage</label>
+            <input type="text" id="adFlyer-${escapeHtml(business.id)}" value="${escapeHtml(business.flyerUrl || "")}">
+          </div>
+          <div class="field">
+            <label>Upload flyer to Storage</label>
+            <input type="file" id="adFlyerFile-${escapeHtml(business.id)}" accept="image/png,image/jpeg,image/webp">
+            <button class="pill" data-upload-ad-image="${escapeHtml(business.id)}">Upload flyer to Storage</button>
+            <small>Only Super Admin can upload. The stored image is shown read-only to app users.</small>
+          </div>
+          <div class="field">
+            <label>Click-through business link</label>
+            <input type="url" id="adDestination-${escapeHtml(business.id)}" value="${escapeHtml(business.destinationUrl || "")}">
+          </div>
+          <div class="field">
+            <label>Website link</label>
+            <input type="url" id="adWebsite-${escapeHtml(business.id)}" value="${escapeHtml(business.website || "")}">
+          </div>
+          <div class="field">
+            <label>Location / address</label>
+            <input type="text" id="adAddress-${escapeHtml(business.id)}" value="${escapeHtml(business.address || "")}">
+          </div>
+          <div class="field">
+            <label>Feature on front page</label>
+            <input type="checkbox" id="adFeatured-${escapeHtml(business.id)}" ${business.featured ? "checked" : ""}>
+          </div>
+          <div class="field">
+            <label>Featured start date</label>
+            <input type="date" id="adFeatureStart-${escapeHtml(business.id)}" value="${inputDate(business.featureStartDate) || defaultFeatureStart}">
+          </div>
+          <div class="field">
+            <label>Featured end date</label>
+            <input type="date" id="adFeatureEnd-${escapeHtml(business.id)}" value="${inputDate(business.featureEndDate) || defaultFeatureEnd}">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="pill" data-save-ad="${escapeHtml(business.id)}">Save advertisement</button>
+          ${business.status === "PENDING_APPROVAL" ? `
+            <button class="primary" data-ad-decision="PUBLISH" data-ad-id="${escapeHtml(business.id)}">Approve &amp; publish</button>
+            <button class="pill" data-ad-decision="REJECT" data-ad-id="${escapeHtml(business.id)}">Reject</button>
+          ` : business.status === "PUBLISHED" ? `
+            <button class="pill" data-ad-decision="UNPUBLISH" data-ad-id="${escapeHtml(business.id)}">Remove from carousel</button>
+            <button class="pill" data-delete-ad="${escapeHtml(business.id)}">Delete permanently</button>
+          ` : `
+            <button class="pill" data-delete-ad="${escapeHtml(business.id)}">Delete permanently</button>
+          `}
+        </div>
+      </div>
+    `;
+  };
+
+  return `
+    <section class="card">
+      <span class="tag blue">SUPER ADMIN</span>
+      <h2>Advertising &amp; BaZaar</h2>
+      <p class="note">Review all listings, edit approved details, manage dated carousel placement, and permanently delete records when required.</p>
+      <div class="actions">
+        <button class="pill" data-print-advertising>Print advertising register</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="actions">
+        <button class="pill" data-scroll-section="carouselSection">Carousel</button>
+        <button class="pill" data-scroll-section="noticeSection">Upload notice</button>
+        <button class="pill" data-scroll-section="pendingSection">Pending approvals</button>
+        <button class="pill" data-scroll-section="publishedSection">Available ads</button>
+        <button class="pill" data-scroll-section="noticeHistorySection">Notice history</button>
+      </div>
+    </section>
+
+    <section class="card" id="carouselSection">
+      <h3>Front-page carousel control</h3>
+      <p class="note">Choose how many selected, approved advertisements appear on the front page. The hard maximum is ${Number(data.maxCarouselLimit || 10)} active ads. Each selected ad uses its own start and end date in the advertisement card below.</p>
+      <span class="tag blue">${carouselAds.length} SELECTED</span>
+      <div class="field">
+        <label>Number of carousel advertisements</label>
+        <select id="carouselAdCount">
+          ${Array.from({ length: Number(data.maxCarouselLimit || 10) }, (_, index) => index + 1).map(count =>
+            `<option value="${count}" ${count === carouselAds.length ? "selected" : ""}>${count} advertisement${count === 1 ? "" : "s"}</option>`
+          ).join("")}
+        </select>
+      </div>
+      <p class="note">Current selected carousel ads: <b>${escapeHtml(carouselAds.map(ad => ad.businessName).join(" \u00b7 ") || "No ads selected yet")}</b></p>
+      <button class="primary" data-save-carousel-settings>Save carousel count</button>
+      <p class="note">To add a new advertisement to the carousel, upload its image, approve it, select Feature on front page, and set its start and end dates. Ads outside their date window are automatically hidden.</p>
+    </section>
+
+    <section class="card" id="noticeSection">
+      <h3>Create official notice</h3>
+      <p class="note">Upload an optional PNG, JPEG, or WebP announcement image directly to the configured club Storage bucket, then preview it before publishing.</p>
+      <div class="field">
+        <label>Notice title</label>
+        <input type="text" id="noticeTitle" placeholder="Notice title">
+      </div>
+      <div class="field">
+        <label>Notice message</label>
+        <textarea id="noticeBody" rows="4" placeholder="Notice message"></textarea>
+      </div>
+      <div class="field">
+        <label>Official notice image from club Storage</label>
+        <input type="text" id="noticeImageUrl" placeholder="Image URL from Storage">
+      </div>
+      <div class="field">
+        <label>Upload notice to Storage</label>
+        <input type="file" id="noticeImageFile" accept="image/png,image/jpeg,image/webp">
+        <button class="pill" id="uploadNoticeImage">Upload notice to Storage</button>
+      </div>
+      <div id="noticeImagePreview" class="hidden"></div>
+      <div class="actions">
+        <button class="pill" id="previewNoticeImage">Preview notice image</button>
+        <button class="primary" id="publishOfficialNotice">Publish official notice</button>
+      </div>
+    </section>
+
+    <section class="card" id="pendingSection">
+      <h3>Pending business approvals</h3>
+      <p class="note">Review every business, upload the approved flyer to club Storage, then approve, reject, or edit the listing.</p>
+      ${pending.map(adCard).join("") || `<p class="note">No business submission is awaiting approval.</p>`}
+    </section>
+
+    <section class="card">
+      <h3>Business update requests</h3>
+      ${(data.updateRequests || []).map(row => `
+        <div class="session">
+          <b>${escapeHtml(row.referenceCode || "Business update")}</b>
+          <small>${escapeHtml(row.requestedBusinessName || "Existing business")} &middot; ${escapeHtml(row.requestedCategory || "No category change")} &middot; ${escapeHtml(recordDate(row.createdAt))}</small>
+          <button class="pill" data-update-request-decision="APPROVE" data-update-request-id="${escapeHtml(row.id)}">Approve update</button>
+          <button class="pill" data-update-request-decision="REJECT" data-update-request-id="${escapeHtml(row.id)}">Reject</button>
+        </div>
+      `).join("") || `<p class="note">No advertiser update request is awaiting approval.</p>`}
+    </section>
+
+    <section class="card" id="publishedSection">
+      <h3>Published directory and featured ads</h3>
+      <p class="note">Maximum ten featured ads may overlap. When a feature end date passes, the business stays in BaZaar but automatically leaves the landing-page carousel.</p>
+      ${published.map(adCard).join("") || `<p class="note">No business has been published yet.</p>`}
+    </section>
+
+    ${other.length ? `
+      <section class="card">
+        <h3>Unpublished or rejected businesses</h3>
+        ${other.map(adCard).join("")}
+      </section>
+    ` : ""}
+
+    <section class="card" id="noticeHistorySection">
+      <h3>Official notice history</h3>
+      ${(data.notices || []).map(notice => `
+        <div class="session">
+          <b>${escapeHtml(notice.title)}</b>
+          <small>${escapeHtml(recordDate(notice.publishedAt || notice.createdAt))} &middot; ${notice.published ? "Published" : "Draft"}</small>
+          ${notice.imageUrl ? `<img src="${imageUrl(notice.imageUrl)}" alt="Stored notice image" style="max-width:200px;border-radius:6px;">` : ""}
+          <button class="pill" data-toggle-notice="${escapeHtml(notice.id)}" data-notice-published="${notice.published}">${notice.published ? "Unpublish" : "Publish"}</button>
+        </div>
+      `).join("") || `<p class="note">No official notices have been created yet.</p>`}
+    </section>
+  `;
+}
+
+// ===== BIND ALL ADMIN EVENT HANDLERS =====
+export function bindAdminViews() {
+  // Scroll-to-section navigation
+  document.querySelectorAll("[data-scroll-section]").forEach(button =>
+    button.onclick = () => document.getElementById(button.dataset.scrollSection)?.scrollIntoView({ behavior: "smooth", block: "start" })
+  );
+
+  // Create activity
+  const createActivity = document.getElementById("createActivity");
+  if (createActivity) createActivity.onclick = async () => {
+    try {
+      await api("/activities", { method: "POST", body: { name: document.getElementById("newActivityName").value.trim() } });
+      notify("Activity created."); refresh();
+    } catch (error) { notify(error.message); }
+  };
+
+  // Create flight
+  document.querySelectorAll("[data-create-flight]").forEach(button => button.onclick = async () => {
+    try {
+      const id = button.dataset.createFlight;
+      await api(`/activities/${encodeURIComponent(id)}/flights`, {
+        method: "POST", body: { name: document.getElementById(`flightName-${id}`).value.trim(), sortOrder: Number(document.getElementById(`flightSort-${id}`).value) }
+      });
+      notify("Flight created."); refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // Toggle activity active/inactive
+  document.querySelectorAll("[data-toggle-activity]").forEach(button => button.onclick = async () => {
+    try {
+      await api(`/activities/${encodeURIComponent(button.dataset.toggleActivity)}`, { method: "PATCH", body: { active: button.dataset.active !== "true" } });
+      refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // Toggle flight active/inactive
+  document.querySelectorAll("[data-toggle-flight]").forEach(button => button.onclick = async () => {
+    try {
+      await api(`/activities/${encodeURIComponent(button.dataset.activityId)}/flights/${encodeURIComponent(button.dataset.toggleFlight)}`, { method: "PATCH", body: { active: button.dataset.active !== "true" } });
+      refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // Pre-register member
+  const createMember = document.getElementById("createMember");
+  if (createMember) createMember.onclick = async () => {
+    try {
+      const flightId = document.getElementById("memberFlight").value;
+      if (!flightId) throw new Error("Choose an assigned flight.");
+      latestInvitation = await api("/members/pre-register", {
+        method: "POST", body: {
+          registeredName: document.getElementById("memberFullName").value.trim(),
+          phone: document.getElementById("memberPhone").value.trim(),
+          role: document.getElementById("memberRole").value,
+          flightId
+        }
+      });
+      latestInvitation.fullName = latestInvitation.registeredName || document.getElementById("memberFullName").value.trim();
+      notify("Member pre-registered."); refresh();
+    } catch (error) { notify(error.message); }
+  };
+
+  // Hide latest invitation
+  const hideLatestInvitation = document.getElementById("hideLatestInvitation");
+  if (hideLatestInvitation) hideLatestInvitation.onclick = () => { latestInvitation = null; refresh(); };
+
+  // WhatsApp onboarding link
+  document.querySelectorAll("[data-whatsapp-onboarding-name]").forEach(button => button.onclick = () => {
+    const phone = String(button.dataset.whatsappOnboardingPhone || "").replace(/\D/g, "");
+    if (!phone) return notify("No phone number was saved.");
+    const name = button.dataset.whatsappOnboardingName || "Member";
+    const appUrl = `${window.location.origin}${window.location.pathname}`;
+    const message = encodeURIComponent(`Hello ${name}, your Indian Club Bahrain membership is ready. Open ${appUrl}, choose New registered member? Create my login, then enter the same registered name and phone number provided to Super Admin. You can create your own email address and password.`);
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener");
+  });
+
+  // Roster activity filter
+  const rosterActivity = document.getElementById("rosterActivityFilter");
+  if (rosterActivity) rosterActivity.onchange = () => { selectedRosterActivityId = rosterActivity.value; selectedRosterFlightId = ""; refresh(); };
+
+  // Roster flight filter
+  const rosterFlight = document.getElementById("rosterFlightFilter");
+  if (rosterFlight) rosterFlight.onchange = () => { selectedRosterFlightId = rosterFlight.value; refresh(); };
+
+  // Save member role/flight
+  document.querySelectorAll("[data-save-member]").forEach(button => button.onclick = async () => {
+    try {
+      const uid = button.dataset.saveMember,
+            role = document.getElementById(`memberRole-${uid}`).value,
+            flightId = document.getElementById(`memberFlight-${uid}`).value;
+      if (!flightId) throw new Error("Choose one assigned flight.");
+      await api(`/members/${encodeURIComponent(uid)}`, { method: "PATCH", body: { role, flightId } });
+      notify(role === "LEVEL_ADMIN" ? "Member is now Flight Admin for the selected level only." : "Member is now a Player.");
+      refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // Toggle member active/inactive
+  document.querySelectorAll("[data-toggle-member]").forEach(button => button.onclick = async () => {
+    try {
+      await api(`/members/${encodeURIComponent(button.dataset.toggleMember)}`, { method: "PATCH", body: { active: button.dataset.active !== "true" } });
+      notify("Member access updated."); refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // Load master timetable month
+  const loadMonth = document.getElementById("loadMasterMonth");
+  if (loadMonth) loadMonth.onclick = () => {
+    selectedMasterMonth = document.getElementById("masterMonth").value;
+    selectedMasterActivityId = document.getElementById("masterActivity").value;
     refresh();
-  }
-};
+  };
 
-window.sendPaymentReminder = function(attendanceId) {
-  console.log('📧 Sending payment reminder:', attendanceId);
-  notify("✅ Payment reminder sent via WhatsApp");
-};
+  // Bulk timetable import
+  const bulkImport = document.getElementById("importBulkTimetable");
+  if (bulkImport) bulkImport.onclick = async () => {
+    try {
+      const lines = document.getElementById("bulkTimetableCsv").value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      if (lines[0]?.toLowerCase().replaceAll(" ", "") === "weekday,flight,starttime,endtime") lines.shift();
+      const flights = flattenFlights(await api("/activities"));
+      const rows = lines.map((line, index) => {
+        const parts = line.split(",").map(value => value.trim());
+        if (parts.length !== 4) throw new Error(`Bulk row ${index + 1} must have weekday, flight, start time, and end time.`);
+        const flight = flights.find(item => item.name.toLowerCase() === parts[1].toLowerCase());
+        if (!flight) throw new Error(`Bulk row ${index + 1} flight was not found: ${parts[1]}.`);
+        return { weekday: parts[0], flightId: flight.id, startTime: parts[2], endTime: parts[3] };
+      });
+      if (!rows.length) throw new Error("Paste at least one timetable row.");
+      const result = await api("/timetable/master/bulk-slots", { method: "POST", body: { activityId: selectedMasterActivityId, rows } });
+      notify(`${result.created?.length || 0} weekly slots imported. ${result.skipped?.length || 0} overlapping existing slots skipped.`);
+      refresh();
+    } catch (error) { notify(error.message); }
+  };
 
-window.addMemberCredit = function(event) {
-  event.preventDefault();
-  const memberId = document.getElementById('creditMemberId').value;
-  const amount = document.getElementById('creditAmount').value;
-  const note = document.getElementById('creditNote').value;
-  console.log('➕ Adding credit:', { memberId, amount, note });
-  notify("✅ Credit added successfully");
-  event.target.reset();
-  refresh();
-};
+  // Download bulk template
+  const downloadBulkTemplate = document.getElementById("downloadBulkTemplate");
+  if (downloadBulkTemplate) downloadBulkTemplate.onclick = () => {
+    const csv = "weekday,flight,startTime,endTime\nSaturday,Flight 2,18:35,19:35\nSaturday,Flight 1,19:35,20:35\nSunday,Flight 4B,18:35,19:35\n";
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    link.download = "master-timetable-template.csv";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
 
-window.applyAuditFilters = function() {
-  window.auditFilterCategory = document.getElementById('auditCategory').value;
-  window.auditFilterActivity = document.getElementById('auditActivity').value;
-  window.auditFilterLevel = document.getElementById('auditLevel').value;
-  window.auditFilterDate = document.getElementById('auditDate').value || "ALL";
-  window.auditFilterMember = document.getElementById('auditMember').value;
-  console.log('🔍 Applying audit filters');
-  refresh();
-};
+  // Save weekly timetable slot
+  const saveSlot = document.getElementById("saveMasterSlot");
+  if (saveSlot) saveSlot.onclick = async () => {
+    try {
+      await api("/timetable/master/slot", {
+        method: "POST", body: {
+          weekday: document.getElementById("slotDay").value,
+          flightId: document.getElementById("slotFlight").value,
+          startTime: document.getElementById("slotStart").value,
+          endTime: document.getElementById("slotEnd").value
+        }
+      });
+      notify("Weekly timetable slot saved."); refresh();
+    } catch (error) { notify(error.message); }
+  };
 
-window.printAuditLog = function() {
-  console.log('🖨️ Printing audit log');
-  window.print();
-};
+  // Publish master month
+  const publish = document.getElementById("publishMasterMonth");
+  if (publish) publish.onclick = async () => {
+    try {
+      await api("/timetable/master/publish-month", { method: "POST", body: { month: selectedMasterMonth, activityId: selectedMasterActivityId } });
+      notify("Monthly sessions published.");
+    } catch (error) { notify(error.message); }
+  };
 
-window.viewAuditCategory = function(category) {
-  window.auditFilterCategory = category;
-  console.log('👁️ Viewing audit category:', category);
-  refresh();
-};
+  // Delete timetable slot
+  document.querySelectorAll("[data-delete-slot]").forEach(button => button.onclick = async () => {
+    if (!confirm("Remove this weekly timetable slot?")) return;
+    try {
+      await api(`/timetable/master/slot/${encodeURIComponent(button.dataset.deleteSlot)}`, { method: "DELETE" });
+      refresh();
+    } catch (error) { notify(error.message); }
+  });
 
-window.setCarouselLimit = function(limit) {
-  if (limit > 10) {
-    notify("❌ Carousel limit cannot exceed 10 ads");
-    return;
-  }
-  console.log('🎠 Setting carousel limit:', limit);
-  notify("✅ Carousel limit updated to " + limit);
-};
-
-window.toggleCarousel = function(adId) {
-  console.log('🔄 Toggling carousel for ad:', adId);
-  notify("✅ Carousel status updated");
-  refresh();
-};
-
-window.editAd = function(adId) {
-  console.log('✏️ Editing ad:', adId);
-  notify("📝 Edit ad form opened");
-};
-
-window.removeAd = function(adId) {
-  if (confirm("Remove this ad from carousel?")) {
-    console.log('🗑️ Removing ad from carousel:', adId);
-    notify("✅ Ad removed from carousel");
+  // Finance activity filter
+  const financeActivity = document.getElementById("financeActivityFilter");
+  if (financeActivity) financeActivity.onchange = () => {
+    selectedFinanceActivityId = financeActivity.value && [...financeActivity.options].some(option => option.value === financeActivity.value) ? financeActivity.value : "";
+    selectedFinanceFlightId = "";
+    selectedFinanceCreditMemberId = "";
     refresh();
-  }
-};
+  };
 
-window.createNotice = function(event) {
-  event.preventDefault();
-  const title = document.getElementById('noticeTitle').value;
-  const message = document.getElementById('noticeMessage').value;
-  const image = document.getElementById('noticeImage').files[0];
-  console.log('📢 Creating notice:', { title, message, image: image?.name });
-  notify("✅ Notice published successfully");
-  event.target.reset();
-  refresh();
-};
-
-window.validateImageSize = function(event) {
-  const file = event.target.files[0];
-  const maxSize = 2 * 1024 * 1024; // 2MB
-  const errorElement = document.getElementById('imageSizeError');
-  
-  if (file && file.size > maxSize) {
-    errorElement.style.display = 'block';
-    event.target.value = '';
-  } else {
-    errorElement.style.display = 'none';
-  }
-};
-
-window.approveAd = function(adId) {
-  console.log('✅ Approving ad:', adId);
-  notify("✅ Ad approved and published");
-  refresh();
-};
-
-window.rejectAd = function(adId) {
-  const reason = prompt("Enter rejection reason:");
-  if (reason) {
-    console.log('❌ Rejecting ad:', adId, 'Reason:', reason);
-    notify("✅ Ad rejected");
+  // Finance flight filter
+  const financeFlight = document.getElementById("financeFlightFilter");
+  if (financeFlight) financeFlight.onchange = () => {
+    selectedFinanceFlightId = financeFlight.value && [...financeFlight.options].some(option => option.value === financeFlight.value) ? financeFlight.value : "";
+    selectedFinanceCreditMemberId = "";
     refresh();
-  }
-};
+  };
 
-window.deleteAd = function(adId) {
-  if (confirm("Permanently delete this ad?")) {
-    console.log('🗑️ Deleting ad:', adId);
-    notify("✅ Ad deleted permanently");
+  // Finance credit member selection
+  const financeCreditMember = document.getElementById("financeCreditMember");
+  if (financeCreditMember) financeCreditMember.onchange = () => {
+    selectedFinanceCreditMemberId = financeCreditMember.value;
+    const selectedOption = financeCreditMember.options[financeCreditMember.selectedIndex];
+    const preview = document.getElementById("financeSelectedMemberPreview");
+    const addButton = document.getElementById("addFinanceCredit");
+    const deductButton = document.getElementById("deductFinanceCredit");
+    const balance = Number(selectedOption?.dataset.walletBalance || 0);
+    if (preview) preview.innerHTML = selectedFinanceCreditMemberId
+      ? `<b>Selected member:</b> ${escapeHtml(selectedOption.textContent || "selected member")}<br><b>Current wallet credit:</b> ${bhd(balance)}`
+      : "Choose the exact member before adding or deducting credit.";
+    if (addButton) addButton.disabled = !selectedFinanceCreditMemberId;
+    if (deductButton) deductButton.disabled = !selectedFinanceCreditMemberId;
+  };
+
+  // Finance tab switching
+  document.querySelectorAll("[data-finance-tab]").forEach(button => button.onclick = () => {
+    selectedFinanceTab = button.dataset.financeTab || "credits";
     refresh();
-  }
-};
+  });
 
-window.toggleNoticePublish = function(noticeId) {
-  console.log('🔄 Toggling notice publish status:', noticeId);
-  notify("✅ Notice status updated");
-  refresh();
-};
-
-window.deleteNotice = function(noticeId) {
-  if (confirm("Delete this notice?")) {
-    console.log('🗑️ Deleting notice:', noticeId);
-    notify("✅ Notice deleted");
+  // Audit category filter
+  document.querySelectorAll("[data-audit-category]").forEach(button => button.onclick = () => {
+    selectedAuditCategory = button.dataset.auditCategory || "ALL";
     refresh();
-  }
-};
+  });
 
+  // Audit activity filter
+  const auditActivity = document.getElementById("auditActivityFilter");
+  if (auditActivity) auditActivity.onchange = () => { selectedAuditActivityId = auditActivity.value; selectedAuditFlightId = ""; refresh(); };
+
+  // Audit flight filter
+  const auditFlight = document.getElementById("auditFlightFilter");
+  if (auditFlight) auditFlight.onchange = () => { selectedAuditFlightId = auditFlight.value; refresh(); };
+
+  // Audit date filter
+  const auditDate = document.getElementById("auditDateFilter");
+  if (auditDate) auditDate.onchange = () => { selectedAuditDate = auditDate.value; refresh(); };
+
+  // Audit member filter
+  const auditMember = document.getElementById("auditMemberFilter");
+  if (auditMember) auditMember.onchange = () => { selectedAuditMember = auditMember.value; refresh(); };
+
+  // Print audit log
+  document.querySelectorAll("[data-print-audit-log]").forEach(button =>
+    button.onclick = () => auditPrint("superAdminAuditPrint", "Indian Club Bahrain filtered audit log")
+  );
+
+  // Add credit
+  const addCredit = document.getElementById("addFinanceCredit");
+  if (addCredit) addCredit.onclick = async () => {
+    try {
+      const memberUid = document.getElementById("financeCreditMember").value,
+            amountFils = Math.round(Number(document.getElementById("financeCreditAmount").value) * 1000),
+            note = document.getElementById("financeCreditNote").value.trim();
+      if (!memberUid) throw new Error("Choose a member.");
+      if (!Number.isInteger(amountFils) || amountFils < 1) throw new Error("Enter a valid credit amount.");
+      await api("/finance/admin/wallet-credit", { method: "POST", body: { memberUid, amountFils, note } });
+      notify("Verified wallet credit added to the selected member."); refresh();
+    } catch (error) { notify(error.message); }
+  };
+
+  // Deduct credit
+  const deductCredit = document.getElementById("deductFinanceCredit");
+  if (deductCredit) deductCredit.onclick = async () => {
+    try {
+      const memberUid = document.getElementById("financeCreditMember").value,
+            deductionFils = Math.round(Number(document.getElementById("financeCreditDeduction").value) * 1000),
+            note = document.getElementById("financeCreditAdjustmentNote").value.trim();
+      if (!memberUid) throw new Error("Choose a member.");
+      if (!Number.isInteger(deductionFils) || deductionFils < 1) throw new Error("Enter a valid deduction amount.");
+      if (!note) throw new Error("Enter the reason for this manual deduction.");
+      const result = await api("/finance/admin/wallet-adjustment", { method: "POST", body: { memberUid, adjustmentFils: -deductionFils, note } });
+      notify(`Credit deducted. Current wallet credit: ${bhd(result.balanceAfterFils)}.`); refresh();
+    } catch (error) { notify(error.message); }
+  };
+
+  // Verify pending payment
+  document.querySelectorAll("[data-verify-payment]").forEach(button => button.onclick = async () => {
+    try {
+      await api(`/finance/payments/${encodeURIComponent(button.dataset.verifyPayment)}/verify`, { method: "POST" });
+      notify("Cash / Benefit payment confirmed."); refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // WhatsApp payment reminder
+  document.querySelectorAll("[data-whatsapp-reminder]").forEach(button => button.onclick = () => {
+    const phone = String(button.dataset.whatsappReminder || "").replace(/\D/g, "");
+    if (!phone) return notify("This Player has no phone number saved.");
+    const message = encodeURIComponent(`Hello ${button.dataset.whatsappName}, a club shuttlecock amount of ${button.dataset.whatsappAmount} is unpaid. Please pay using wallet credit, Cash, or Benefit. Thank you.`);
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener");
+  });
+
+  // Print buttons
+  document.querySelectorAll("[data-print-finance], [data-print-audit], [data-print-advertising], [data-print-deleted-users]").forEach(button =>
+    button.onclick = () => window.print()
+  );
+
+  // Save carousel settings
+  const saveCarouselSettings = document.querySelector("[data-save-carousel-settings]");
+  if (saveCarouselSettings) saveCarouselSettings.onclick = async () => {
+    try {
+      const carouselLimit = Number(document.getElementById("carouselAdCount").value);
+      await api("/business/admin/carousel-settings", { method: "PATCH", body: { carouselLimit } });
+      notify("Carousel count updated."); refresh();
+    } catch (error) { notify(error.message); }
+  };
+
+  // Upload ad flyer image
+  document.querySelectorAll("[data-upload-ad-image]").forEach(button => button.onclick = async () => {
+    try {
+      const id = button.dataset.uploadAdImage;
+      const file = document.getElementById(`adFlyerFile-${id}`).files[0];
+      document.getElementById(`adFlyer-${id}`).value = await uploadAdminImage(file);
+      notify("Flyer uploaded. Save the advertisement to attach it.");
+    } catch (error) { notify(error.message); }
+  });
+
+  // Upload notice image
+  const uploadNoticeImage = document.getElementById("uploadNoticeImage");
+  if (uploadNoticeImage) uploadNoticeImage.onclick = async () => {
+    try {
+      const file = document.getElementById("noticeImageFile").files[0];
+      document.getElementById("noticeImageUrl").value = await uploadAdminImage(file);
+      notify("Announcement image uploaded.");
+    } catch (error) { notify(error.message); }
+  };
+
+  // Preview notice image
+  const previewNoticeImage = document.getElementById("previewNoticeImage");
+  if (previewNoticeImage) previewNoticeImage.onclick = () => {
+    const preview = document.getElementById("noticeImagePreview");
+    const url = imageUrl(document.getElementById("noticeImageUrl").value);
+    if (!url) return notify("Upload an image or enter a valid public image link first.");
+    preview.innerHTML = `<img src="${url}" alt="Notice preview" style="max-width:100%;border-radius:8px;">`;
+    preview.classList.remove("hidden");
+  };
+
+  // Publish official notice
+  const publishOfficialNotice = document.getElementById("publishOfficialNotice");
+  if (publishOfficialNotice) publishOfficialNotice.onclick = async () => {
+    try {
+      await api("/business/admin/notices", {
+        method: "POST", body: {
+          title: document.getElementById("noticeTitle").value.trim(),
+          body: document.getElementById("noticeBody").value.trim(),
+          imageUrl: document.getElementById("noticeImageUrl").value.trim(),
+          published: true
+        }
+      });
+      notify("Official notice published."); refresh();
+    } catch (error) { notify(error.message); }
+  };
+
+  // Toggle notice publish/unpublish
+  document.querySelectorAll("[data-toggle-notice]").forEach(button => button.onclick = async () => {
+    try {
+      await api(`/business/admin/notices/${encodeURIComponent(button.dataset.toggleNotice)}`, { method: "PATCH", body: { published: button.dataset.noticePublished !== "true" } });
+      notify("Official notice updated."); refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // Ad decision (approve/reject/unpublish)
+  document.querySelectorAll("[data-ad-decision]").forEach(button => button.onclick = async () => {
+    try {
+      const id = button.dataset.adId;
+      const note = String(prompt(`Optional note for ${button.dataset.adDecision.toLowerCase()}:`) || "").trim();
+      await api(`/business/admin/${encodeURIComponent(id)}/decision`, { method: "POST", body: { decision: button.dataset.adDecision, note } });
+
+      if (button.dataset.adDecision === "PUBLISH") {
+        const featured = document.getElementById(`adFeatured-${id}`).checked;
+        const body = {
+          category: document.getElementById(`adCategory-${id}`).value.trim(),
+          discountText: document.getElementById(`adOffer-${id}`).value.trim(),
+          flyerUrl: document.getElementById(`adFlyer-${id}`).value.trim(),
+          destinationUrl: document.getElementById(`adDestination-${id}`).value.trim(),
+          website: document.getElementById(`adWebsite-${id}`).value.trim(),
+          address: document.getElementById(`adAddress-${id}`).value.trim(),
+          featured,
+          featureStartDate: document.getElementById(`adFeatureStart-${id}`).value,
+          featureEndDate: document.getElementById(`adFeatureEnd-${id}`).value
+        };
+        if (featured && (!body.featureStartDate || !body.featureEndDate))
+          throw new Error("The business was published, but both featured dates are needed before it can be featured.");
+        await api(`/business/admin/${encodeURIComponent(id)}`, { method: "PATCH", body });
+      }
+      notify(`Business ${String(button.dataset.adDecision).toLowerCase()}ed.`); refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // Delete ad permanently
+  document.querySelectorAll("[data-delete-ad]").forEach(button => button.onclick = async () => {
+    try {
+      if (!window.confirm("Delete this unpublished advertisement record permanently?")) return;
+      await api(`/business/admin/${encodeURIComponent(button.dataset.deleteAd)}`, { method: "DELETE", confirm: false });
+      notify("Advertisement record deleted."); refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // Save ad details
+  document.querySelectorAll("[data-save-ad]").forEach(button => button.onclick = async () => {
+    try {
+      const id = button.dataset.saveAd;
+      const featured = document.getElementById(`adFeatured-${id}`).checked;
+      const body = {
+        category: document.getElementById(`adCategory-${id}`).value.trim(),
+        discountText: document.getElementById(`adOffer-${id}`).value.trim(),
+        flyerUrl: document.getElementById(`adFlyer-${id}`).value.trim(),
+        destinationUrl: document.getElementById(`adDestination-${id}`).value.trim(),
+        website: document.getElementById(`adWebsite-${id}`).value.trim(),
+        address: document.getElementById(`adAddress-${id}`).value.trim(),
+        featured,
+        featureStartDate: document.getElementById(`adFeatureStart-${id}`).value,
+        featureEndDate: document.getElementById(`adFeatureEnd-${id}`).value
+      };
+      if (featured && (!body.featureStartDate || !body.featureEndDate))
+        throw new Error("Choose both featured start and end dates.");
+      await api(`/business/admin/${encodeURIComponent(id)}`, { method: "PATCH", body });
+      notify("Advertisement saved."); refresh();
+    } catch (error) { notify(error.message); }
+  });
+
+  // Update request decisions
+  document.querySelectorAll("[data-update-request-decision]").forEach(button => button.onclick = async () => {
+    try {
+      await api(`/business/admin/update-requests/${encodeURIComponent(button.dataset.updateRequestId)}/decision`, { method: "POST", body: { decision: button.dataset.updateRequestDecision } });
+      notify("Business update request reviewed."); refresh();
+    } catch (error) { notify(error.message); }
+  });
+}
+
+// ===== EXPORT ADMIN VIEWS =====
 export const adminViews = {
   home: superAdminHomeView,
-  activities: superAdminActivitiesView,
+  activities: activitiesAndFlightsView,
   timetable: superAdminTimetableView,
-  finance: superAdminFinanceView,
-  auditLogs: superAdminAuditLogsView,
-  ads: superAdminAdsView
+  finance: financeAdminView,
+  auditLogs: auditHistoryView,
+  activityLog: superAdminActivityLogView,
+  walletLog: superAdminWalletLogView,
+  sessionLog: superAdminSessionLogView,
+  stockLog: superAdminStockLogView,
+  ads: advertisingApprovalView
 };
 
