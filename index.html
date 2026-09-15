@@ -847,34 +847,34 @@
       if (role === "SUPER_ADMIN") {
     switch (page) {
       // SUPER_ADMIN
-      case "home": return await adminViews.home();
-      case "activities": return await adminViews.activities();
-      case "timetable": return await adminViews.timetable();
-      case "finance": return await adminViews.finance();
-      case "ads": return await adminViews.ads();
-      case "auditLogs": return await adminViews.auditLogs();
-      case "activityLog": return await adminViews.activityLog();
-      case "walletLog": return await adminViews.walletLog();
-      case "sessionLog": return await adminViews.sessionLog();
-      case "stockLog": return await adminViews.stockLog();
-      case "bazaar": return await views.bazaar();
-      case "profile": return await views.profile();
+      case "home": return adminViews.home();
+      case "activities": return adminViews.activities();
+      case "timetable": return adminViews.timetable();
+      case "finance": return adminViews.finance();
+      case "ads": return adminViews.ads();
+      case "auditLogs": return adminViews.auditLogs();
+      case "activityLog": return adminViews.activityLog();
+      case "walletLog": return adminViews.walletLog();
+      case "sessionLog": return adminViews.sessionLog();
+      case "stockLog": return adminViews.stockLog();
+      case "bazaar": return views.bazaar();
+      case "profile": return views.profile();
       default: return "<p>Page not found</p>";
     }
     
       } else if (role === "LEVEL_ADMIN") {
       switch (page) {
       // LEVEL_ADMIN (7 player tabs + 3 flight admin tabs)
-      case "home": return await views.home();
-      case "timetable": return await views.timetable();
-      case "attendance": return await views.attendance();
-      case "logs": return await views.logs();
-      case "wallet": return await views.wallet();
-      case "bazaar": return await views.bazaar();
-      case "profile": return await views.profile();
-      case "sessionControl": return await flightAdminViews.sessionControl();
-      case "shuttle": return await flightAdminViews.shuttle();
-      case "reports": return await flightAdminViews.reports();
+      case "home": return views.home();
+      case "timetable": return views.timetable();
+      case "attendance": return views.attendance();
+      case "logs": return views.logs();
+      case "wallet": return views.wallet();
+      case "bazaar": return views.bazaar();
+      case "profile": return views.profile();
+      case "sessionControl": return flightAdminViews.sessionControl();
+      case "shuttle": return flightAdminViews.shuttle();
+      case "reports": return flightAdminViews.reports();
       default: return "<p>Page not found</p>";
     }
         
