@@ -859,22 +859,22 @@
           case "audit": return adminViews.logsTab ? adminViews.logsTab() : "<p>Audit</p>";
           default: return "<p>Page not found</p>";
         }
-      } else if (role === "LEVEL_ADMIN") {
-        switch (page) {
-          case "home": return flightAdminViews.dashboard ? flightAdminViews.dashboard() : "<p>Dashboard</p>";
-          case "timetable": return views.timetable ? views.timetable() : "<p>Timetable</p>";
-          case "attendance": return flightAdminViews.attendanceTab ? flightAdminViews.attendanceTab() : "<p>Attendance</p>";
-          case "logs": return views.logs ? views.logs() : "<p>Logs</p>";
-          case "wallet": return views.wallet ? views.wallet() : "<p>Wallet</p>";
-          case "bazaar": return views.bazaar ? views.bazaar() : "<p>BaZaar</p>";
-          case "profile": return views.profile ? views.profile() : "<p>Profile</p>";
-          case "sessionControl": return flightAdminViews.sessionControlTab ? flightAdminViews.sessionControlTab() : "<p>Session Control</p>";
-          case "shuttle": return flightAdminViews.shuttleTab ? flightAdminViews.shuttleTab() : "<p>Shuttle Stock</p>";
-          case "stock": return flightAdminViews.shuttleTab ? flightAdminViews.shuttleTab() : "<p>Shuttle Stock</p>";
-          case "finance": return flightAdminViews.financeTab ? flightAdminViews.financeTab() : "<p>Finance</p>";
-          case "reports": return flightAdminViews.reportsTab ? flightAdminViews.reportsTab() : "<p>Reports</p>";
-          default: return "<p>Page not found</p>";
-        }
+        } else if (role === "LEVEL_ADMIN") {
+          switch (page) {
+            case "home": return views.home ? views.home() : "<p>Dashboard</p>";
+            case "timetable": return views.timetable ? views.timetable() : "<p>Timetable</p>";
+            case "attendance": return views.attendance ? views.attendance() : "<p>Attendance</p>";
+            case "logs": return views.logs ? views.logs() : "<p>Logs</p>";
+            case "wallet": return views.wallet ? views.wallet() : "<p>Wallet</p>";
+            case "bazaar": return views.bazaar ? views.bazaar() : "<p>BaZaar</p>";
+            case "profile": return views.profile ? views.profile() : "<p>Profile</p>";
+            case "sessionControl": return flightAdminViews.sessionControl ? flightAdminViews.sessionControl() : "<p>Session Control</p>";
+            case "shuttle": return flightAdminViews.shuttle ? flightAdminViews.shuttle() : "<p>Shuttle Stock</p>";
+            case "stock": return flightAdminViews.shuttle ? flightAdminViews.shuttle() : "<p>Shuttle Stock</p>";
+            case "reports": return flightAdminViews.reports ? flightAdminViews.reports() : "<p>Reports</p>";
+        default: return "<p>Page not found</p>";
+      }
+     }
       } else {
         switch (page) {
           case "home": return views.home ? views.home() : "<p>Home</p>";
