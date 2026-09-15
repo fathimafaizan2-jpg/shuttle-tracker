@@ -817,55 +817,305 @@
   </footer>
 
   <!-- ===== SCRIPTS ===== -->
+  
   <script type="module">
-    import { initializeApp } from "./js/router.js";
+    import { watchAuthentication, navigate, renderPage, bindPageEvents, getSidebarMenu, state, signOut } from "./js/router.js";
+    import * as views from "./js/modules/views.js";
+    import * as flightAdminViews from "./js/modules/flightAdminViews.js";
+    import * as adminViews from "./js/modules/adminViews.js";
+    import { login } from "./js/modules/auth.js";
+
+    const viewModules = { views, flightAdminViews, adminViews };
 
     // ===== TOAST NOTIFICATION SYSTEM =====
     window.addEventListener("indianclub:toast", (event) => {
-      const message = event.detail;
+      const message = typeof event.detail === "string" ? event.detail : "Notification";
       const toast = document.createElement("div");
       toast.className = "toast";
-      
-      if (message.includes("✅") || message.includes("success")) {
-        toast.classList.add("success");
-      } else if (message.includes("❌") || message.includes("error")) {
-        toast.classList.add("error");
-      } else if (message.includes("⚠️") || message.includes("warning")) {
-        toast.classList.add("warning");
-      }
-      
+      if (message.includes("✅") || message.toLowerCase().includes("success")) toast.classList.add("success");
+      else if (message.includes("❌") || message.toLowerCase().includes("error") || message.toLowerCase().includes("fail")) toast.classList.add("error");
+      else if (message.includes("⚠️") || message.toLowerCase().includes("warning")) toast.classList.add("warning");
       toast.textContent = message;
       document.body.appendChild(toast);
-
-      setTimeout(() => {
-        toast.style.animation = "slideOut 0.3s ease";
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
+      setTimeout(() => { toast.remove(); }, 3500);
     });
 
-    // ===== RENDER EVENT LISTENER =====
-    window.addEventListener("indianclub:render", async () => {
-      const { state, renderPage } = await import("./js/modules/router.js");
-      renderPage();
-    });
+    // ===== RENDER THE APP =====
+    function renderApp() {
+      const content = document.getElementById("app-content");
+      const nav = document.getElementById("app-nav");
+      const headerInfo = document.getElementById("headerInfo");
 
-    // ===== CAROUSEL FUNCTIONALITY =====
+      if (!state.member) {
+        // SHOW LOGIN PAGE
+        headerInfo.style.display = "none";
+        nav.innerHTML = `<div class="nav-header"><h3>Welcome</h3><small>Please login to continue</small></div>`;
+        content.innerHTML = renderLoginPage();
+        bindLoginEvents();
+        return;
+      }
+
+      // SHOW APP
+      headerInfo.style.display = "flex";
+      document.getElementById("headerUserName").textContent = state.member.fullName || "Member";
+      document.getElementById("headerUserRole").textContent = state.member.role.replace("_", " ");
+
+      // Render sidebar
+      const menu = getSidebarMenu();
+      nav.innerHTML = `
+        <div class="nav-header">
+          <h3>${state.member.fullName || "Member"}</h3>
+          <small>${state.member.role.replace("_", " ")} ${state.member.flightName ? "• " + state.member.flightName : ""}</small>
+        </div>
+        <div class="nav-tabs">
+          ${menu.map(item => `
+            <button class="nav-tab ${state.page === item.page ? "active" : ""}" data-page="${item.page}">
+              <i class="${item.icon}"></i> ${item.label}
+            </button>
+          `).join("")}
+        </div>
+        <div class="nav-footer">
+          <button class="nav-btn" id="logoutBtn">🚪 Sign Out</button>
+        </div>
+      `;
+
+      // Bind nav clicks
+      nav.querySelectorAll(".nav-tab").forEach(tab => {
+        tab.onclick = () => navigate(tab.dataset.page);
+      });
+
+      // Bind logout
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (logoutBtn) logoutBtn.onclick = async () => {
+        await signOut();
+        renderApp();
+      };
+
+      // Render page content
+      const html = renderPage(viewModules);
+      content.innerHTML = html || "<p>Loading...</p>";
+
+      // Bind page events
+      bindPageEvents(viewModules);
+    }
+
+    // ===== LOGIN PAGE =====
+    function renderLoginPage() {
+      return `
+        <div class="login-page">
+          <!-- CLUB ANNOUNCEMENTS -->
+          <div class="announcements-section">
+            <div class="announcements-header">
+              <h2>📢 Club Announcements</h2>
+              <p>Latest news from Indian Club Bahrain</p>
+            </div>
+            <div class="announcement-item">
+              <h4>🏆 Annual Badminton Championship</h4>
+              <p>Join us for the biggest badminton tournament of the year! Registration opens next week.</p>
+              <small>Published: Sep 10, 2026</small>
+            </div>
+            <div class="announcement-item">
+              <h4>🎉 Club Anniversary Celebration</h4>
+              <p>Celebrate 25 years of Indian Club Bahrain with us! Special events and prizes await.</p>
+              <small>Published: Sep 05, 2026</small>
+            </div>
+            <div class="announcement-item">
+              <h4>📢 New Membership Drive</h4>
+              <p>Invite your friends to join our vibrant community. Special discounts for new members!</p>
+              <small>Published: Sep 01, 2026</small>
+            </div>
+          </div>
+
+          <!-- BUSINESS ADS CAROUSEL (6 TABS) -->
+          <div class="ads-carousel-section">
+            <div class="carousel-header">
+              <h2>🏪 Community Business Directory</h2>
+              <p>Approved businesses from Indian community in Bahrain</p>
+            </div>
+            <div class="carousel-tabs">
+              <button class="carousel-tab active" onclick="switchCarouselTab(0)">🍽️ Food</button>
+              <button class="carousel-tab" onclick="switchCarouselTab(1)">💪 Fitness</button>
+              <button class="carousel-tab" onclick="switchCarouselTab(2)">✈️ Travel</button>
+              <button class="carousel-tab" onclick="switchCarouselTab(3)">💻 Tech</button>
+              <button class="carousel-tab" onclick="switchCarouselTab(4)">💆 Beauty</button>
+              <button class="carousel-tab" onclick="switchCarouselTab(5)">🏠 Real Estate</button>
+            </div>
+            <div class="carousel-content">
+              <div class="carousel-ad active">
+                <div class="ad-title">Al-Noor Restaurant</div>
+                <div class="ad-description">Authentic Bahraini cuisine with modern ambiance</div>
+                <div class="ad-contact"><button onclick="window.open('tel:+97312345678')">📞 Call</button><button onclick="window.open('https://wa.me/97312345678')">💬 WhatsApp</button></div>
+              </div>
+              <div class="carousel-ad">
+                <div class="ad-title">Fitness Plus Gym</div>
+                <div class="ad-description">State-of-the-art gym with professional trainers</div>
+                <div class="ad-contact"><button onclick="window.open('tel:+97333445566')">📞 Call</button><button onclick="window.open('https://wa.me/97333445566')">💬 WhatsApp</button></div>
+              </div>
+              <div class="carousel-ad">
+                <div class="ad-title">Travel Bahrain Tours</div>
+                <div class="ad-description">Explore Bahrain with our guided tours</div>
+                <div class="ad-contact"><button onclick="window.open('tel:+97355667788')">📞 Call</button><button onclick="window.open('https://wa.me/97355667788')">💬 WhatsApp</button></div>
+              </div>
+              <div class="carousel-ad">
+                <div class="ad-title">Tech Solutions Ltd</div>
+                <div class="ad-description">IT services and software development</div>
+                <div class="ad-contact"><button onclick="window.open('tel:+97377889900')">📞 Call</button><button onclick="window.open('https://wa.me/97377889900')">💬 WhatsApp</button></div>
+              </div>
+              <div class="carousel-ad">
+                <div class="ad-title">Beauty & Spa Center</div>
+                <div class="ad-description">Premium beauty and spa treatments</div>
+                <div class="ad-contact"><button onclick="window.open('tel:+97399001122')">📞 Call</button><button onclick="window.open('https://wa.me/97399001122')">💬 WhatsApp</button></div>
+              </div>
+              <div class="carousel-ad">
+                <div class="ad-title">Real Estate Bahrain</div>
+                <div class="ad-description">Premium properties and investment opportunities</div>
+                <div class="ad-contact"><button onclick="window.open('tel:+97311223344')">📞 Call</button><button onclick="window.open('https://wa.me/97311223344')">💬 WhatsApp</button></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HAVE BUSINESS? FORM -->
+          <div class="card" style="max-width: 800px; width: 100%; text-align: center;">
+            <h3>🏢 Have a business in Bahrain?</h3>
+            <p class="note">Submit your business details to be featured in our community directory!</p>
+            <button class="primary" style="max-width: 300px; margin: 0 auto;" id="showBusinessFormBtn">Submit Business Form</button>
+          </div>
+
+          <!-- LOGIN BOX -->
+          <div class="login-box">
+            <div class="login-header">
+              <div class="logo">🏏</div>
+              <h1>Indian Club Bahrain</h1>
+              <p>Member Portal Login</p>
+            </div>
+            <form class="login-form" id="loginForm">
+              <div class="field">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="Enter your email" required />
+              </div>
+              <div class="field">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter your password" required />
+              </div>
+              <div class="field">
+                <label for="loginRole">Role</label>
+                <select id="loginRole" required>
+                  <option value="">Select your role</option>
+                  <option value="PLAYER">Player</option>
+                  <option value="LEVEL_ADMIN">Level Admin (Flight Admin)</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                </select>
+              </div>
+              <button type="submit" class="primary">🔐 Sign In</button>
+            </form>
+            <div style="text-align: center; margin-top: 1rem;">
+              <p class="note">New member? Contact your Flight Admin to get activated.</p>
+            </div>
+          </div>
+
+          <!-- NEW MEMBER ACTIVATION -->
+          <div class="card" style="max-width: 400px; width: 100%;">
+            <h3>🆕 New Member Activation</h3>
+            <p class="note">If you've been pre-registered, enter your email to activate your account.</p>
+            <div class="field">
+              <label for="activateEmail">Registered Email</label>
+              <input type="email" id="activateEmail" placeholder="Enter your registered email" />
+            </div>
+            <button class="primary" id="activateBtn">Activate Account</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // ===== BIND LOGIN EVENTS =====
+    function bindLoginEvents() {
+      const loginForm = document.getElementById("loginForm");
+      if (loginForm) {
+        loginForm.onsubmit = async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("loginEmail").value.trim();
+          const password = document.getElementById("loginPassword").value;
+          const role = document.getElementById("loginRole").value;
+
+          if (!email || !password || !role) {
+            window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: "❌ Please fill in all fields" }));
+            return;
+          }
+
+          try {
+            const result = await login(email, password, role);
+            if (result.success) {
+              state.member = result.member;
+              state.page = "home";
+              window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: `✅ Welcome, ${result.member.fullName}!` }));
+              renderApp();
+            }
+          } catch (error) {
+            window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: `❌ ${error.message}` }));
+          }
+        };
+      }
+
+      const activateBtn = document.getElementById("activateBtn");
+      if (activateBtn) {
+        activateBtn.onclick = async () => {
+          const email = document.getElementById("activateEmail").value.trim();
+          if (!email) {
+            window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: "❌ Please enter your registered email" }));
+            return;
+          }
+          window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: "📧 Activation request sent. Check your email for further instructions." }));
+        };
+      }
+
+      const showBusinessFormBtn = document.getElementById("showBusinessFormBtn");
+      if (showBusinessFormBtn) {
+        showBusinessFormBtn.onclick = () => {
+          window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: "📝 Please login first to submit a business listing." }));
+        };
+      }
+    }
+
+    // ===== CAROUSEL AUTO-ROTATE =====
     window.switchCarouselTab = function(tabIndex) {
       const tabs = document.querySelectorAll(".carousel-tab");
       const ads = document.querySelectorAll(".carousel-ad");
-      
-      tabs.forEach((tab, index) => {
-        tab.classList.toggle("active", index === tabIndex);
-      });
-      
-      ads.forEach((ad, index) => {
-        ad.classList.toggle("active", index === tabIndex);
-      });
+      tabs.forEach((tab, i) => tab.classList.toggle("active", i === tabIndex));
+      ads.forEach((ad, i) => ad.classList.toggle("active", i === tabIndex));
     };
 
-    // ===== INITIALIZE APP =====
-    initializeApp();
-  </script>
+    let carouselInterval = setInterval(() => {
+      const tabs = document.querySelectorAll(".carousel-tab");
+      if (tabs.length === 0) return;
+      const currentIndex = [...tabs].findIndex(t => t.classList.contains("active"));
+      const nextIndex = (currentIndex + 1) % tabs.length;
+      switchCarouselTab(nextIndex);
+    }, 4000);
+
+    // ===== RENDER EVENT LISTENER =====
+    window.addEventListener("indianclub:render", () => renderApp());
+    window.addEventListener("indianclub:signout", () => renderApp());
+
+    // ===== WATCH AUTH & INITIALIZE =====
+    watchAuthentication({
+      onSignedIn: (member) => {
+        console.log("✅ Signed in:", member.fullName);
+        renderApp();
+      },
+      onSignedOut: () => {
+        console.log("🚪 Signed out");
+        renderApp();
+      },
+      onError: (error) => {
+        console.error("❌ Auth error:", error);
+        renderApp();
+      }
+    });
+
+    // Initial render
+    renderApp();
+    console.log("✅ Indian Club Bahrain App initialized");
+</script>
 </body>
 </html>
 
