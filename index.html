@@ -1207,6 +1207,120 @@
       const nextIndex = (currentIndex + 1) % tabs.length;
       switchCarouselTab(nextIndex);
     }, 4000);
+    
+    // ===== OVERRIDE API TO USE FIRESTORE DIRECTLY =====
+    import { collection, getDocs, query, where, orderBy, limit, addDoc, updateDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Override the api function to use Firestore
+    window.firestoreApi = async function(endpoint) {
+      const authUser = auth.currentUser;
+      if (!authUser) return [];
+
+      try {
+        // MEMBERS
+        if (endpoint === "/members/me") {
+          const memberDoc = await getDoc(doc(db, "members", authUser.uid));
+          if (memberDoc.exists()) {
+            return { uid: authUser.uid, ...memberDoc.data() };
+          }
+          return null;
+        }
+
+        if (endpoint === "/members" || endpoint.startsWith("/members/list") || endpoint === "/members/audit") {
+          const snap = await getDocs(collection(db, "members"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // ACTIVITIES
+        if (endpoint === "/activities" || endpoint.startsWith("/activities")) {
+          const snap = await getDocs(collection(db, "activities"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // SESSIONS
+        if (endpoint.startsWith("/sessions") || endpoint.startsWith("/attendance/session")) {
+          const snap = await getDocs(collection(db, "sessions"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // ATTENDANCE
+        if (endpoint.startsWith("/attendance")) {
+          const snap = await getDocs(collection(db, "attendance"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // TIMETABLE
+        if (endpoint.startsWith("/timetable")) {
+          const snap = await getDocs(collection(db, "weeklyTimetable"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // WALLETS
+        if (endpoint.startsWith("/wallet") || endpoint.startsWith("/wallets")) {
+          if (endpoint.includes("/ledger") || endpoint.includes("Ledger")) {
+            const snap = await getDocs(collection(db, "walletLedger"));
+            return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          }
+          const snap = await getDocs(collection(db, "wallets"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // INVENTORY
+        if (endpoint.startsWith("/inventory") || endpoint.startsWith("/stock") || endpoint.startsWith("/shuttle")) {
+          const snap = await getDocs(collection(db, "inventory"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // FINANCE
+        if (endpoint.startsWith("/finance") || endpoint.startsWith("/payments")) {
+          const snap = await getDocs(collection(db, "walletLedger"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // SITE SETTINGS (Ads, Notices, Announcements)
+        if (endpoint.startsWith("/settings") || endpoint.startsWith("/ads") || endpoint.startsWith("/notices")) {
+          const snap = await getDocs(collection(db, "siteSettings"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // AUDIT LOGS
+        if (endpoint.includes("audit") || endpoint.includes("logs")) {
+          const collections_to_check = ["attendanceAudit", "memberAudit", "businessAudit", "inventoryAudit"];
+          let allLogs = [];
+          for (const colName of collections_to_check) {
+            try {
+              const snap = await getDocs(collection(db, colName));
+              snap.docs.forEach(d => allLogs.push({ id: d.id, collection: colName, ...d.data() }));
+            } catch (e) { /* skip if collection doesn't exist */ }
+          }
+          return allLogs;
+        }
+
+        // MEMBER INVITATIONS
+        if (endpoint.startsWith("/invitations") || endpoint.startsWith("/memberInvitations")) {
+          const snap = await getDocs(collection(db, "memberInvitations"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // PRE-REGISTRATIONS
+        if (endpoint.startsWith("/pre-registration") || endpoint.startsWith("/memberPreRegistrations")) {
+          const snap = await getDocs(collection(db, "memberPreRegistrations"));
+          return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        // DEFAULT - return empty array
+        console.warn("⚠️ Unhandled Firestore endpoint:", endpoint);
+        return [];
+
+      } catch (error) {
+        console.error("❌ Firestore API error:", endpoint, error);
+        return [];
+      }
+    };
+
+    // Make it globally accessible
+    window.api = window.firestoreApi;
+
 
     // ===== RENDER EVENT LISTENER =====
     window.addEventListener("indianclub:render", () => renderApp());
