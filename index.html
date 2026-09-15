@@ -845,37 +845,39 @@
       const page = state.page;
 
       if (role === "SUPER_ADMIN") {
-        switch (page) {
-          case "home": return adminViews.dashboard ? adminViews.dashboard() : "<p>Dashboard</p>";
-          case "members": return adminViews.membersTab ? adminViews.membersTab() : "<p>Members</p>";
-          case "timetable": return adminViews.timetableTab ? adminViews.timetableTab() : "<p>Timetable</p>";
-          case "advertising": return adminViews.advertisingTab ? adminViews.advertisingTab() : "<p>Advertising</p>";
-          case "reports": return adminViews.reportsTab ? adminViews.reportsTab() : "<p>Reports</p>";
-          case "logs": return adminViews.logsTab ? adminViews.logsTab() : "<p>Logs</p>";
-          case "wallet": return adminViews.walletTab ? adminViews.walletTab() : "<p>Wallet</p>";
-          case "bazaar": return adminViews.bazaarTab ? adminViews.bazaarTab() : "<p>BaZaar</p>";
-          case "profile": return adminViews.profileTab ? adminViews.profileTab() : "<p>Profile</p>";
-          case "ads": return adminViews.advertisingTab ? adminViews.advertisingTab() : "<p>Ads</p>";
-          case "audit": return adminViews.logsTab ? adminViews.logsTab() : "<p>Audit</p>";
-          default: return "<p>Page not found</p>";
-        }
-        } else if (role === "LEVEL_ADMIN") {
-          switch (page) {
-            case "home": return views.home ? views.home() : "<p>Dashboard</p>";
-            case "timetable": return views.timetable ? views.timetable() : "<p>Timetable</p>";
-            case "attendance": return views.attendance ? views.attendance() : "<p>Attendance</p>";
-            case "logs": return views.logs ? views.logs() : "<p>Logs</p>";
-            case "wallet": return views.wallet ? views.wallet() : "<p>Wallet</p>";
-            case "bazaar": return views.bazaar ? views.bazaar() : "<p>BaZaar</p>";
-            case "profile": return views.profile ? views.profile() : "<p>Profile</p>";
-            case "sessionControl": return flightAdminViews.sessionControl ? flightAdminViews.sessionControl() : "<p>Session Control</p>";
-            case "shuttle": return flightAdminViews.shuttle ? flightAdminViews.shuttle() : "<p>Shuttle Stock</p>";
-            case "stock": return flightAdminViews.shuttle ? flightAdminViews.shuttle() : "<p>Shuttle Stock</p>";
-            case "reports": return flightAdminViews.reports ? flightAdminViews.reports() : "<p>Reports</p>";
-        default: return "<p>Page not found</p>";
-      }
-     }
-      } else {
+    switch (page) {
+      case "home": return adminViews.home ? await adminViews.home() : "<p>Loading...</p>";
+      case "activities": return adminViews.activities ? await adminViews.activities() : "<p>Loading...</p>";
+      case "timetable": return adminViews.timetable ? await adminViews.timetable() : "<p>Loading...</p>";
+      case "finance": return adminViews.finance ? await adminViews.finance() : "<p>Loading...</p>";
+      case "ads": return adminViews.ads ? await adminViews.ads() : "<p>Loading...</p>";
+      case "auditLogs": return adminViews.auditLogs ? await adminViews.auditLogs() : "<p>Loading...</p>";
+      case "activityLog": return adminViews.activityLog ? await adminViews.activityLog() : "<p>Loading...</p>";
+      case "walletLog": return adminViews.walletLog ? await adminViews.walletLog() : "<p>Loading...</p>";
+      case "sessionLog": return adminViews.sessionLog ? await adminViews.sessionLog() : "<p>Loading...</p>";
+      case "stockLog": return adminViews.stockLog ? await adminViews.stockLog() : "<p>Loading...</p>";
+      case "bazaar": return views.bazaar ? await views.bazaar() : "<p>Loading...</p>";
+      case "profile": return views.profile ? await views.profile() : "<p>Loading...</p>";
+      default: return "<p>Page not found</p>";
+    }
+    
+      } else if (role === "LEVEL_ADMIN") {
+      switch (page) {
+      case "home": return views.home ? await views.home() : "<p>Loading...</p>";
+      case "timetable": return views.timetable ? await views.timetable() : "<p>Loading...</p>";
+      case "attendance": return views.attendance ? await views.attendance() : "<p>Loading...</p>";
+      case "logs": return views.logs ? await views.logs() : "<p>Loading...</p>";
+      case "wallet": return views.wallet ? await views.wallet() : "<p>Loading...</p>";
+      case "bazaar": return views.bazaar ? await views.bazaar() : "<p>Loading...</p>";
+      case "profile": return views.profile ? await views.profile() : "<p>Loading...</p>";
+      case "sessionControl": return flightAdminViews.sessionControl ? await flightAdminViews.sessionControl() : "<p>Loading...</p>";
+      case "shuttle": return flightAdminViews.shuttle ? await flightAdminViews.shuttle() : "<p>Loading...</p>";
+      case "reports": return flightAdminViews.reports ? await flightAdminViews.reports() : "<p>Loading...</p>";
+      default: return "<p>Page not found</p>";
+    }
+        
+    }
+     else {
         switch (page) {
           case "home": return views.home ? views.home() : "<p>Home</p>";
           case "timetable": return views.timetable ? views.timetable() : "<p>Timetable</p>";
