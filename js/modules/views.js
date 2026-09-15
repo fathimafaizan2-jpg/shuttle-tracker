@@ -1,5 +1,5 @@
 
-import { api, submitBusinessUpdateRequest, updateMyCredentials, uploadProfilePhoto, deleteProfilePhoto } from "./auth.js";
+import { api, submitBusinessUpdateRequest, updateMyCredentials, uploadProfilePhoto } from "./auth.js";
 import { state } from "../router.js";
 
 const escapeHtml = value => String(value ?? "")
