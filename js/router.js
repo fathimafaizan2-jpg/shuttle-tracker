@@ -1,5 +1,5 @@
 
-import { api, observeAuth } from "./auth.js";
+import { api, observeAuth } from "./modules/auth.js";
 
 /* ─────────────── state ─────────────── */
 export const state = { member: null, page: "home", language: "en" };
