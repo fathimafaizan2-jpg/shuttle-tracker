@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
@@ -14,8 +13,6 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const firebaseAuth = getAuth(firebaseApp);
 
-/* Browser-local persistence keeps the account signed in through refreshes and normal browser restarts. */
 await setPersistence(firebaseAuth, browserLocalPersistence);
 
 export { firebaseApp, firebaseAuth };
-
