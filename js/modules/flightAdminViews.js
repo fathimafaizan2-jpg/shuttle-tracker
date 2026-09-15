@@ -261,4 +261,11 @@ export function bindFlightAdminViews() {
     URL.revokeObjectURL(link.href);
   };
 }
+// ===== EXPORT FLIGHT ADMIN VIEWS =====
+export const flightAdminViews = {
+  sessionControl: flightAdminSessionControlView,
+  shuttle: flightAdminShuttleStockView,
+  reports: flightAdminReportsView,
+  bindEvents: bindFlightAdminViews
+};
 
