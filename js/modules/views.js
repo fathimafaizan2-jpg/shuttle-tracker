@@ -435,7 +435,7 @@ export function bindBusinessSubmission() {
   if (deleteProfilePhotoButton) deleteProfilePhotoButton.onclick = async () => {
     try {
       if (!window.confirm("Delete your profile photo permanently from your account?")) return;
-      await deleteProfilePhoto();
+      await api('/members/me/photo', { method: 'DELETE' });
       if (state.member) state.member.profilePhotoUrl = null;
       notify("Profile photo deleted.");
       window.dispatchEvent(new CustomEvent("indianclub:render"));
