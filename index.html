@@ -817,15 +817,14 @@
   </footer>
 
   <!-- ===== SCRIPTS ===== -->
-  
   <script type="module">
-    import { watchAuthentication, navigate, renderPage, bindPageEvents, getSidebarMenu, state, signOut } from "./js/router.js";
-    import * as views from "./js/modules/views.js";
-    import * as flightAdminViews from "./js/modules/flightAdminViews.js";
-    import * as adminViews from "./js/modules/adminViews.js";
-    import { login } from "./js/modules/auth.js";
-
-    const viewModules = { views, flightAdminViews, adminViews };
+    import { watchAuthentication, navigate, getSidebarMenu, state, signOut, canOpenPage, showNotification } from "./js/router.js";
+    import { views } from "./js/modules/views.js";
+    import { flightAdminViews } from "./js/modules/flightAdminViews.js";
+    import { adminViews } from "./js/modules/adminViews.js";
+    import { api, observeAuth } from "./js/modules/auth.js";
+    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { firebaseAuth } from "./js/config.js";
 
     // ===== TOAST NOTIFICATION SYSTEM =====
     window.addEventListener("indianclub:toast", (event) => {
@@ -840,6 +839,56 @@
       setTimeout(() => { toast.remove(); }, 3500);
     });
 
+    // ===== RENDER PAGE BASED ON ROLE =====
+    function localRenderPage() {
+      const role = state.member?.role;
+      const page = state.page;
+
+      if (role === "SUPER_ADMIN") {
+        switch (page) {
+          case "home": return adminViews.dashboard ? adminViews.dashboard() : "<p>Dashboard</p>";
+          case "members": return adminViews.membersTab ? adminViews.membersTab() : "<p>Members</p>";
+          case "timetable": return adminViews.timetableTab ? adminViews.timetableTab() : "<p>Timetable</p>";
+          case "advertising": return adminViews.advertisingTab ? adminViews.advertisingTab() : "<p>Advertising</p>";
+          case "reports": return adminViews.reportsTab ? adminViews.reportsTab() : "<p>Reports</p>";
+          case "logs": return adminViews.logsTab ? adminViews.logsTab() : "<p>Logs</p>";
+          case "wallet": return adminViews.walletTab ? adminViews.walletTab() : "<p>Wallet</p>";
+          case "bazaar": return adminViews.bazaarTab ? adminViews.bazaarTab() : "<p>BaZaar</p>";
+          case "profile": return adminViews.profileTab ? adminViews.profileTab() : "<p>Profile</p>";
+          case "ads": return adminViews.advertisingTab ? adminViews.advertisingTab() : "<p>Ads</p>";
+          case "audit": return adminViews.logsTab ? adminViews.logsTab() : "<p>Audit</p>";
+          default: return "<p>Page not found</p>";
+        }
+      } else if (role === "LEVEL_ADMIN") {
+        switch (page) {
+          case "home": return flightAdminViews.dashboard ? flightAdminViews.dashboard() : "<p>Dashboard</p>";
+          case "timetable": return views.timetable ? views.timetable() : "<p>Timetable</p>";
+          case "attendance": return flightAdminViews.attendanceTab ? flightAdminViews.attendanceTab() : "<p>Attendance</p>";
+          case "logs": return views.logs ? views.logs() : "<p>Logs</p>";
+          case "wallet": return views.wallet ? views.wallet() : "<p>Wallet</p>";
+          case "bazaar": return views.bazaar ? views.bazaar() : "<p>BaZaar</p>";
+          case "profile": return views.profile ? views.profile() : "<p>Profile</p>";
+          case "sessionControl": return flightAdminViews.sessionControlTab ? flightAdminViews.sessionControlTab() : "<p>Session Control</p>";
+          case "shuttle": return flightAdminViews.shuttleTab ? flightAdminViews.shuttleTab() : "<p>Shuttle Stock</p>";
+          case "stock": return flightAdminViews.shuttleTab ? flightAdminViews.shuttleTab() : "<p>Shuttle Stock</p>";
+          case "finance": return flightAdminViews.financeTab ? flightAdminViews.financeTab() : "<p>Finance</p>";
+          case "reports": return flightAdminViews.reportsTab ? flightAdminViews.reportsTab() : "<p>Reports</p>";
+          default: return "<p>Page not found</p>";
+        }
+      } else {
+        switch (page) {
+          case "home": return views.home ? views.home() : "<p>Home</p>";
+          case "timetable": return views.timetable ? views.timetable() : "<p>Timetable</p>";
+          case "attendance": return views.attendance ? views.attendance() : "<p>Attendance</p>";
+          case "logs": return views.logs ? views.logs() : "<p>Logs</p>";
+          case "wallet": return views.wallet ? views.wallet() : "<p>Wallet</p>";
+          case "bazaar": return views.bazaar ? views.bazaar() : "<p>BaZaar</p>";
+          case "profile": return views.profile ? views.profile() : "<p>Profile</p>";
+          default: return "<p>Page not found</p>";
+        }
+      }
+    }
+
     // ===== RENDER THE APP =====
     function renderApp() {
       const content = document.getElementById("app-content");
@@ -847,9 +896,8 @@
       const headerInfo = document.getElementById("headerInfo");
 
       if (!state.member) {
-        // SHOW LOGIN PAGE
         headerInfo.style.display = "none";
-        nav.innerHTML = `<div class="nav-header"><h3>Welcome</h3><small>Please login to continue</small></div>`;
+        nav.innerHTML = '<div class="nav-header"><h3>Welcome</h3><small>Please login to continue</small></div>';
         content.innerHTML = renderLoginPage();
         bindLoginEvents();
         return;
@@ -870,7 +918,7 @@
         <div class="nav-tabs">
           ${menu.map(item => `
             <button class="nav-tab ${state.page === item.page ? "active" : ""}" data-page="${item.page}">
-              <i class="${item.icon}"></i> ${item.label}
+              ${item.icon} ${item.label}
             </button>
           `).join("")}
         </div>
@@ -879,24 +927,22 @@
         </div>
       `;
 
-      // Bind nav clicks
       nav.querySelectorAll(".nav-tab").forEach(tab => {
-        tab.onclick = () => navigate(tab.dataset.page);
+        tab.onclick = () => {
+          navigate(tab.dataset.page);
+          renderApp();
+        };
       });
 
-      // Bind logout
       const logoutBtn = document.getElementById("logoutBtn");
       if (logoutBtn) logoutBtn.onclick = async () => {
         await signOut();
         renderApp();
       };
 
-      // Render page content
-      const html = renderPage(viewModules);
+      // Render page content using LOCAL render
+      const html = localRenderPage();
       content.innerHTML = html || "<p>Loading...</p>";
-
-      // Bind page events
-      bindPageEvents(viewModules);
     }
 
     // ===== LOGIN PAGE =====
@@ -1043,15 +1089,19 @@
           }
 
           try {
-            const result = await login(email, password, role);
-            if (result.success) {
-              state.member = result.member;
-              state.page = "home";
-              window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: `✅ Welcome, ${result.member.fullName}!` }));
-              renderApp();
-            }
+            // Use Firebase signInWithEmailAndPassword directly
+            const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+            console.log("✅ Firebase login success:", userCredential.user.email);
+            // watchAuthentication will handle the rest via onAuthStateChanged
           } catch (error) {
-            window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: `❌ ${error.message}` }));
+            console.error("❌ Login error:", error);
+            let msg = "Login failed";
+            if (error.code === "auth/user-not-found") msg = "❌ Email not found";
+            else if (error.code === "auth/wrong-password") msg = "❌ Wrong password";
+            else if (error.code === "auth/invalid-email") msg = "❌ Invalid email";
+            else if (error.code === "auth/too-many-requests") msg = "❌ Too many attempts. Try again later";
+            else msg = "❌ " + (error.message || "Login failed");
+            window.dispatchEvent(new CustomEvent("indianclub:toast", { detail: msg }));
           }
         };
       }
