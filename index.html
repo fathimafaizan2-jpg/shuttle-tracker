@@ -896,7 +896,7 @@
     // ===== RENDER PAGE BASED ON ROLE =====
     
     // ===== RENDER PAGE BASED ON ROLE =====
-    function localRenderPage() {
+    async function localRenderPage() {
       const role = state.member?.role;
       const page = state.page;
 
@@ -950,7 +950,7 @@
     }
 
     // ===== RENDER THE APP =====
-    function renderApp() {
+    async function renderApp() {
       const content = document.getElementById("app-content");
       const nav = document.getElementById("app-nav");
       const headerInfo = document.getElementById("headerInfo");
@@ -1000,9 +1000,14 @@
         renderApp();
       };
 
-      // Render page content using LOCAL render
-      const html = localRenderPage();
-      content.innerHTML = html || "<p>Loading...</p>";
+      try {
+        const html = await localRenderPage();
+        content.innerHTML = html || "<p>Loading...</p>";
+     }  catch (err) {
+        console.error("❌ Render error:", err);
+        content.innerHTML = "<p>Error loading page. Please try again.</p>";
+    }
+
     }
 
     // ===== LOGIN PAGE =====
