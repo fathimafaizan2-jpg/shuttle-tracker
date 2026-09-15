@@ -515,3 +515,14 @@ export function bindBusinessSubmission() {
     };
   });
 }
+// ===== EXPORT PLAYER VIEWS =====
+export const views = {
+  home: playerDashboard,
+  timetable: playerTimetable,
+  attendance: attendanceView,
+  logs: playerActivityLog,
+  wallet: walletView,
+  bazaar: publicIndiMart,
+  profile: credentialsView,
+  bindEvents: bindBusinessSubmission
+};
