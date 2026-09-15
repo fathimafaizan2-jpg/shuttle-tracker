@@ -1,8 +1,10 @@
 
-import { login, logout, observeAuth, api } from "./modules/auth-wrapper.js";
-import { views } from "./modules/views.js";
-import { flightAdminViews } from "./modules/flightAdminViews.js";
-import { adminViews } from "./modules/adminViews.js";
+import { views } from "./views.js";
+import { flightAdminViews } from "./flightAdminViews.js";
+import { adminViews } from "./adminViews.js";
+
+// Import from your existing auth.js
+import * as authModule from "./auth.js";
 
 // ===== GLOBAL STATE =====
 export const state = {
@@ -59,26 +61,45 @@ async function renderLoginPage() {
   if (!container) return;
 
   try {
-    const announcements = await api("/announcements");
-    const ads = await api("/ads");
+    // Try to fetch announcements and ads from your API
+    let announcements = [];
+    let ads = [];
+
+    try {
+      const annResponse = await fetch("https://indian-club-api.onrender.com/api/announcements");
+      if (annResponse.ok) {
+        announcements = await annResponse.json();
+      }
+    } catch (e) {
+      console.warn("⚠️ Could not fetch announcements");
+    }
+
+    try {
+      const adsResponse = await fetch("https://indian-club-api.onrender.com/api/ads");
+      if (adsResponse.ok) {
+        ads = await adsResponse.json();
+      }
+    } catch (e) {
+      console.warn("⚠️ Could not fetch ads");
+    }
 
     const adsHtml = ads.slice(0, 6).map((ad, index) => `
       <div class="carousel-ad ${index === 0 ? "active" : ""}">
-        <div class="ad-title">🏢 ${ad.businessName}</div>
-        <div class="ad-description">${ad.description}</div>
-        <small style="color: #6b7280; display: block; margin-bottom: 1rem;">📞 ${ad.phone}</small>
+        <div class="ad-title">🏢 ${ad.businessName || "Business"}</div>
+        <div class="ad-description">${ad.description || "No description"}</div>
+        <small style="color: #6b7280; display: block; margin-bottom: 1rem;">📞 ${ad.phone || "N/A"}</small>
         <div class="ad-contact">
-          <button onclick="window.open('tel:${ad.phone.replace(/\s/g, '')}')">📞 Call</button>
-          <button onclick="window.open('https://wa.me/${ad.phone.replace(/\D/g, '')}')">💬 WhatsApp</button>
+          <button onclick="window.open('tel:${(ad.phone || "").replace(/\s/g, '')}')">📞 Call</button>
+          <button onclick="window.open('https://wa.me/${(ad.phone || "").replace(/\D/g, '')}')">💬 WhatsApp</button>
         </div>
       </div>
     `).join("");
 
     const announcementsHtml = announcements.map(ann => `
       <div class="announcement-item">
-        <h4>${ann.title}</h4>
-        <p>${ann.message}</p>
-        <small>${new Date(ann.publishedAt).toLocaleDateString("en-BH")}</small>
+        <h4>${ann.title || "Announcement"}</h4>
+        <p>${ann.message || ann.description || "No details"}</p>
+        <small>${ann.publishedAt ? new Date(ann.publishedAt).toLocaleDateString("en-BH") : "N/A"}</small>
       </div>
     `).join("");
 
@@ -126,7 +147,7 @@ async function renderLoginPage() {
           <div class="carousel-tabs">
             ${ads.slice(0, 6).map((ad, index) => `
               <button class="carousel-tab ${index === 0 ? "active" : ""}" onclick="window.switchCarouselTab(${index})">
-                ${ad.businessName}
+                ${ad.businessName || "Business"}
               </button>
             `).join("")}
           </div>
@@ -250,7 +271,8 @@ export function renderNavigation() {
 // ===== AUTHENTICATION FUNCTIONS =====
 export async function handleLogin(email, password) {
   try {
-    const member = await login(email, password);
+    // Call your existing auth.js login function
+    const member = await authModule.login(email, password);
 
     state.member = member;
     state.role = member.role;
@@ -275,7 +297,8 @@ export async function handleLogin(email, password) {
 export async function handleLogout() {
   if (confirm("Are you sure you want to logout?")) {
     try {
-      await logout();
+      // Call your existing auth.js logout function
+      await authModule.logout();
       state.member = null;
       state.role = null;
       state.flightId = null;
@@ -294,28 +317,44 @@ export async function handleLogout() {
 
 export async function checkAuth() {
   return new Promise((resolve) => {
-    observeAuth(async (user) => {
-      if (user) {
-        try {
-          const member = await api("/members/me");
-          state.member = member;
-          state.role = member.role;
-          state.flightId = member.flightId || null;
-          state.flightName = member.flightName || null;
-          state.currentPage = "dashboard";
-          state.currentTab = "home";
+    try {
+      // Call your existing auth.js observeAuth function
+      authModule.observeAuth(async (user) => {
+        if (user) {
+          try {
+            const response = await fetch("https://indian-club-api.onrender.com/api/members/me", {
+              headers: {
+                "Authorization": `Bearer ${await user.getIdToken()}`
+              }
+            });
+            
+            if (response.ok) {
+              const member = await response.json();
+              state.member = member;
+              state.role = member.role;
+              state.flightId = member.flightId || null;
+              state.flightName = member.flightName || null;
+              state.currentPage = "dashboard";
+              state.currentTab = "home";
 
-          console.log(`✅ Auth verified: ${state.member.fullName}`);
-          resolve(true);
-        } catch (error) {
-          console.error("❌ Auth verification failed:", error);
+              console.log(`✅ Auth verified: ${state.member.fullName}`);
+              resolve(true);
+            } else {
+              resolve(false);
+            }
+          } catch (error) {
+            console.error("❌ Auth verification failed:", error);
+            resolve(false);
+          }
+        } else {
+          state.currentPage = "login";
           resolve(false);
         }
-      } else {
-        state.currentPage = "login";
-        resolve(false);
-      }
-    });
+      });
+    } catch (error) {
+      console.error("❌ Auth check failed:", error);
+      resolve(false);
+    }
   });
 }
 
@@ -362,4 +401,3 @@ if (document.readyState === "loading") {
 }
 
 export default { navigate, renderPage, handleLogin, handleLogout, checkAuth, state };
-
