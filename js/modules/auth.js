@@ -283,6 +283,21 @@ export async function api(endpoint, options = {}) {
   if (endpoint === "/reports/attendance") { return []; }
   if (endpoint === "/reports/payments") { return []; }
   if (endpoint === "/reports/members") { return MOCK_MEMBERS; }
+  
+  // ===== MEMBERS AUDIT ENDPOINT =====
+  // (Add this block right BEFORE the "// ===== DEFAULT =====" line in auth.js)
+
+  if (endpoint === "/members/audit" && method === "GET") {
+    return [
+      { category: "MEMBER", action: "Member Created", subject: "Ahmed Al-Mansouri", activityId: "badminton", activityName: "Badminton", flightId: "flight1", flightName: "Flight 1", detail: "New player registered", actor: "Fatima Al-Dosari", createdAt: new Date("2026-09-14T10:30:00"), sessionDate: null },
+      { category: "ATTENDANCE", action: "Attendance Marked", subject: "Ahmed Al-Mansouri", activityId: "badminton", activityName: "Badminton", flightId: "flight1", flightName: "Flight 1", detail: "Present in session", actor: "Fatima Al-Dosari", createdAt: new Date("2026-09-14T09:15:00"), sessionDate: new Date("2026-09-14") },
+      { category: "WALLET / PAYMENT", action: "Payment Confirmed", subject: "Ahmed Al-Mansouri", activityId: "badminton", activityName: "Badminton", flightId: "flight1", flightName: "Flight 1", detail: "Cash payment BHD 5.000 received", actor: "Fatima Al-Dosari", createdAt: new Date("2026-09-13T18:45:00"), sessionDate: null },
+      { category: "SESSION CONTROL", action: "Session Ended", subject: "Badminton Flight 1", activityId: "badminton", activityName: "Badminton", flightId: "flight1", flightName: "Flight 1", detail: "Badminton session completed", actor: "Fatima Al-Dosari", createdAt: new Date("2026-09-13T20:00:00"), sessionDate: new Date("2026-09-13") },
+      { category: "SHUTTLE STOCK", action: "Stock Added", subject: "Flight 1 Inventory", activityId: "badminton", activityName: "Badminton", flightId: "flight1", flightName: "Flight 1", detail: "50 shuttles added to inventory", actor: "Fatima Al-Dosari", createdAt: new Date("2026-09-12T14:30:00"), sessionDate: null },
+      { category: "MEMBER", action: "Profile Updated", subject: "Fatima Al-Dosari", activityId: "badminton", activityName: "Badminton", flightId: "flight1", flightName: "Flight 1", detail: "Phone number updated", actor: "Fatima Al-Dosari", createdAt: new Date("2026-09-12T11:00:00"), sessionDate: null },
+      { category: "WALLET / PAYMENT", action: "Credit Added", subject: "Ahmed Al-Mansouri", activityId: "badminton", activityName: "Badminton", flightId: "flight1", flightName: "Flight 1", detail: "BHD 50.000 wallet credit added", actor: "Mohammed Al-Khalifa", createdAt: new Date("2026-09-11T14:00:00"), sessionDate: null }
+    ];
+  }
 
   // ===== DEFAULT =====
   console.warn(`⚠️ Unknown endpoint: ${endpoint}`);
