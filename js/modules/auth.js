@@ -358,6 +358,302 @@ export async function api(endpoint, options = {}) {
   return { success: false, message: "Endpoint not found" };
 }
 
-// ===== EXPORT =====
-export default { api };
 
+// ===== ADD THESE FUNCTIONS TO YOUR auth.js =====
+// PASTE BEFORE the last line "export default { api };"
+
+// Current logged in member
+let currentMember = null;
+let authCallbacks = [];
+
+// Login function
+export async function login(email, password, role) {
+  const result = await api("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password, role })
+  });
+  if (result.success) {
+    currentMember = result.member;
+    localStorage.setItem("indian_club_token", result.token);
+    localStorage.setItem("indian_club_member", JSON.stringify(result.member));
+    // Notify all auth observers
+    authCallbacks.forEach(cb => cb(result.member));
+  }
+  return result;
+}
+
+// Logout function
+export async function signOut() {
+  currentMember = null;
+  localStorage.removeItem("indian_club_token");
+  localStorage.removeItem("indian_club_member");
+  authCallbacks.forEach(cb => cb(null));
+}
+
+// observeAuth - THIS IS WHAT router.js NEEDS!
+export function observeAuth(callback) {
+  authCallbacks.push(callback);
+  // Check if already logged in
+  const savedMember = localStorage.getItem("indian_club_member");
+  if (savedMember) {
+    try {
+      currentMember = JSON.parse(savedMember);
+      setTimeout(() => callback(currentMember), 100);
+    } catch {
+      callback(null);
+    }
+  } else {
+    setTimeout(() => callback(null), 100);
+  }
+  // Return unsubscribe function
+  return () => { authCallbacks = authCallbacks.filter(cb2 => cb2 !== callback); };
+}
+
+// Get current member
+export function getCurrentMember() {
+  return currentMember;
+}
+
+// Verify token on page load
+export async function verifyToken() {
+  const token = localStorage.getItem("indian_club_token");
+  if (!token) return null;
+  try {
+    const result = await api("/auth/verify", {
+      method: "POST",
+      body: JSON.stringify({ token })
+    });
+    if (result.success) {
+      currentMember = result.member;
+      return result.member;
+    }
+  } catch {
+    localStorage.removeItem("indian_club_token");
+    localStorage.removeItem("indian_club_member");
+  }
+  return null;
+}
+
+
+// ===== ADD THESE FUNCTIONS TO YOUR auth.js =====
+// PASTE BEFORE the last line "export default { api };"
+
+// Current logged in member
+let currentMember = null;
+let authCallbacks = [];
+
+// Login function
+export async function login(email, password, role) {
+  const result = await api("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password, role })
+  });
+  if (result.success) {
+    currentMember = result.member;
+    localStorage.setItem("indian_club_token", result.token);
+    localStorage.setItem("indian_club_member", JSON.stringify(result.member));
+    // Notify all auth observers
+    authCallbacks.forEach(cb => cb(result.member));
+  }
+  return result;
+}
+
+// Logout function
+export async function signOut() {
+  currentMember = null;
+  localStorage.removeItem("indian_club_token");
+  localStorage.removeItem("indian_club_member");
+  authCallbacks.forEach(cb => cb(null));
+}
+
+// observeAuth - THIS IS WHAT router.js NEEDS!
+export function observeAuth(callback) {
+  authCallbacks.push(callback);
+  // Check if already logged in
+  const savedMember = localStorage.getItem("indian_club_member");
+  if (savedMember) {
+    try {
+      currentMember = JSON.parse(savedMember);
+      setTimeout(() => callback(currentMember), 100);
+    } catch {
+      callback(null);
+    }
+  } else {
+    setTimeout(() => callback(null), 100);
+  }
+  // Return unsubscribe function
+  return () => { authCallbacks = authCallbacks.filter(cb2 => cb2 !== callback); };
+}
+
+// Get current member
+export function getCurrentMember() {
+  return currentMember;
+}
+
+// Verify token on page load
+export async function verifyToken() {
+  const token = localStorage.getItem("indian_club_token");
+  if (!token) return null;
+  try {
+    const result = await api("/auth/verify", {
+      method: "POST",
+      body: JSON.stringify({ token })
+    });
+    if (result.success) {
+      currentMember = result.member;
+      return result.member;
+    }
+  } catch {
+    localStorage.removeItem("indian_club_token");
+    localStorage.removeItem("indian_club_member");
+  }
+  return null;
+}
+
+
+// ===== ADD THESE FUNCTIONS TO YOUR auth.js =====
+// PASTE BEFORE the last line "export default { api };"
+
+// Current logged in member
+let currentMember = null;
+let authCallbacks = [];
+
+// Login function
+export async function login(email, password, role) {
+  const result = await api("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password, role })
+  });
+  if (result.success) {
+    currentMember = result.member;
+    localStorage.setItem("indian_club_token", result.token);
+    localStorage.setItem("indian_club_member", JSON.stringify(result.member));
+    // Notify all auth observers
+    authCallbacks.forEach(cb => cb(result.member));
+  }
+  return result;
+}
+
+// Logout function
+export async function signOut() {
+  currentMember = null;
+  localStorage.removeItem("indian_club_token");
+  localStorage.removeItem("indian_club_member");
+  authCallbacks.forEach(cb => cb(null));
+}
+
+// observeAuth - THIS IS WHAT router.js NEEDS!
+export function observeAuth(callback) {
+  authCallbacks.push(callback);
+  // Check if already logged in
+  const savedMember = localStorage.getItem("indian_club_member");
+  if (savedMember) {
+    try {
+      currentMember = JSON.parse(savedMember);
+      setTimeout(() => callback(currentMember), 100);
+    } catch {
+      callback(null);
+    }
+  } else {
+    setTimeout(() => callback(null), 100);
+  }
+  // Return unsubscribe function
+  return () => { authCallbacks = authCallbacks.filter(cb2 => cb2 !== callback); };
+}
+
+// Get current member
+export function getCurrentMember() {
+  return currentMember;
+}
+
+// Verify token on page load
+export async function verifyToken() {
+  const token = localStorage.getItem("indian_club_token");
+  if (!token) return null;
+  try {
+    const result = await api("/auth/verify", {
+      method: "POST",
+      body: JSON.stringify({ token })
+    });
+    if (result.success) {
+      currentMember = result.member;
+      return result.member;
+    }
+  } catch {
+    localStorage.removeItem("indian_club_token");
+    localStorage.removeItem("indian_club_member");
+  }
+  return null;
+}
+
+let currentMember = null;
+let authCallbacks = [];
+
+// Login function
+export async function login(email, password, role) {
+  const result = await api("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password, role })
+  });
+  if (result.success) {
+    currentMember = result.member;
+    localStorage.setItem("indian_club_token", result.token);
+    localStorage.setItem("indian_club_member", JSON.stringify(result.member));
+    // Notify all auth observers
+    authCallbacks.forEach(cb => cb(result.member));
+  }
+  return result;
+}
+
+// Logout function
+export async function signOut() {
+  currentMember = null;
+  localStorage.removeItem("indian_club_token");
+  localStorage.removeItem("indian_club_member");
+  authCallbacks.forEach(cb => cb(null));
+}
+
+// observeAuth - THIS IS WHAT router.js NEEDS!
+export function observeAuth(callback) {
+  authCallbacks.push(callback);
+  // Check if already logged in
+  const savedMember = localStorage.getItem("indian_club_member");
+  if (savedMember) {
+    try {
+      currentMember = JSON.parse(savedMember);
+      setTimeout(() => callback(currentMember), 100);
+    } catch {
+      callback(null);
+    }
+  } else {
+    setTimeout(() => callback(null), 100);
+  }
+  // Return unsubscribe function
+  return () => { authCallbacks = authCallbacks.filter(cb2 => cb2 !== callback); };
+}
+
+// Get current member
+export function getCurrentMember() {
+  return currentMember;
+}
+
+// Verify token on page load
+export async function verifyToken() {
+  const token = localStorage.getItem("indian_club_token");
+  if (!token) return null;
+  try {
+    const result = await api("/auth/verify", {
+      method: "POST",
+      body: JSON.stringify({ token })
+    });
+    if (result.success) {
+      currentMember = result.member;
+      return result.member;
+    }
+  } catch {
+    localStorage.removeItem("indian_club_token");
+    localStorage.removeItem("indian_club_member");
+  }
+  return null;
+}
+export default { api, login, signOut, observeAuth, getCurrentMember, verifyToken };
