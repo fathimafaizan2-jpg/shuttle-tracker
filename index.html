@@ -818,11 +818,11 @@
 
   <!-- ===== SCRIPTS ===== -->
   <script type="module">
-    import { watchAuthentication, navigate, getSidebarMenu, state, signOut, canOpenPage, showNotification } from "./js/router.js";
+    import { watchAuthentication, navigate, getSidebarMenu, state, signOut } from "./js/router.js";
     import { views } from "./js/modules/views.js";
     import { flightAdminViews } from "./js/modules/flightAdminViews.js";
     import { adminViews } from "./js/modules/adminViews.js";
-    import { api, observeAuth } from "./js/modules/auth.js";
+    import { api } from "./js/modules/auth.js";
     import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { firebaseAuth } from "./js/config.js";
 
