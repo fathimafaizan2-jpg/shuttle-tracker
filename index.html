@@ -846,33 +846,35 @@
 
       if (role === "SUPER_ADMIN") {
     switch (page) {
-      case "home": return adminViews.home ? await adminViews.home() : "<p>Loading...</p>";
-      case "activities": return adminViews.activities ? await adminViews.activities() : "<p>Loading...</p>";
-      case "timetable": return adminViews.timetable ? await adminViews.timetable() : "<p>Loading...</p>";
-      case "finance": return adminViews.finance ? await adminViews.finance() : "<p>Loading...</p>";
-      case "ads": return adminViews.ads ? await adminViews.ads() : "<p>Loading...</p>";
-      case "auditLogs": return adminViews.auditLogs ? await adminViews.auditLogs() : "<p>Loading...</p>";
-      case "activityLog": return adminViews.activityLog ? await adminViews.activityLog() : "<p>Loading...</p>";
-      case "walletLog": return adminViews.walletLog ? await adminViews.walletLog() : "<p>Loading...</p>";
-      case "sessionLog": return adminViews.sessionLog ? await adminViews.sessionLog() : "<p>Loading...</p>";
-      case "stockLog": return adminViews.stockLog ? await adminViews.stockLog() : "<p>Loading...</p>";
-      case "bazaar": return views.bazaar ? await views.bazaar() : "<p>Loading...</p>";
-      case "profile": return views.profile ? await views.profile() : "<p>Loading...</p>";
+      // SUPER_ADMIN
+      case "home": return await adminViews.home();
+      case "activities": return await adminViews.activities();
+      case "timetable": return await adminViews.timetable();
+      case "finance": return await adminViews.finance();
+      case "ads": return await adminViews.ads();
+      case "auditLogs": return await adminViews.auditLogs();
+      case "activityLog": return await adminViews.activityLog();
+      case "walletLog": return await adminViews.walletLog();
+      case "sessionLog": return await adminViews.sessionLog();
+      case "stockLog": return await adminViews.stockLog();
+      case "bazaar": return await views.bazaar();
+      case "profile": return await views.profile();
       default: return "<p>Page not found</p>";
     }
     
       } else if (role === "LEVEL_ADMIN") {
       switch (page) {
-      case "home": return views.home ? await views.home() : "<p>Loading...</p>";
-      case "timetable": return views.timetable ? await views.timetable() : "<p>Loading...</p>";
-      case "attendance": return views.attendance ? await views.attendance() : "<p>Loading...</p>";
-      case "logs": return views.logs ? await views.logs() : "<p>Loading...</p>";
-      case "wallet": return views.wallet ? await views.wallet() : "<p>Loading...</p>";
-      case "bazaar": return views.bazaar ? await views.bazaar() : "<p>Loading...</p>";
-      case "profile": return views.profile ? await views.profile() : "<p>Loading...</p>";
-      case "sessionControl": return flightAdminViews.sessionControl ? await flightAdminViews.sessionControl() : "<p>Loading...</p>";
-      case "shuttle": return flightAdminViews.shuttle ? await flightAdminViews.shuttle() : "<p>Loading...</p>";
-      case "reports": return flightAdminViews.reports ? await flightAdminViews.reports() : "<p>Loading...</p>";
+      // LEVEL_ADMIN (7 player tabs + 3 flight admin tabs)
+      case "home": return await views.home();
+      case "timetable": return await views.timetable();
+      case "attendance": return await views.attendance();
+      case "logs": return await views.logs();
+      case "wallet": return await views.wallet();
+      case "bazaar": return await views.bazaar();
+      case "profile": return await views.profile();
+      case "sessionControl": return await flightAdminViews.sessionControl();
+      case "shuttle": return await flightAdminViews.shuttle();
+      case "reports": return await flightAdminViews.reports();
       default: return "<p>Page not found</p>";
     }
         
