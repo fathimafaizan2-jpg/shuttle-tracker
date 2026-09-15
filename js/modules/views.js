@@ -1,6 +1,23 @@
 
-import { api, submitBusinessUpdateRequest, updateMyCredentials, uploadProfilePhoto } from "./auth.js";
+import { api } from "./auth.js";
 import { state } from "../router.js";
+// ===== HELPER FUNCTIONS (not in auth.js) =====
+async function updateMyCredentials(data) {
+  return await api("/members/me/credentials", { method: "PUT", body: data });
+}
+
+async function uploadProfilePhoto(file) {
+  if (!file) throw new Error("Please select a photo first.");
+  if (file.size > 2 * 1024 * 1024) throw new Error("Photo must be under 2 MB.");
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) throw new Error("Only PNG, JPEG, or WebP allowed.");
+  const formData = new FormData();
+  formData.append("photo", file);
+  return await api("/members/me/photo", { method: "POST", body: formData, raw: true });
+}
+
+async function submitBusinessUpdateRequest(data) {
+  return await api("/business/public/update-request", { method: "POST", body: data });
+}
 
 const escapeHtml = value => String(value ?? "")
   .replaceAll("&", "&amp;")
